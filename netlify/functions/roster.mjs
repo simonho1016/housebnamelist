@@ -69,7 +69,9 @@ export default async (req) => {
   if (!password) {
     return json({ error: "server_not_configured", message: "尚未在 Netlify 設定環境變數 ROSTER_PASSWORD" }, 503);
   }
-  const provided = req.headers.get("x-roster-key") || "";
+  // 前端會先 encodeURIComponent 再放入標頭（HTTP 標頭不能直接載有中文），這裡解碼後才比對
+  let provided = req.headers.get("x-roster-key") || "";
+  try { provided = decodeURIComponent(provided); } catch { /* 保留原值 */ }
   if (!safeEqual(provided, password)) return json({ error: "unauthorized" }, 401);
 
   const store = getStore({ name: STORE_NAME, consistency: "strong" });

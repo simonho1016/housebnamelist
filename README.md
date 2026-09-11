@@ -27,7 +27,7 @@ package.json                     函式所需的套件（@netlify/blobs）
 
    | Key | Value |
    |-----|-------|
-   | `ROSTER_PASSWORD` | 你自訂的存取密碼（建議 10 個字元以上，可含中文） |
+   | `ROSTER_PASSWORD` | 你自訂的存取密碼（建議 10 個字元以上，中英文皆可；開頭和結尾不要有空格） |
 
 5. 按 **Deploy**。完成後 Netlify 會給你一個網址，例如 `https://xxxx.netlify.app`。
    可在 *Site configuration → Site details → Change site name* 改成易記的名稱。

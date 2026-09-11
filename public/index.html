@@ -571,7 +571,7 @@
   function apiFetch(method, body) {
     return fetch(API, {
       method: method, cache: 'no-store',
-      headers: { 'x-roster-key': accessKey, 'content-type': 'application/json' },
+      headers: { 'x-roster-key': encodeURIComponent(accessKey), 'content-type': 'application/json' },
       body: body
     }).then(function (r) {
       return r.text().then(function (t) {
