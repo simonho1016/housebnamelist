@@ -12,20 +12,16 @@ package.json                     函式所需的套件（@netlify/blobs）
 
 ## 第一次部署（約 10 分鐘）
 
-### 1. 把程式碼放上 GitHub
+### 1. 程式碼已在 GitHub
 
-專案已是一個 git 倉庫。若尚未推送到 GitHub，在此資料夾執行：
-
-```bash
-gh repo create hostel-roster --private --source=. --push
-```
-
-（倉庫請設為 **private**。倉庫內只有程式碼，沒有舍友資料；資料只存在 Netlify。）
+倉庫：<https://github.com/simonho1016/housebnamelist>（分支 `main`）。
+倉庫內只有程式碼，沒有舍友資料；資料只存在 Netlify。
+建議到 GitHub 的 *Settings → Danger Zone → Change repository visibility* 改為 **Private**。
 
 ### 2. 在 Netlify 建立網站
 
 1. 登入 <https://app.netlify.com>，按 **Add new site → Import an existing project → GitHub**。
-2. 授權 Netlify 讀取你的 GitHub，選擇 `hostel-roster` 倉庫。
+2. 授權 Netlify 讀取你的 GitHub，選擇 `housebnamelist` 倉庫。
 3. 建置設定會自動從 `netlify.toml` 讀取（Publish directory：`public`，Functions：`netlify/functions`），不用改。
 4. **部署前**按 **Add environment variables**（或部署後到 *Site configuration → Environment variables*），新增：
 
