@@ -46,7 +46,7 @@
   .cell{display:flex;min-height:0;min-width:0;border-right:0.5mm solid var(--line);border-bottom:0.5mm solid var(--line);
     cursor:pointer;position:relative}
   .cell:hover,.cell:focus-visible{outline:3px solid var(--accent);outline-offset:-3px;z-index:1}
-  .bed{width:12mm;flex-shrink:0;background:var(--bed-bg);display:flex;align-items:center;justify-content:center;
+  .bed{width:12mm;flex-shrink:0;background:#f3f4f6;display:flex;align-items:center;justify-content:center;
     font-weight:700;font-size:11.5pt;letter-spacing:.02em;border-right:0.3mm solid var(--line)}
   .body{flex:1;min-width:0;display:flex;flex-direction:column}
   .top{flex:1;min-height:0;display:flex}
@@ -59,7 +59,14 @@
   .tags{border-top:0.3mm solid var(--line);min-height:10.5mm;padding:1mm 1.4mm;display:flex;flex-wrap:wrap;gap:1mm;align-content:flex-start}
   .tag{font-size:8pt;line-height:1.25;padding:0.7mm 1.5mm;border-radius:1mm;font-weight:600;
     border:0.2mm solid rgba(0,0,0,.28);white-space:nowrap}
-  .sheet-foot{height:7mm;display:flex;align-items:flex-end;justify-content:flex-end;font-size:9.5pt;color:#374151;padding-top:2mm}
+  .sheet-foot{height:7mm;display:flex;align-items:flex-end;justify-content:space-between;gap:4mm;font-size:9.5pt;color:#374151;padding-top:2mm}
+  .legend{display:flex;flex-wrap:wrap;gap:1mm 4mm;font-size:9pt;min-width:0}
+  .legend span{display:inline-flex;align-items:center;gap:1.2mm;white-space:nowrap}
+  .legend i{display:inline-block;width:4mm;height:3.2mm;border:0.2mm solid rgba(0,0,0,.35);border-radius:0.6mm}
+  .color-rows{display:flex;flex-direction:column;gap:6px}
+  .color-row{display:flex;align-items:center;gap:10px}
+  .color-row b{min-width:2.5em;font-size:16px}
+  .color-row select{font:inherit;font-size:15px;padding:6px 8px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:var(--ink)}
 
   /* ── 對話框 ────────────────────────────────────── */
   dialog{border:0;border-radius:14px;padding:0;width:min(92vw,440px);box-shadow:0 20px 50px rgba(0,0,0,.3);color:var(--ink)}
@@ -117,7 +124,7 @@
   <main class="sheet" id="sheet">
     <div class="sheet-title" id="sheetTitle">孝社 舍友名單</div>
     <div class="grid" id="grid"></div>
-    <div class="sheet-foot">更新日期：<span id="updated"></span></div>
+    <div class="sheet-foot"><div class="legend" id="legend"></div><div>更新日期：<span id="updated"></span></div></div>
   </main>
 </div>
 
@@ -182,6 +189,15 @@
       <textarea id="stWorkers" rows="2"></textarea>
     </div>
     <div class="field">
+      <div class="lbl">舍友格子底色（按社工；多位社工時以第一位為準）</div>
+      <div class="color-rows" id="stColors"></div>
+      <div class="sub">新增社工後，先按「儲存設定」再重新開啟此頁，就可為他選顏色。</div>
+    </div>
+    <div class="field">
+      <div class="lbl">有此狀態的舍友整格改為淺灰（優先於社工顏色）</div>
+      <select id="stGrey" style="font:inherit;font-size:15px;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;width:100%"></select>
+    </div>
+    <div class="field">
       <div class="lbl">狀態標籤（每行一個）</div>
       <textarea id="stTags" rows="5"></textarea>
       <div class="sub">同一行以「/」分隔的為互斥選項，只能選其一（例如：長讀/短適）。顏色依次序自動分配；改名後，舍友原有的標籤會自動對應到新名稱。</div>
@@ -228,6 +244,18 @@
   BEDS.push('B26');
 
   var TAG_COLORS = ['#fde047', '#93c5fd', '#fdba74', '#86efac', '#f9a8d4', '#c4b5fd', '#fca5a5', '#a5f3fc'];
+  // 格子底色：[格子, 舍號欄]
+  var CELL_COLORS = {
+    green:  ['#dcfce7', '#bbf7d0'],
+    blue:   ['#dbeafe', '#bfdbfe'],
+    orange: ['#ffedd5', '#fed7aa'],
+    yellow: ['#fef9c3', '#fef08a'],
+    purple: ['#f3e8ff', '#e9d5ff'],
+    pink:   ['#fce7f3', '#fbcfe8'],
+    grey:   ['#e5e7eb', '#d1d5db']
+  };
+  var CELL_COLOR_NAMES = [['none', '無'], ['green', '淺綠'], ['blue', '淺藍'], ['orange', '淺橙'], ['yellow', '淺黃'], ['purple', '淺紫'], ['pink', '淺粉'], ['grey', '淺灰']];
+  var CELL_NONE = ['#ffffff', '#f3f4f6'];
 
   function today() {
     var d = new Date();
@@ -245,9 +273,19 @@
       title: '孝社 舍友名單',
       workers: ['宙', '諾', '容', '軒'],
       tags: ['可申請外出', '長讀/短適', '回原校', '返家適應'],
+      workerColors: { '容': 'green', '諾': 'blue', '軒': 'orange' },
+      greyTag: '回原校',
       residents: {},
       updated: today()
     };
+  }
+  function cleanColors(obj) {
+    var out = {};
+    if (!obj || typeof obj !== 'object') return out;
+    Object.keys(obj).forEach(function (k) {
+      if (typeof obj[k] === 'string' && CELL_COLORS[obj[k]]) out[k] = obj[k];
+    });
+    return out;
   }
 
   function normalize(raw) {
@@ -258,6 +296,8 @@
       title: typeof raw.title === 'string' && raw.title.trim() ? raw.title : d.title,
       workers: Array.isArray(raw.workers) ? raw.workers.filter(function (x) { return typeof x === 'string' && x.trim(); }) : d.workers,
       tags: Array.isArray(raw.tags) ? raw.tags.filter(function (x) { return typeof x === 'string' && x.trim(); }) : d.tags,
+      workerColors: raw.workerColors && typeof raw.workerColors === 'object' ? cleanColors(raw.workerColors) : d.workerColors,
+      greyTag: typeof raw.greyTag === 'string' ? raw.greyTag : d.greyTag,
       residents: {},
       updated: typeof raw.updated === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.updated) ? raw.updated : d.updated
     };
@@ -286,7 +326,7 @@
     catch (e) {}
   }
   function exportable() {
-    return { version: 1, title: state.title, workers: state.workers, tags: state.tags, residents: state.residents, updated: state.updated };
+    return { version: 1, title: state.title, workers: state.workers, tags: state.tags, workerColors: state.workerColors, greyTag: state.greyTag, residents: state.residents, updated: state.updated };
   }
 
   var $ = function (id) { return document.getElementById(id); };
@@ -309,8 +349,37 @@
     return out;
   }
 
+  // 決定格子底色：有灰色狀態 → 淺灰；否則按第一位有顏色的社工
+  function cellColor(r) {
+    if (state.greyTag && r.tags.indexOf(state.greyTag) !== -1) return CELL_COLORS.grey;
+    for (var i = 0; i < r.workers.length; i++) {
+      var c = state.workerColors[r.workers[i]];
+      if (c && CELL_COLORS[c]) return CELL_COLORS[c];
+    }
+    return CELL_NONE;
+  }
+  function renderLegend() {
+    var box = $('legend');
+    box.innerHTML = '';
+    state.workers.forEach(function (w) {
+      var c = state.workerColors[w];
+      if (!c || !CELL_COLORS[c]) return;
+      var s = document.createElement('span');
+      var sw = document.createElement('i'); sw.style.background = CELL_COLORS[c][0];
+      s.appendChild(sw); s.appendChild(document.createTextNode(w));
+      box.appendChild(s);
+    });
+    if (state.greyTag) {
+      var g = document.createElement('span');
+      var gsw = document.createElement('i'); gsw.style.background = CELL_COLORS.grey[0];
+      g.appendChild(gsw); g.appendChild(document.createTextNode(state.greyTag));
+      box.appendChild(g);
+    }
+  }
+
   // ── 繪製名單 ──────────────────────────────────────
   function render() {
+    renderLegend();
     sheetTitle.textContent = state.title;
     brand.textContent = state.title;
     document.title = state.title;
@@ -324,7 +393,10 @@
       cell.setAttribute('role', 'button');
       cell.setAttribute('aria-label', bed + (r.name ? ' ' + r.name : '') + '，點擊編輯');
 
+      var colors = cellColor(r);
+      cell.style.background = colors[0];
       var bedEl = document.createElement('div'); bedEl.className = 'bed'; bedEl.textContent = bed;
+      bedEl.style.background = colors[1];
       var body = document.createElement('div'); body.className = 'body';
       var top = document.createElement('div'); top.className = 'top';
       var nameEl = document.createElement('div'); nameEl.className = 'name'; nameEl.textContent = r.name;
@@ -475,20 +547,54 @@
       var r = state.residents[bed];
       r[field] = uniq(r[field].map(function (x) { return map[x]; }).filter(Boolean));
     });
+    return map;
+  }
+  var stColors = $('stColors'), stGrey = $('stGrey');
+  function renderColorSettings() {
+    stColors.innerHTML = '';
+    if (!state.workers.length) {
+      var e = document.createElement('div'); e.className = 'sub'; e.textContent = '（尚未設定社工）'; stColors.appendChild(e);
+    }
+    state.workers.forEach(function (w) {
+      var row = document.createElement('div'); row.className = 'color-row';
+      var b = document.createElement('b'); b.textContent = w;
+      var sel = document.createElement('select'); sel.dataset.worker = w;
+      CELL_COLOR_NAMES.forEach(function (pair) {
+        var o = document.createElement('option'); o.value = pair[0]; o.textContent = pair[1];
+        sel.appendChild(o);
+      });
+      sel.value = state.workerColors[w] && CELL_COLORS[state.workerColors[w]] ? state.workerColors[w] : 'none';
+      row.appendChild(b); row.appendChild(sel); stColors.appendChild(row);
+    });
+    stGrey.innerHTML = '';
+    var none = document.createElement('option'); none.value = ''; none.textContent = '無'; stGrey.appendChild(none);
+    allTagOptions(state.tags).forEach(function (t) {
+      var o = document.createElement('option'); o.value = t; o.textContent = t; stGrey.appendChild(o);
+    });
+    stGrey.value = state.greyTag && allTagOptions(state.tags).indexOf(state.greyTag) !== -1 ? state.greyTag : '';
   }
   function openSettings() {
     stTitle.value = state.title;
     stWorkers.value = state.workers.join(' ');
     stTags.value = state.tags.join('\n');
     stDate.value = state.updated;
+    renderColorSettings();
     settings.showModal();
   }
   $('btnSettings').addEventListener('click', openSettings);
   $('stSave').addEventListener('click', function () {
     var newWorkers = parseList(stWorkers.value, true);
     var newTags = parseList(stTags.value, false);
-    remap('workers', state.workers, newWorkers);
-    remap('tags', allTagOptions(state.tags), allTagOptions(newTags));
+    var workerMap = remap('workers', state.workers, newWorkers);
+    var tagMap = remap('tags', allTagOptions(state.tags), allTagOptions(newTags));
+    // 社工顏色：依對話框內的選擇，並跟隨改名
+    var colors = {};
+    Array.prototype.forEach.call(stColors.querySelectorAll('select'), function (sel) {
+      var newName = workerMap[sel.dataset.worker];
+      if (newName && sel.value !== 'none' && CELL_COLORS[sel.value]) colors[newName] = sel.value;
+    });
+    state.workerColors = colors;
+    state.greyTag = stGrey.value ? (tagMap[stGrey.value] || '') : '';
     state.workers = newWorkers;
     state.tags = newTags;
     state.title = stTitle.value.trim() || defaults().title;
@@ -585,7 +691,7 @@
   function mergeFromServer(data) {
     var merged = normalize(data);
     Object.keys(dirtyBeds).forEach(function (b) { merged.residents[b] = state.residents[b]; });
-    if (dirtySettings) { merged.title = state.title; merged.workers = state.workers; merged.tags = state.tags; }
+    if (dirtySettings) { merged.title = state.title; merged.workers = state.workers; merged.tags = state.tags; merged.workerColors = state.workerColors; merged.greyTag = state.greyTag; }
     if (state.updated > merged.updated) merged.updated = state.updated;
     rev = (data && Number(data.rev)) || 0;
     state = merged; saveCache(); render();

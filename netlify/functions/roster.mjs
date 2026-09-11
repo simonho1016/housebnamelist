@@ -39,6 +39,18 @@ function cleanList(list, maxItems, maxLen) {
   return out;
 }
 
+function cleanColors(obj) {
+  const out = {};
+  if (!obj || typeof obj !== "object") return out;
+  let n = 0;
+  for (const [k, v] of Object.entries(obj)) {
+    if (typeof v !== "string" || !k.trim() || n >= 40) continue;
+    out[k.trim().slice(0, 20)] = v.trim().slice(0, 20);
+    n++;
+  }
+  return out;
+}
+
 // 只保留名單需要的欄位，並限制長度，避免存入奇怪的資料
 function sanitize(input) {
   const src = input && typeof input === "object" ? input : {};
@@ -57,6 +69,8 @@ function sanitize(input) {
     title: typeof src.title === "string" && src.title.trim() ? src.title.trim().slice(0, 60) : "孝社 舍友名單",
     workers: cleanList(src.workers, 20, 20),
     tags: cleanList(src.tags, 20, 40),
+    workerColors: cleanColors(src.workerColors),
+    greyTag: typeof src.greyTag === "string" ? src.greyTag.trim().slice(0, 40) : "",
     residents,
     updated: typeof src.updated === "string" && /^\d{4}-\d{2}-\d{2}$/.test(src.updated)
       ? src.updated
