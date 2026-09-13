@@ -6,16 +6,21 @@ import { getStore } from "@netlify/blobs";
 import { timingSafeEqual } from "node:crypto";
 
 const STORE_NAME = "hostel-roster";
-// 各社名單：id → 雲端儲存鍵及預設標題。孝社沿用原本的鍵，既有資料不受影響。
+function bedRange(prefix, from, to, skip = []) {
+  const out = [];
+  for (let i = from; i <= to; i++) { if (skip.includes(i)) continue; out.push(prefix + String(i).padStart(2, "0")); }
+  return out;
+}
+// 各社名單：id → 雲端儲存鍵、預設標題及預設舍號。孝社沿用原本的鍵，既有資料不受影響。
+// 舍號列表存在每份名單的資料內（beds），可由前端「設定」修改。
 const HOUSES = {
-  xiao:  { key: "roster",       title: "孝社 舍友名單" },
-  zhong: { key: "roster-zhong", title: "忠社 舍友名單" },
+  xiao:  { key: "roster",       title: "孝社 舍友名單", beds: [...bedRange("B", 1, 24, [8]), "B26"] },
+  zhong: { key: "roster-zhong", title: "忠社 舍友名單", beds: bedRange("A", 1, 24) },
 };
+const MAX_BEDS = 60;
+const MAX_BED_LEN = 8;
 const MAX_BODY_BYTES = 200_000;
 
-const BEDS = [];
-for (let i = 1; i <= 24; i++) { if (i === 8) continue; BEDS.push("B" + String(i).padStart(2, "0")); }
-BEDS.push("B26");
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -56,11 +61,40 @@ function cleanColors(obj) {
 }
 
 // 只保留名單需要的欄位，並限制長度，避免存入奇怪的資料
-function sanitize(input, defaultTitle) {
+function cleanBeds(list) {
+  if (!Array.isArray(list)) return null;
+  const out = [];
+  for (const x of list) {
+    if (typeof x !== "string") continue;
+    const v = x.trim();
+    if (v && v.length <= MAX_BED_LEN && !out.includes(v)) out.push(v);
+  }
+  return out.length && out.length <= MAX_BEDS ? out : null;
+}
+
+function hasData(r) {
+  return !!(r && typeof r === "object" && (
+    (typeof r.name === "string" && r.name.trim()) ||
+    (Array.isArray(r.workers) && r.workers.length) ||
+    (Array.isArray(r.tags) && r.tags.length)));
+}
+
+// 舊版前端不會送 beds：若已有舍友資料，沿用其舍號次序，避免資料被丟棄
+function inferBeds(src, fallback) {
+  const b = cleanBeds(src.beds);
+  if (b) return b;
+  const res = src.residents && typeof src.residents === "object" ? src.residents : {};
+  const keys = Object.keys(res);
+  if (keys.some((k) => hasData(res[k]))) { const inferred = cleanBeds(keys); if (inferred) return inferred; }
+  return fallback;
+}
+
+function sanitize(input, house) {
   const src = input && typeof input === "object" ? input : {};
+  const beds = inferBeds(src, house.beds);
   const residentsIn = src.residents && typeof src.residents === "object" ? src.residents : {};
   const residents = {};
-  for (const bed of BEDS) {
+  for (const bed of beds) {
     const r = residentsIn[bed] && typeof residentsIn[bed] === "object" ? residentsIn[bed] : {};
     residents[bed] = {
       name: typeof r.name === "string" ? r.name.trim().slice(0, 60) : "",
@@ -70,7 +104,8 @@ function sanitize(input, defaultTitle) {
   }
   return {
     version: 1,
-    title: typeof src.title === "string" && src.title.trim() ? src.title.trim().slice(0, 60) : defaultTitle,
+    title: typeof src.title === "string" && src.title.trim() ? src.title.trim().slice(0, 60) : house.title,
+    beds,
     workers: cleanList(src.workers, 20, 20),
     tags: cleanList(src.tags, 20, 40),
     workerColors: cleanColors(src.workerColors),
@@ -118,7 +153,7 @@ export default async (req) => {
     const baseRev = Number(body.baseRev) || 0;
     if (baseRev !== currentRev) return json({ error: "conflict", data: current ?? null }, 409);
 
-    const next = { ...sanitize(body, house.title), rev: currentRev + 1, savedAt: new Date().toISOString() };
+    const next = { ...sanitize(body, house), rev: currentRev + 1, savedAt: new Date().toISOString() };
     await store.setJSON(house.key, next);
     return json({ data: next });
   }
