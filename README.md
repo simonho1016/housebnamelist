@@ -1,11 +1,17 @@
-# 孝社 舍友名單（Netlify 雲端版）
+# 舍友名單（Netlify 雲端版）：孝社／忠社
 
-一頁式的舍友名單網站：任何裝置開啟同一網址，輸入存取密碼後，都會看到最新的名單，
-改動會自動儲存到雲端（Netlify Blobs），並可一鍵列印成 A4 PDF 張貼。
+一頁式的舍友名單網站：開啟網址先選擇「孝社」或「忠社」，輸入存取密碼後，
+任何裝置都會看到該社最新的名單。改動會自動儲存到雲端（Netlify Blobs），並可一鍵列印成 A4 PDF 張貼。
+
+- 兩社名單各自獨立儲存，功能完全相同，使用同一個存取密碼。
+- 可直接以網址開啟指定的社（方便加到書籤或主畫面）：
+  `https://<你的網址>/?house=xiao`（孝社）、`https://<你的網址>/?house=zhong`（忠社）。
+- 名單內右上角「⇄ 切換社」可返回選擇畫面。
+- 要新增其他社：在 `public/index.html` 的 `HOUSES` 及 `netlify/functions/roster.mjs` 的 `HOUSES` 各加一行。
 
 ```
 public/index.html                網頁本身（名單、編輯、列印）
-netlify/functions/roster.mjs     雲端儲存 API（讀取／儲存名單，須密碼）
+netlify/functions/roster.mjs     雲端儲存 API（讀取／儲存各社名單，須密碼；?house= 指定社）
 netlify.toml                     Netlify 設定（發佈資料夾、函式資料夾、安全標頭）
 package.json                     函式所需的套件（@netlify/blobs）
 ```

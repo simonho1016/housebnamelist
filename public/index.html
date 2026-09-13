@@ -14,6 +14,7 @@
     --bed-bg:#dcefd8; --bg:#e5e7eb; --accent:#2563eb; --danger:#dc2626;
   }
   *{box-sizing:border-box}
+  [hidden]{display:none !important}
   html,body{margin:0;background:var(--bg);color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC","Noto Sans CJK TC","Helvetica Neue",Arial,sans-serif}
   body{padding-bottom:48px}
@@ -101,6 +102,25 @@
 
   .sel{font:inherit;font-size:15px;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;width:100%;color:var(--ink)}
 
+  /* ── 選擇社（開首畫面） ─────────────────────────── */
+  .chooser{min-height:calc(100vh - 48px);display:flex;align-items:center;justify-content:center;padding:24px;
+    background-color:#fffdf6;background-image:radial-gradient(#dde3ea 1.2px,transparent 1.6px);background-size:10px 10px;
+    font-family:"Huninn","PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
+  .chooser-box{text-align:center;max-width:720px;width:100%}
+  .chooser-title{display:inline-block;margin:0;padding:8px 36px;background:#fde047;color:#111;border:3px solid #111;border-radius:10px;
+    box-shadow:6px 6px 0 #111;transform:rotate(-1.2deg);font-size:32px;font-weight:400;letter-spacing:.12em}
+  .chooser-sub{color:#374151;font-size:17px;margin:22px 0 26px}
+  .chooser-cards{display:flex;flex-wrap:wrap;gap:26px;justify-content:center}
+  .house-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:240px;height:200px;
+    border:3px solid #111;border-radius:16px;box-shadow:7px 7px 0 #111;text-decoration:none;color:#111;
+    background-image:radial-gradient(rgba(0,0,0,.07) 1.1px,transparent 1.5px);background-size:8px 8px;
+    transition:transform .08s,box-shadow .08s}
+  .house-card:hover{transform:translate(-2px,-2px);box-shadow:9px 9px 0 #111}
+  .house-card:active{transform:translate(4px,4px);box-shadow:3px 3px 0 #111}
+  .house-big{font-size:84px;line-height:1}
+  .house-name{font-size:19px;letter-spacing:.06em}
+  .chooser-note{margin-top:28px;font-size:13px;color:#6b7280}
+
   /* ── 字體與風格（由「設定」選擇，套用在整張名單） ── */
   :root{--sheet-font:-apple-system,BlinkMacSystemFont,"PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC","Noto Sans CJK TC","Helvetica Neue",Arial,sans-serif}
   body[data-font="huninn"]{--sheet-font:"Huninn","PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
@@ -142,12 +162,22 @@
 </head>
 <body>
 
-<header class="toolbar">
+<section class="chooser" id="chooser" hidden>
+  <div class="chooser-box">
+    <h1 class="chooser-title">舍友名單</h1>
+    <p class="chooser-sub">請選擇要開啟的社</p>
+    <div class="chooser-cards" id="houseCards"></div>
+    <p class="chooser-note">兩份名單各自獨立儲存，使用同一個存取密碼。</p>
+  </div>
+</section>
+
+<header class="toolbar" id="toolbar">
   <span class="brand" id="brand">孝社 舍友名單</span>
   <span class="status" id="syncStatus" hidden>連線中…</span>
   <span class="spacer"></span>
   <button class="btn primary" id="btnPrint">🖨 列印／儲存為 PDF</button>
   <button class="btn" id="btnSettings">⚙ 設定與備份</button>
+  <button class="btn" id="btnSwitch" title="返回選擇孝社／忠社">⇄ 切換社</button>
   <p class="hint" id="hint">點擊任何一格即可編輯姓名、社工短稱及狀態。列印時請選擇 A4 紙張、邊界「無」，並勾選「背景圖形」以保留顏色。</p>
 </header>
 
@@ -279,9 +309,36 @@
 <script>
 (function(){
   'use strict';
-  var KEY = 'hs-roster-v1';          // 本機暫存
-  var KEY_STORE = 'hs-roster-key';   // 此裝置記住的存取密碼
-  var API = '/api/roster';
+  // 各社名單：網址以 ?house=xiao 或 ?house=zhong 指定；沒有指定時顯示選擇畫面
+  var HOUSES = [
+    { id: 'xiao',  title: '孝社 舍友名單', big: '孝', color: '#dbeafe' },
+    { id: 'zhong', title: '忠社 舍友名單', big: '忠', color: '#ffe4e6' }
+  ];
+  var HOUSE = null;
+  (function () {
+    var id = '';
+    try { id = new URLSearchParams(location.search).get('house') || ''; } catch (e) {}
+    for (var i = 0; i < HOUSES.length; i++) { if (HOUSES[i].id === id) HOUSE = HOUSES[i]; }
+  })();
+  if (!HOUSE) {
+    var cards = document.getElementById('houseCards');
+    HOUSES.forEach(function (h) {
+      var a = document.createElement('a');
+      a.className = 'house-card'; a.href = '?house=' + encodeURIComponent(h.id); a.style.backgroundColor = h.color;
+      var big = document.createElement('span'); big.className = 'house-big'; big.textContent = h.big;
+      var nm = document.createElement('span'); nm.className = 'house-name'; nm.textContent = h.title;
+      a.appendChild(big); a.appendChild(nm); cards.appendChild(a);
+    });
+    document.getElementById('toolbar').hidden = true;
+    document.getElementById('sheetWrap').hidden = true;
+    document.getElementById('chooser').hidden = false;
+    document.title = '舍友名單';
+    return;
+  }
+
+  var KEY = HOUSE.id === 'xiao' ? 'hs-roster-v1' : 'hs-roster-v1-' + HOUSE.id;   // 本機暫存（孝社沿用原有的鍵）
+  var KEY_STORE = 'hs-roster-key';   // 此裝置記住的存取密碼（兩社共用）
+  var API = '/api/roster?house=' + encodeURIComponent(HOUSE.id);
   // 由網站（http/https）開啟時使用雲端儲存；直接開啟本機檔案（file:）時只用本機儲存
   var CLOUD = location.protocol === 'http:' || location.protocol === 'https:';
 
@@ -317,7 +374,7 @@
   function defaults() {
     return {
       version: 1,
-      title: '孝社 舍友名單',
+      title: HOUSE.title,
       workers: ['宙', '諾', '容', '軒'],
       tags: ['可申請外出', '長讀/短適', '回原校', '返家適應'],
       workerColors: { '容': 'green', '諾': 'blue', '軒': 'orange' },
@@ -699,6 +756,7 @@
   });
 
   // ── 列印 ──────────────────────────────────────────
+  $('btnSwitch').addEventListener('click', function () { location.href = location.pathname; });
   $('btnPrint').addEventListener('click', function () {
     var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
     ready.then(function () { window.print(); }, function () { window.print(); });

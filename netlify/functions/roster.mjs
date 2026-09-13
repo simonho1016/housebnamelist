@@ -1,12 +1,16 @@
 // 孝社 舍友名單 — 雲端儲存 API（Netlify Function + Netlify Blobs）
-// GET  /api/roster  → 讀取整份名單
-// PUT  /api/roster  → 儲存整份名單（需附 baseRev，版本不符會回 409）
+// GET  /api/roster?house=xiao|zhong  → 讀取該社整份名單
+// PUT  /api/roster?house=xiao|zhong  → 儲存該社整份名單（需附 baseRev，版本不符會回 409）
 // 所有請求都必須附上 x-roster-key 標頭，內容須與環境變數 ROSTER_PASSWORD 相同。
 import { getStore } from "@netlify/blobs";
 import { timingSafeEqual } from "node:crypto";
 
 const STORE_NAME = "hostel-roster";
-const DATA_KEY = "roster";
+// 各社名單：id → 雲端儲存鍵及預設標題。孝社沿用原本的鍵，既有資料不受影響。
+const HOUSES = {
+  xiao:  { key: "roster",       title: "孝社 舍友名單" },
+  zhong: { key: "roster-zhong", title: "忠社 舍友名單" },
+};
 const MAX_BODY_BYTES = 200_000;
 
 const BEDS = [];
@@ -52,7 +56,7 @@ function cleanColors(obj) {
 }
 
 // 只保留名單需要的欄位，並限制長度，避免存入奇怪的資料
-function sanitize(input) {
+function sanitize(input, defaultTitle) {
   const src = input && typeof input === "object" ? input : {};
   const residentsIn = src.residents && typeof src.residents === "object" ? src.residents : {};
   const residents = {};
@@ -66,7 +70,7 @@ function sanitize(input) {
   }
   return {
     version: 1,
-    title: typeof src.title === "string" && src.title.trim() ? src.title.trim().slice(0, 60) : "孝社 舍友名單",
+    title: typeof src.title === "string" && src.title.trim() ? src.title.trim().slice(0, 60) : defaultTitle,
     workers: cleanList(src.workers, 20, 20),
     tags: cleanList(src.tags, 20, 40),
     workerColors: cleanColors(src.workerColors),
@@ -90,10 +94,14 @@ export default async (req) => {
   try { provided = decodeURIComponent(provided); } catch { /* 保留原值 */ }
   if (!safeEqual(provided, password)) return json({ error: "unauthorized" }, 401);
 
+  const houseId = new URL(req.url).searchParams.get("house") || "xiao";
+  if (!Object.prototype.hasOwnProperty.call(HOUSES, houseId)) return json({ error: "unknown_house" }, 400);
+  const house = HOUSES[houseId];
+
   const store = getStore({ name: STORE_NAME, consistency: "strong" });
 
   if (req.method === "GET") {
-    const data = await store.get(DATA_KEY, { type: "json" });
+    const data = await store.get(house.key, { type: "json" });
     return json({ data: data ?? null });
   }
 
@@ -105,13 +113,13 @@ export default async (req) => {
     if (!body || typeof body !== "object" || !body.residents || typeof body.residents !== "object") {
       return json({ error: "bad_shape" }, 400);
     }
-    const current = await store.get(DATA_KEY, { type: "json" });
+    const current = await store.get(house.key, { type: "json" });
     const currentRev = current ? Number(current.rev) || 0 : 0;
     const baseRev = Number(body.baseRev) || 0;
     if (baseRev !== currentRev) return json({ error: "conflict", data: current ?? null }, 409);
 
-    const next = { ...sanitize(body), rev: currentRev + 1, savedAt: new Date().toISOString() };
-    await store.setJSON(DATA_KEY, next);
+    const next = { ...sanitize(body, house.title), rev: currentRev + 1, savedAt: new Date().toISOString() };
+    await store.setJSON(house.key, next);
     return json({ data: next });
   }
 
