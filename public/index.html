@@ -196,7 +196,7 @@
     <p class="chooser-sub">請選擇要開啟的社</p>
     <div class="chooser-cards" id="houseCards"></div>
     <p class="chooser-note">兩份名單各自獨立儲存，使用同一個存取密碼。</p>
-    <p class="chooser-foot">版本 <span class="ver-num">1.0.0</span> ・ <button type="button" class="linkbtn ver-open">版本紀錄</button> ・ 創作者：何文諾社工</p>
+    <p class="chooser-foot">版本 <span class="ver-num">1.0.1</span> ・ <button type="button" class="linkbtn ver-open">版本紀錄</button> ・ 創作者：何文諾社工</p>
   </div>
 </section>
 
@@ -337,7 +337,7 @@
       </div>
     </div>
     <div class="about">
-      <span>版本 <span class="ver-num">1.0.0</span></span>
+      <span>版本 <span class="ver-num">1.0.1</span></span>
       <button type="button" class="linkbtn ver-open">版本紀錄</button>
       <span>創作者：何文諾社工</span>
     </div>
@@ -362,8 +362,11 @@
 (function(){
   'use strict';
   // ── 版本紀錄（新版本請加在陣列最前） ─────────────────
-  var APP_VERSION = '1.0.0';
+  var APP_VERSION = '1.0.1';
   var CHANGELOG = [
+    { version: '1.0.1', date: '2026-09-13', sections: [
+      { title: '調整', items: ['開首畫面按鈕次序改為「忠」在前、「孝」在後'] }
+    ]},
     { version: '1.0.0', date: '2026-09-13', sections: [
       { title: '名單', items: [
         '忠社、孝社兩份舍友名單，開首畫面選擇後進入；可用網址直接開啟指定的社（?house=xiao / ?house=zhong）',
@@ -424,9 +427,10 @@
     for (var i = from; i <= to; i++) { if (skip && skip.indexOf(i) !== -1) continue; out.push(prefix + String(i).padStart(2, '0')); }
     return out;
   }
+  // 次序即開首畫面的按鈕次序（忠在前、孝在後）
   var HOUSES = [
-    { id: 'xiao',  title: '孝社 舍友名單', big: '孝', color: '#dbeafe', beds: bedRange('B', 1, 24, [8]).concat(['B26']) },
-    { id: 'zhong', title: '忠社 舍友名單', big: '忠', color: '#ffe4e6', beds: bedRange('A', 1, 24) }
+    { id: 'zhong', title: '忠社 舍友名單', big: '忠', color: '#ffe4e6', beds: bedRange('A', 1, 24) },
+    { id: 'xiao',  title: '孝社 舍友名單', big: '孝', color: '#dbeafe', beds: bedRange('B', 1, 24, [8]).concat(['B26']) }
   ];
   var MAX_BEDS = 60, MAX_BED_LEN = 8;
   var HOUSE = null;
