@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>孝社 舍友名單</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Huninn&family=Iansui&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#111827; --muted:#6b7280; --line:#1f2937; --line-soft:#d1d5db;
@@ -96,6 +99,34 @@
   .msg{font-size:14px;color:var(--danger);min-height:1.4em;margin-top:6px}
   hr{border:0;border-top:1px solid #e5e7eb;margin:16px 0}
 
+  .sel{font:inherit;font-size:15px;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;width:100%;color:var(--ink)}
+
+  /* ── 字體與風格（由「設定」選擇，套用在整張名單） ── */
+  :root{--sheet-font:-apple-system,BlinkMacSystemFont,"PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC","Noto Sans CJK TC","Helvetica Neue",Arial,sans-serif}
+  body[data-font="huninn"]{--sheet-font:"Huninn","PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
+  body[data-font="iansui"]{--sheet-font:"Iansui","PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
+  .sheet{font-family:var(--sheet-font)}
+
+  /* 可愛漫畫風格：粗黑邊、硬陰影、網點、貼紙式標籤 */
+  body[data-theme="comic"] .sheet{background-color:#fffdf6;background-image:radial-gradient(#dde3ea 0.32mm,transparent 0.4mm);background-size:2.4mm 2.4mm}
+  body[data-theme="comic"] .sheet-title{align-self:center;height:auto;margin:0.5mm auto 3.5mm;padding:1.2mm 9mm;
+    background:#fde047;color:#111;border:0.7mm solid #111;border-radius:2mm;box-shadow:1.6mm 1.6mm 0 #111;
+    transform:rotate(-1.2deg);font-size:24pt;font-weight:400;letter-spacing:.1em}
+  body[data-theme="comic"] .sheet-title::before,body[data-theme="comic"] .sheet-title::after{content:"★";font-size:14pt;margin:0 3mm;color:#111}
+  body[data-theme="comic"] .grid{border:0;gap:2.4mm;padding:0 1.8mm 1.8mm 0}
+  body[data-theme="comic"] .cell{border:0.6mm solid #111;border-radius:2.2mm;box-shadow:1.3mm 1.3mm 0 #111;overflow:hidden;
+    background-image:radial-gradient(rgba(0,0,0,.085) 0.3mm,transparent 0.36mm);background-size:1.9mm 1.9mm}
+  body[data-theme="comic"] .cell:hover,body[data-theme="comic"] .cell:focus-visible{outline-offset:-4px}
+  body[data-theme="comic"] .bed{font-family:"Bangers",var(--sheet-font);font-size:16pt;font-weight:400;letter-spacing:.06em;border-right:0.5mm solid #111;padding-top:0.5mm}
+  body[data-theme="comic"] .name{font-size:18pt;font-weight:400;letter-spacing:.06em}
+  body[data-theme="comic"] .name.long{font-size:13pt}
+  body[data-theme="comic"] .name.xlong{font-size:10pt}
+  body[data-theme="comic"] .workers{border-left:0.5mm dashed #111;font-size:12.5pt;font-weight:400}
+  body[data-theme="comic"] .tags{border-top:0.5mm solid #111;padding:1.2mm 1.6mm;gap:1.2mm}
+  body[data-theme="comic"] .tag{border:0.42mm solid #111;border-radius:1.2mm;box-shadow:0.7mm 0.7mm 0 #111;font-size:8.5pt;font-weight:400;padding:0.5mm 1.7mm;margin:0 0.7mm 0.7mm 0}
+  body[data-theme="comic"] .legend i{border:0.35mm solid #111;box-shadow:0.45mm 0.45mm 0 #111;border-radius:0.8mm}
+  body[data-theme="comic"] .sheet-foot .date{border:0.45mm solid #111;background:#fff;padding:0.6mm 2.5mm;border-radius:1mm;box-shadow:0.7mm 0.7mm 0 #111}
+
   /* ── 列印 ──────────────────────────────────────── */
   @page{size:A4 portrait;margin:0}
   @media print{
@@ -124,7 +155,7 @@
   <main class="sheet" id="sheet">
     <div class="sheet-title" id="sheetTitle">孝社 舍友名單</div>
     <div class="grid" id="grid"></div>
-    <div class="sheet-foot"><div class="legend" id="legend"></div><div>更新日期：<span id="updated"></span></div></div>
+    <div class="sheet-foot"><div class="legend" id="legend"></div><div class="date">更新日期：<span id="updated"></span></div></div>
   </main>
 </div>
 
@@ -183,6 +214,22 @@
     <div class="field">
       <div class="lbl">名單標題</div>
       <input type="text" id="stTitle">
+    </div>
+    <div class="field">
+      <div class="lbl">列印風格</div>
+      <select id="stTheme" class="sel">
+        <option value="comic">可愛漫畫（粗黑邊、網點、貼紙式標籤）</option>
+        <option value="plain">簡潔表格</option>
+      </select>
+    </div>
+    <div class="field">
+      <div class="lbl">字體</div>
+      <select id="stFont" class="sel">
+        <option value="huninn">粉圓體（圓潤可愛）</option>
+        <option value="iansui">芫荽（手寫感）</option>
+        <option value="system">系統字體（標準黑體）</option>
+      </select>
+      <div class="sub">粉圓體及芫荽由 Google Fonts 提供，開啟網站時自動下載；沒有網絡時會改用系統字體。</div>
     </div>
     <div class="field">
       <div class="lbl">社工短稱（以空格或每行一個分隔）</div>
@@ -275,10 +322,14 @@
       tags: ['可申請外出', '長讀/短適', '回原校', '返家適應'],
       workerColors: { '容': 'green', '諾': 'blue', '軒': 'orange' },
       greyTag: '回原校',
+      theme: 'comic',
+      font: 'huninn',
       residents: {},
       updated: today()
     };
   }
+  var THEMES = ['comic', 'plain'];
+  var FONTS = ['huninn', 'iansui', 'system'];
   function cleanColors(obj) {
     var out = {};
     if (!obj || typeof obj !== 'object') return out;
@@ -298,6 +349,8 @@
       tags: Array.isArray(raw.tags) ? raw.tags.filter(function (x) { return typeof x === 'string' && x.trim(); }) : d.tags,
       workerColors: raw.workerColors && typeof raw.workerColors === 'object' ? cleanColors(raw.workerColors) : d.workerColors,
       greyTag: typeof raw.greyTag === 'string' ? raw.greyTag : d.greyTag,
+      theme: THEMES.indexOf(raw.theme) !== -1 ? raw.theme : d.theme,
+      font: FONTS.indexOf(raw.font) !== -1 ? raw.font : d.font,
       residents: {},
       updated: typeof raw.updated === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.updated) ? raw.updated : d.updated
     };
@@ -326,7 +379,7 @@
     catch (e) {}
   }
   function exportable() {
-    return { version: 1, title: state.title, workers: state.workers, tags: state.tags, workerColors: state.workerColors, greyTag: state.greyTag, residents: state.residents, updated: state.updated };
+    return { version: 1, title: state.title, workers: state.workers, tags: state.tags, workerColors: state.workerColors, greyTag: state.greyTag, theme: state.theme, font: state.font, residents: state.residents, updated: state.updated };
   }
 
   var $ = function (id) { return document.getElementById(id); };
@@ -379,6 +432,8 @@
 
   // ── 繪製名單 ──────────────────────────────────────
   function render() {
+    document.body.setAttribute('data-theme', state.theme);
+    document.body.setAttribute('data-font', state.font);
     renderLegend();
     sheetTitle.textContent = state.title;
     brand.textContent = state.title;
@@ -394,9 +449,9 @@
       cell.setAttribute('aria-label', bed + (r.name ? ' ' + r.name : '') + '，點擊編輯');
 
       var colors = cellColor(r);
-      cell.style.background = colors[0];
+      cell.style.backgroundColor = colors[0];
       var bedEl = document.createElement('div'); bedEl.className = 'bed'; bedEl.textContent = bed;
-      bedEl.style.background = colors[1];
+      bedEl.style.backgroundColor = colors[1];
       var body = document.createElement('div'); body.className = 'body';
       var top = document.createElement('div'); top.className = 'top';
       var nameEl = document.createElement('div'); nameEl.className = 'name'; nameEl.textContent = r.name;
@@ -549,7 +604,7 @@
     });
     return map;
   }
-  var stColors = $('stColors'), stGrey = $('stGrey');
+  var stColors = $('stColors'), stGrey = $('stGrey'), stTheme = $('stTheme'), stFont = $('stFont');
   function renderColorSettings() {
     stColors.innerHTML = '';
     if (!state.workers.length) {
@@ -578,6 +633,8 @@
     stWorkers.value = state.workers.join(' ');
     stTags.value = state.tags.join('\n');
     stDate.value = state.updated;
+    stTheme.value = state.theme;
+    stFont.value = state.font;
     renderColorSettings();
     settings.showModal();
   }
@@ -595,6 +652,8 @@
     });
     state.workerColors = colors;
     state.greyTag = stGrey.value ? (tagMap[stGrey.value] || '') : '';
+    state.theme = THEMES.indexOf(stTheme.value) !== -1 ? stTheme.value : 'comic';
+    state.font = FONTS.indexOf(stFont.value) !== -1 ? stFont.value : 'huninn';
     state.workers = newWorkers;
     state.tags = newTags;
     state.title = stTitle.value.trim() || defaults().title;
@@ -640,7 +699,10 @@
   });
 
   // ── 列印 ──────────────────────────────────────────
-  $('btnPrint').addEventListener('click', function () { window.print(); });
+  $('btnPrint').addEventListener('click', function () {
+    var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+    ready.then(function () { window.print(); }, function () { window.print(); });
+  });
 
   // ── 細屏幕縮放預覽 ────────────────────────────────
   var wrap = $('sheetWrap');
@@ -691,7 +753,7 @@
   function mergeFromServer(data) {
     var merged = normalize(data);
     Object.keys(dirtyBeds).forEach(function (b) { merged.residents[b] = state.residents[b]; });
-    if (dirtySettings) { merged.title = state.title; merged.workers = state.workers; merged.tags = state.tags; merged.workerColors = state.workerColors; merged.greyTag = state.greyTag; }
+    if (dirtySettings) { merged.title = state.title; merged.workers = state.workers; merged.tags = state.tags; merged.workerColors = state.workerColors; merged.greyTag = state.greyTag; merged.theme = state.theme; merged.font = state.font; }
     if (state.updated > merged.updated) merged.updated = state.updated;
     rev = (data && Number(data.rev)) || 0;
     state = merged; saveCache(); render();
