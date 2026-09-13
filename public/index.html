@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>孝社 舍友名單</title>
+<title>香港扶幼會則仁中心 忠孝舍友名單</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Huninn&family=Iansui&display=swap" rel="stylesheet">
@@ -117,7 +117,9 @@
   .chooser-box{text-align:center;max-width:720px;width:100%}
   .chooser-title{display:inline-block;margin:0;padding:8px 36px;background:#fde047;color:#111;border:3px solid #111;border-radius:10px;
     box-shadow:6px 6px 0 #111;transform:rotate(-1.2deg);font-size:32px;font-weight:400;letter-spacing:.12em}
+  .chooser-org{margin:0 0 18px;font-size:20px;letter-spacing:.14em;color:#111}
   .chooser-sub{color:#374151;font-size:17px;margin:22px 0 26px}
+  @media (max-width:520px){.chooser-title{font-size:26px;padding:8px 22px}.chooser-org{font-size:17px}}
   .chooser-cards{display:flex;flex-wrap:wrap;gap:26px;justify-content:center}
   .house-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:240px;height:200px;
     border:3px solid #111;border-radius:16px;box-shadow:7px 7px 0 #111;text-decoration:none;color:#111;
@@ -176,7 +178,8 @@
 
 <section class="chooser" id="chooser" hidden>
   <div class="chooser-box">
-    <h1 class="chooser-title">舍友名單</h1>
+    <p class="chooser-org">香港扶幼會則仁中心</p>
+    <h1 class="chooser-title">忠孝舍友名單</h1>
     <p class="chooser-sub">請選擇要開啟的社</p>
     <div class="chooser-cards" id="houseCards"></div>
     <p class="chooser-note">兩份名單各自獨立儲存，使用同一個存取密碼。</p>
@@ -326,6 +329,8 @@
 <script>
 (function(){
   'use strict';
+  var SITE_NAME = '香港扶幼會則仁中心 忠孝舍友名單';
+  var ORG_NAME = '香港扶幼會則仁中心';
   // 各社名單：網址以 ?house=xiao 或 ?house=zhong 指定；沒有指定時顯示選擇畫面
   function bedRange(prefix, from, to, skip) {
     var out = [];
@@ -355,7 +360,7 @@
     document.getElementById('toolbar').hidden = true;
     document.getElementById('sheetWrap').hidden = true;
     document.getElementById('chooser').hidden = false;
-    document.title = '舍友名單';
+    document.title = SITE_NAME;
     return;
   }
 
@@ -540,7 +545,7 @@
     renderLegend();
     sheetTitle.textContent = state.title;
     brand.textContent = state.title;
-    document.title = state.title;
+    document.title = state.title + '｜' + ORG_NAME;
     updatedEl.textContent = fmtDate(state.updated);
     grid.innerHTML = '';
     var rows = Math.max(1, Math.ceil(state.beds.length / 3));

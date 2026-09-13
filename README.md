@@ -1,4 +1,4 @@
-# 舍友名單（Netlify 雲端版）：孝社／忠社
+# 香港扶幼會則仁中心 忠孝舍友名單（Netlify 雲端版）
 
 一頁式的舍友名單網站：開啟網址先選擇「孝社」或「忠社」，輸入存取密碼後，
 任何裝置都會看到該社最新的名單。改動會自動儲存到雲端（Netlify Blobs），並可一鍵列印成 A4 PDF 張貼。
@@ -8,7 +8,8 @@
   兩社都可在「設定與備份 → 舍號」自行修改（最多 60 個，每個最長 8 個字元）；
   同一位置改名會保留該格資料，刪除舍號會連同資料一併移除（會先確認）。
 - 可直接以網址開啟指定的社（方便加到書籤或主畫面）：
-  `https://<你的網址>/?house=xiao`（孝社）、`https://<你的網址>/?house=zhong`（忠社）。
+  <https://housenamelist.netlify.app/?house=xiao>（孝社）、<https://housenamelist.netlify.app/?house=zhong>（忠社）。
+  網站：<https://housenamelist.netlify.app/>
 - 名單內右上角「⇄ 切換社」可返回選擇畫面。
 - 要新增其他社：在 `public/index.html` 的 `HOUSES` 及 `netlify/functions/roster.mjs` 的 `HOUSES` 各加一行。
 
