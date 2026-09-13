@@ -108,10 +108,12 @@ function sanitize(input, house) {
     beds,
     workers: cleanList(src.workers, 20, 20),
     tags: cleanList(src.tags, 20, 40),
-    workerColors: cleanColors(src.workerColors),
-    greyTag: typeof src.greyTag === "string" ? src.greyTag.trim().slice(0, 40) : "",
-    theme: typeof src.theme === "string" ? src.theme.trim().slice(0, 20) : "",
-    font: typeof src.font === "string" ? src.font.trim().slice(0, 20) : "",
+    // 以下欄位：前端沒有送來時不要寫入空值（undefined 會被 JSON 略去），讓前端套用預設
+    workerColors: src.workerColors && typeof src.workerColors === "object" ? cleanColors(src.workerColors) : undefined,
+    greyTag: src.greyTag === null ? null
+      : (typeof src.greyTag === "string" && src.greyTag.trim() ? src.greyTag.trim().slice(0, 40) : undefined),
+    theme: typeof src.theme === "string" && src.theme.trim() ? src.theme.trim().slice(0, 20) : undefined,
+    font: typeof src.font === "string" && src.font.trim() ? src.font.trim().slice(0, 20) : undefined,
     residents,
     updated: typeof src.updated === "string" && /^\d{4}-\d{2}-\d{2}$/.test(src.updated)
       ? src.updated

@@ -285,7 +285,7 @@
     <div class="field">
       <div class="lbl">舍友格子底色（按社工；多位社工時以第一位為準）</div>
       <div class="color-rows" id="stColors"></div>
-      <div class="sub">新增社工後，先按「儲存設定」再重新開啟此頁，就可為他選顏色。</div>
+      <div class="sub">在上方修改社工短稱後，這裡會即時更新；改名會保留原本選好的顏色。</div>
     </div>
     <div class="field">
       <div class="lbl">有此狀態的舍友整格改為淺灰（優先於社工顏色）</div>
@@ -434,7 +434,7 @@
     var out = {};
     if (!obj || typeof obj !== 'object') return out;
     Object.keys(obj).forEach(function (k) {
-      if (typeof obj[k] === 'string' && CELL_COLORS[obj[k]]) out[k] = obj[k];
+      if (typeof obj[k] === 'string' && (obj[k] === 'none' || CELL_COLORS[obj[k]])) out[k] = obj[k];
     });
     return out;
   }
@@ -447,8 +447,10 @@
       title: typeof raw.title === 'string' && raw.title.trim() ? raw.title : d.title,
       workers: Array.isArray(raw.workers) ? raw.workers.filter(function (x) { return typeof x === 'string' && x.trim(); }) : d.workers,
       tags: Array.isArray(raw.tags) ? raw.tags.filter(function (x) { return typeof x === 'string' && x.trim(); }) : d.tags,
-      workerColors: raw.workerColors && typeof raw.workerColors === 'object' ? cleanColors(raw.workerColors) : d.workerColors,
-      greyTag: typeof raw.greyTag === 'string' ? raw.greyTag : d.greyTag,
+      // 顏色：空白（未設定）→ 預設；有內容（包括明確的「無」）→ 依設定
+      workerColors: (function () { var c = cleanColors(raw.workerColors); return Object.keys(c).length ? c : d.workerColors; })(),
+      // 灰色狀態：null 代表刻意設為「無」；空字串或缺少 → 預設
+      greyTag: raw.greyTag === null ? null : (typeof raw.greyTag === 'string' && raw.greyTag.trim() ? raw.greyTag : d.greyTag),
       theme: THEMES.indexOf(raw.theme) !== -1 ? raw.theme : d.theme,
       font: FONTS.indexOf(raw.font) !== -1 ? raw.font : d.font,
       beds: inferBeds(raw, d.beds),
@@ -713,12 +715,31 @@
     return map;
   }
   var stColors = $('stColors'), stGrey = $('stGrey'), stTheme = $('stTheme'), stFont = $('stFont'), stBeds = $('stBeds');
-  function renderColorSettings() {
+  // 對話框開啟時的基準（用來在改名時保留顏色與灰色狀態的選擇）
+  var dlgBaseWorkers = [], dlgBaseColors = {}, dlgPicked = {};
+  var dlgBaseTagOpts = [], dlgGrey = { name: '', base: '' };
+
+  function harvestColors() {
+    var out = {};
+    Array.prototype.forEach.call(stColors.querySelectorAll('select'), function (sel) { out[sel.dataset.worker] = sel.value; });
+    return out;
+  }
+  function inverse(map) {
+    var inv = {};
+    Object.keys(map).forEach(function (k) { inv[map[k]] = k; });
+    return inv;
+  }
+  // 依目前輸入的社工短稱重繪顏色列；顏色來源：本次對話框內的選擇 → 開啟時的設定（跟隨改名）→ 無
+  function renderColorRows(workers) {
+    var map = listMap(dlgBaseWorkers, workers), inv = inverse(map);
     stColors.innerHTML = '';
-    if (!state.workers.length) {
-      var e = document.createElement('div'); e.className = 'sub'; e.textContent = '（尚未設定社工）'; stColors.appendChild(e);
+    if (!workers.length) {
+      var e = document.createElement('div'); e.className = 'sub'; e.textContent = '（請先在上方輸入社工短稱）'; stColors.appendChild(e);
     }
-    state.workers.forEach(function (w) {
+    workers.forEach(function (w) {
+      var base = inv[w];
+      var v = dlgPicked[w] || (base && (dlgPicked[base] || dlgBaseColors[base])) || 'none';
+      if (v !== 'none' && !CELL_COLORS[v]) v = 'none';
       var row = document.createElement('div'); row.className = 'color-row';
       var b = document.createElement('b'); b.textContent = w;
       var sel = document.createElement('select'); sel.dataset.worker = w;
@@ -726,16 +747,44 @@
         var o = document.createElement('option'); o.value = pair[0]; o.textContent = pair[1];
         sel.appendChild(o);
       });
-      sel.value = state.workerColors[w] && CELL_COLORS[state.workerColors[w]] ? state.workerColors[w] : 'none';
+      sel.value = v;
+      sel.addEventListener('change', function () {
+        dlgPicked[w] = sel.value;
+        if (base) dlgPicked[base] = sel.value;
+      });
       row.appendChild(b); row.appendChild(sel); stColors.appendChild(row);
     });
+  }
+  // 依目前輸入的狀態標籤重繪「灰色狀態」選項，並保留選擇（跟隨改名）
+  function renderGreyOptions(tags) {
+    var opts = allTagOptions(tags);
+    var map = listMap(dlgBaseTagOpts, opts);
+    var chosen = dlgGrey.base ? (map[dlgGrey.base] || '') : dlgGrey.name;
+    if (opts.indexOf(chosen) === -1) chosen = '';
     stGrey.innerHTML = '';
     var none = document.createElement('option'); none.value = ''; none.textContent = '無'; stGrey.appendChild(none);
-    allTagOptions(state.tags).forEach(function (t) {
+    opts.forEach(function (t) {
       var o = document.createElement('option'); o.value = t; o.textContent = t; stGrey.appendChild(o);
     });
-    stGrey.value = state.greyTag && allTagOptions(state.tags).indexOf(state.greyTag) !== -1 ? state.greyTag : '';
+    stGrey.value = chosen;
   }
+  function renderColorSettings() {
+    dlgBaseWorkers = state.workers.slice();
+    dlgBaseColors = {}; Object.keys(state.workerColors).forEach(function (k) { dlgBaseColors[k] = state.workerColors[k]; });
+    dlgPicked = {};
+    dlgBaseTagOpts = allTagOptions(state.tags);
+    var g = state.greyTag && dlgBaseTagOpts.indexOf(state.greyTag) !== -1 ? state.greyTag : '';
+    dlgGrey = { name: g, base: g };
+    renderColorRows(dlgBaseWorkers);
+    renderGreyOptions(state.tags);
+  }
+  stWorkers.addEventListener('input', function () { renderColorRows(parseList(stWorkers.value, true)); });
+  stTags.addEventListener('input', function () { renderGreyOptions(parseList(stTags.value, false)); });
+  stGrey.addEventListener('change', function () {
+    var opts = allTagOptions(parseList(stTags.value, false));
+    var inv = inverse(listMap(dlgBaseTagOpts, opts));
+    dlgGrey = { name: stGrey.value, base: stGrey.value ? (inv[stGrey.value] || '') : '' };
+  });
   function openSettings() {
     stTitle.value = state.title;
     stBeds.value = state.beds.join(' ');
@@ -767,16 +816,14 @@
     }
     var newWorkers = parseList(stWorkers.value, true);
     var newTags = parseList(stTags.value, false);
-    var workerMap = remap('workers', state.workers, newWorkers);
-    var tagMap = remap('tags', allTagOptions(state.tags), allTagOptions(newTags));
-    // 社工顏色：依對話框內的選擇，並跟隨改名
-    var colors = {};
-    Array.prototype.forEach.call(stColors.querySelectorAll('select'), function (sel) {
-      var newName = workerMap[sel.dataset.worker];
-      if (newName && sel.value !== 'none' && CELL_COLORS[sel.value]) colors[newName] = sel.value;
-    });
+    remap('workers', state.workers, newWorkers);
+    remap('tags', allTagOptions(state.tags), allTagOptions(newTags));
+    // 社工顏色與灰色狀態：對話框內的列已跟隨上方輸入即時更新，直接讀取
+    renderColorRows(newWorkers); renderGreyOptions(newTags);
+    var picked = harvestColors(), colors = {};
+    newWorkers.forEach(function (w) { colors[w] = (picked[w] === 'none' || CELL_COLORS[picked[w]]) ? picked[w] : 'none'; });
     state.workerColors = colors;
-    state.greyTag = stGrey.value ? (tagMap[stGrey.value] || '') : '';
+    state.greyTag = stGrey.value || null;
     state.theme = THEMES.indexOf(stTheme.value) !== -1 ? stTheme.value : 'comic';
     state.font = FONTS.indexOf(stFont.value) !== -1 ? stFont.value : 'huninn';
     state.workers = newWorkers;
