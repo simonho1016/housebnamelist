@@ -130,6 +130,19 @@
   .house-big{font-size:84px;line-height:1}
   .house-name{font-size:19px;letter-spacing:.06em}
   .chooser-note{margin-top:28px;font-size:13px;color:#6b7280}
+  .chooser-foot{margin-top:10px;font-size:13px;color:#6b7280}
+  .linkbtn{border:0;background:none;padding:0;color:#2563eb;text-decoration:underline;font:inherit;cursor:pointer}
+  .linkbtn:hover{color:#1d4ed8}
+  .about{font-size:13px;color:#6b7280;margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+  .ver-list{max-height:min(60vh,520px);overflow:auto;padding-right:4px}
+  .ver{border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+  .ver-head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .ver-head b{font-size:16px}
+  .ver-head span{font-size:12px;color:#6b7280}
+  .ver ul{margin:0;padding-left:18px;font-size:14px;line-height:1.55}
+  .ver li{margin:2px 0}
+  .ver h4{margin:8px 0 2px;font-size:13px;color:#374151}
+  .credit{margin-top:12px;font-size:14px}
 
   /* ── 字體與風格（由「設定」選擇，套用在整張名單） ── */
   :root{--sheet-font:-apple-system,BlinkMacSystemFont,"PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC","Noto Sans CJK TC","Helvetica Neue",Arial,sans-serif}
@@ -183,6 +196,7 @@
     <p class="chooser-sub">請選擇要開啟的社</p>
     <div class="chooser-cards" id="houseCards"></div>
     <p class="chooser-note">兩份名單各自獨立儲存，使用同一個存取密碼。</p>
+    <p class="chooser-foot">版本 <span class="ver-num">1.0.0</span> ・ <button type="button" class="linkbtn ver-open">版本紀錄</button> ・ 創作者：何文諾社工</p>
   </div>
 </section>
 
@@ -322,13 +336,86 @@
         <button type="button" class="btn" id="btnLogout">登出此裝置（下次要再輸入密碼）</button>
       </div>
     </div>
+    <div class="about">
+      <span>版本 <span class="ver-num">1.0.0</span></span>
+      <button type="button" class="linkbtn ver-open">版本紀錄</button>
+      <span>創作者：何文諾社工</span>
+    </div>
     <input type="file" id="fileInput" accept="application/json,.json" hidden>
+  </form>
+</dialog>
+
+<!-- 版本紀錄 -->
+<dialog id="changelog">
+  <form method="dialog" class="dlg">
+    <div class="dlg-head">
+      <h2>版本紀錄</h2>
+      <button type="button" class="icon" id="clClose" aria-label="關閉">✕</button>
+    </div>
+    <div class="ver-list" id="verList"></div>
+    <div class="credit">創作者：<b>何文諾社工</b>（香港扶幼會則仁中心）</div>
+    <div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn primary" id="clDone">關閉</button></div>
   </form>
 </dialog>
 
 <script>
 (function(){
   'use strict';
+  // ── 版本紀錄（新版本請加在陣列最前） ─────────────────
+  var APP_VERSION = '1.0.0';
+  var CHANGELOG = [
+    { version: '1.0.0', date: '2026-09-13', sections: [
+      { title: '名單', items: [
+        '忠社、孝社兩份舍友名單，開首畫面選擇後進入；可用網址直接開啟指定的社（?house=xiao / ?house=zhong）',
+        '舍號按社各自設定：預設孝社 B01–B24（沒有 B08）及 B26，忠社 A01–A24；可在「設定」增刪改，改名保留該格資料',
+        '每格記錄姓名、社工短稱（宙、諾、容、軒，可多選）及狀態：可申請外出、長讀／短適（二選一）、回原校、返家適應',
+        '格子底色按第一位社工顯示（容淺綠、諾淺藍、軒淺橙），「回原校」整格淺灰；名單底部有顏色圖例'
+      ]},
+      { title: '列印', items: [
+        '一頁 A4 直向，3 欄排列，按「列印／儲存為 PDF」即可張貼',
+        '列印風格：可愛漫畫（粗黑邊、網點、貼紙式標籤）或簡潔表格',
+        '字體：粉圓體、芫荽、系統字體；列印前會等字體載入完成'
+      ]},
+      { title: '儲存與同步', items: [
+        '資料自動儲存到雲端（Netlify Blobs），任何裝置開啟都看到最新版本',
+        '多人同時編輯不同舍號會自動合併；斷線時保留本機暫存並自動重試',
+        '存取密碼保護，每部裝置輸入一次；網站不被搜尋引擎收錄',
+        '可匯出／匯入 JSON 備份檔'
+      ]},
+      { title: '設定', items: [
+        '名單標題、舍號、社工短稱、狀態標籤、社工顏色、灰色狀態、列印風格、字體、更新日期',
+        '修改社工短稱或狀態標籤時，顏色與灰色狀態的選項即時跟隨並保留選擇'
+      ]}
+    ]}
+  ];
+  (function setupChangelog() {
+    var dlg = document.getElementById('changelog'), list = document.getElementById('verList');
+    Array.prototype.forEach.call(document.querySelectorAll('.ver-num'), function (el) { el.textContent = APP_VERSION; });
+    function build() {
+      list.innerHTML = '';
+      CHANGELOG.forEach(function (v) {
+        var box = document.createElement('div'); box.className = 'ver';
+        var head = document.createElement('div'); head.className = 'ver-head';
+        var b = document.createElement('b'); b.textContent = '版本 ' + v.version;
+        var d = document.createElement('span'); d.textContent = v.date;
+        head.appendChild(b); head.appendChild(d); box.appendChild(head);
+        v.sections.forEach(function (sec) {
+          var h = document.createElement('h4'); h.textContent = sec.title; box.appendChild(h);
+          var ul = document.createElement('ul');
+          sec.items.forEach(function (t) { var li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+          box.appendChild(ul);
+        });
+        list.appendChild(box);
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.ver-open'), function (btn) {
+      btn.addEventListener('click', function () { build(); dlg.showModal(); });
+    });
+    document.getElementById('clClose').addEventListener('click', function () { dlg.close(); });
+    document.getElementById('clDone').addEventListener('click', function () { dlg.close(); });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+  })();
+
   var SITE_NAME = '香港扶幼會則仁中心 忠孝舍友名單';
   var ORG_NAME = '香港扶幼會則仁中心';
   // 各社名單：網址以 ?house=xiao 或 ?house=zhong 指定；沒有指定時顯示選擇畫面
