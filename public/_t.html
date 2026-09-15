@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>RUNNING</title></head><body>
+<pre id="log">RUNNING</pre>
+<iframe id="f" style="width:1200px;height:700px"></iframe>
+<script>
+const log=[]; const L=(n,ok,d='')=>log.push((ok?'PASS':'FAIL')+' | '+n+(d?' | '+d:''));
+const F=document.getElementById('f');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function load(src){return new Promise(res=>{F.onload=()=>res(F.contentWindow);F.src=src;});}
+(async()=>{
+ try{
+  // 1 入口頁：未登入顯示登入閘
+  sessionStorage.removeItem('cyc-portal-auth');
+  let w=await load('/');
+  L('portal fresh shows lock', !w.document.getElementById('lockView').hidden && w.document.getElementById('mainView').hidden);
+  // 2 錯誤密碼（同源 /api/roster 401）應被拒
+  w.document.getElementById('lockInput').value='wrong-pass-123';
+  w.document.getElementById('lockForm').dispatchEvent(new w.Event('submit',{cancelable:true}));
+  await sleep(5000);
+  L('portal wrong password rejected', w.document.getElementById('lockMsg').textContent.includes('密碼不正確'), w.document.getElementById('lockMsg').textContent);
+  // 3 登入後顯示功能頁
+  w.portalLogin('secret'); w.showMain();
+  L('portal main view after login', !w.document.getElementById('mainView').hidden);
+  L('portal session pill', w.document.getElementById('sessionPill').textContent.includes('已登入'), w.document.getElementById('sessionPill').textContent);
+  // 4 過期 session 重新上鎖
+  sessionStorage.setItem('cyc-portal-auth', JSON.stringify({p:'x',exp:Date.now()-1000}));
+  w=await load('/');
+  L('portal expired session relocks', !w.document.getElementById('lockView').hidden);
+  // 5 抽籤頁：hash 登入
+  sessionStorage.removeItem('cyc-portal-auth');
+  w=await load('/duties/#key='+encodeURIComponent('測試密碼123')+'&t='+Date.now());
+  await sleep(600);
+  L('duties hash login stored', w.portalAuth() && w.portalAuth().p==='測試密碼123');
+  L('duties hash stripped', w.location.hash==='');
+  L('duties passcode from session', w.cloudSavedPasscode()==='測試密碼123');
+  // 6 抽籤頁：舍務記錄列印
+  w.print=()=>{w.__printed=true};
+  w.revealAll();
+  await sleep(400);
+  w.openHistory();
+  await sleep(400);
+  const viewBtn=w.document.querySelector('[data-history-view]');
+  L('duties record created', !!viewBtn);
+  if(viewBtn){viewBtn.click();await sleep(300);
+   w.document.getElementById('historyPrintBtn').click();await sleep(300);
+   L('duties print record builds sheet', w.document.body.classList.contains('printing-record') && w.document.getElementById('printRecord').innerHTML.includes('舍號'), 'len='+w.document.getElementById('printRecord').innerHTML.length);
+   L('duties window.print called', w.__printed===true);
+  }
+  // 7 名單頁：錯誤密碼 hash → 雲端 401 → 顯示入口頁登入對話框
+  w=await load('/roster/?house=xiao#key=wrong-pass&t='+Date.now());
+  await sleep(2500);
+  L('roster wrong password shows login dialog', w.document.getElementById('auth').open, w.document.getElementById('authMsg').textContent);
+  L('roster dialog portal link is /', w.document.getElementById('authPortal') && w.document.getElementById('authPortal').getAttribute('href')==='/');
+  L('roster hash stripped', w.location.hash==='');
+  // 8 名單頁：過期 hash → 直接顯示登入對話框
+  w=await load('/roster/?house=xiao#key=secret&t='+(Date.now()-20*60*1000));
+  await sleep(800);
+  L('roster expired hash shows login dialog', w.document.getElementById('auth').open);
+ }catch(e){L('harness error', false, String(e&&e.message||e))}
+ document.getElementById('log').textContent=log.join('\n');
+ document.title='DONE';
+})();
+</script>
+</body></html>
