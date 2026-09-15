@@ -268,12 +268,22 @@ function dutyAuthValid(){const t=Number(sessionValue(AUTH_EXP_KEY));return Numbe
   }
  }catch{}
  if(dutyAuthValid()){
-  document.querySelectorAll('[data-dorm]').forEach(b=>b.addEventListener('click',()=>{
-   if(!dutyAuthValid())return;
-   try{sessionStorage.setItem(SESSION_DORM_KEY,b.dataset.dorm);sessionStorage.setItem(SESSION_UNLOCK_KEY,'1');sessionStorage.removeItem(SESSION_OFFLINE_KEY)}catch{}
-   location.reload();
-  },true));
-  const note=document.querySelector('.gate-note');if(note)note.innerHTML+='<br>已經由入口頁登入，點選社別即可直接進入；15 分鐘後自動登出。';
+  // 已喺入口頁登入：揀社後免密碼，先顯示該社上次抽籤記錄，再按「進入」開始
+  const passInput=document.getElementById('gatePass'),enterBtn=document.getElementById('gateEnterBtn');
+  const passLabel=passInput?passInput.closest('label'):null;
+  if(passLabel)passLabel.hidden=true;
+  if(enterBtn){
+   enterBtn.type='button';
+   enterBtn.textContent='進入抽籤系統（已登入，免密碼）';
+   enterBtn.addEventListener('click',()=>{
+    if(!dutyAuthValid()){location.reload();return}
+    const dorm=(document.querySelector('[data-dorm].active')||{}).dataset?.dorm;
+    if(!dorm)return;
+    try{sessionStorage.setItem(SESSION_DORM_KEY,dorm);sessionStorage.setItem(SESSION_UNLOCK_KEY,'1');sessionStorage.removeItem(SESSION_OFFLINE_KEY)}catch{}
+    location.reload();
+   });
+  }
+  const note=document.querySelector('.gate-note');if(note)note.innerHTML='已經由入口頁登入（15 分鐘後自動登出）。<br>點選社別可先查看該社上次抽籤記錄，再按「進入」開始抽籤，全程無需再輸入密碼。';
  }
  setInterval(()=>{
   if(sessionValue(SESSION_PASS_KEY)&&!dutyAuthValid()){

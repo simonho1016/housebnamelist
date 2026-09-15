@@ -167,7 +167,7 @@
         <span class="pill" id="sessionPill">已登入</span>
         <button type="button" class="logout" id="logoutBtn">登出</button>
       </div>
-      <p class="sub">請選擇要開啟的功能；按卡內「忠社／孝社」可直達該社</p>
+      <p class="sub">請選擇要開啟的功能；按卡內「忠社／孝社」可預先揀定社別</p>
 
       <div class="cards">
         <div class="card card-duty" data-url="/duties/" role="link" tabindex="0" aria-label="舍務抽籤">
@@ -312,23 +312,16 @@ function openSystem(url, dorm) {
   const a = portalAuth();
   if (!a) { showLock('登入已過期（15 分鐘），請重新輸入密碼。'); return; }
   let target = url;
-  if (dorm) {
-    if (url === '/duties/') {
-      try {
-        sessionStorage.setItem('dorm-duty-dorm', dorm);
-        sessionStorage.setItem('dorm-duty-unlocked', '1');
-        sessionStorage.removeItem('dorm-duty-offline');
-      } catch (e) {}
-    } else if (url === '/roster/') {
-      target = '/roster/?house=' + dorm;
-    }
-  } else if (url === '/duties/') {
-    // 冇指定社別：清除上次抽籤嘅社別狀態，確保返去揀社畫面
+  if (url === '/duties/') {
+    // 抽籤一律先入揀社＋上次記錄畫面（免密碼）；指定社別就只係預先揀定
     try {
-      sessionStorage.removeItem('dorm-duty-dorm');
+      if (dorm) sessionStorage.setItem('dorm-duty-dorm', dorm);
+      else sessionStorage.removeItem('dorm-duty-dorm');
       sessionStorage.removeItem('dorm-duty-unlocked');
       sessionStorage.removeItem('dorm-duty-offline');
     } catch (e) {}
+  } else if (dorm && url === '/roster/') {
+    target = '/roster/?house=' + dorm;
   }
   location.href = target + '#key=' + encodeURIComponent(a.p) + '&t=' + Date.now();
 }
