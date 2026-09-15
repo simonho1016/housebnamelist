@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>portal e2e 2</title></head>
+<body><pre id="log">RUNNING
+</pre>
+<script>
+const log=m=>{document.getElementById('log').textContent+=m+'\n'};
+const pass=m=>log('PASS: '+m),fail=m=>log('FAIL: '+m);
+const KEYS=['dorm-duty-dorm','dorm-duty-unlocked','dorm-duty-passcode','dorm-duty-offline','dorm-duty-auth-exp','cyc-portal-auth'];
+const clearKeys=()=>KEYS.forEach(k=>sessionStorage.removeItem(k));
+function loadFrame(url){return new Promise((res,rej)=>{const f=document.createElement('iframe');f.style.cssText='width:1280px;height:860px';f.onload=()=>setTimeout(()=>res(f),350);f.onerror=rej;f.src=url;document.body.appendChild(f)})}
+function waitReload(f){return new Promise(res=>{f.onload=()=>setTimeout(res,450)})}
+const login=()=>sessionStorage.setItem('cyc-portal-auth',JSON.stringify({p:'testpass',exp:Date.now()+15*60*1000}));
+(async()=>{
+let f,d,w,nav;
+try{
+ // Q1 撳卡身 → 抽籤揀社畫面（唔係直入）
+ clearKeys();login();
+ f=await loadFrame('/?cb=q1');
+ d=f.contentDocument;
+ nav=waitReload(f);
+ d.querySelector('.card-duty').click();
+ await nav;
+ w=f.contentWindow;d=f.contentDocument;
+ if(w.location.pathname==='/duties/')pass('Q1 已到 /duties/');else fail('Q1 網址: '+w.location.pathname);
+ if(!w.eval("$('gate').hidden"))pass('Q1 顯示揀社畫面（唔係直入抽籤）');else fail('Q1 仍然直入咗抽籤頁');
+ if((d.querySelector('.gate-note')||{}).textContent?.includes('已經由入口頁登入'))pass('Q1 閘頁有直通提示（免密碼）');else fail('Q1 缺直通提示');
+
+ // Q2 閘頁撳「忠」→ 免密碼直入忠社
+ nav=waitReload(f);
+ d.querySelector('[data-dorm="chung"]').click();
+ await nav;
+ w=f.contentWindow;d=f.contentDocument;
+ if(w.eval("$('gate').hidden")&&w.eval("DORM_ID")==='chung')pass('Q2 揀忠社後直入忠社抽籤');else fail('Q2 未直入忠社');
+
+ // Q3 返回主頁再撳卡身 → 又係揀社畫面
+ nav=waitReload(f);
+ [...d.querySelectorAll('.top-actions button')].find(b=>b.textContent.includes('返回主頁')).click();
+ await nav;
+ d=f.contentDocument;
+ nav=waitReload(f);
+ d.querySelector('.card-duty').click();
+ await nav;
+ w=f.contentWindow;d=f.contentDocument;
+ if(!w.eval("$('gate').hidden"))pass('Q3 再次撳卡身仍係揀社畫面');else fail('Q3 又直入咗');
+
+ // Q4 卡內「孝社」掣仍然直達
+ nav=waitReload(f);
+ // 先返入口頁
+ f.src='/?cb=q4';await new Promise(r=>{f.onload=()=>setTimeout(r,400)});
+ d=f.contentDocument;
+ nav=waitReload(f);
+ d.querySelector('.card-duty .dorm-btn[data-dorm="hau"]').click();
+ await nav;
+ w=f.contentWindow;
+ if(w.eval("$('gate').hidden")&&w.eval("DORM_ID")==='hau')pass('Q4 卡內孝社掣直達孝社');else fail('Q4 直達失效');
+
+ f.remove();clearKeys();
+}catch(e){fail('異常: '+(e&&e.message||e))}
+log('DONE');
+})();
+</script></body></html>

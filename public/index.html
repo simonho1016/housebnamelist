@@ -307,7 +307,7 @@ $('logoutBtn').addEventListener('click', () => {
 });
 
 // 進入各系統時，把密碼及進入時間附加在網址 hash（只留在瀏覽器，不會送上伺服器）
-// 撳「忠社／孝社」會順便帶埋社別，直接進入該社，唔使再揀一次
+// 撳「忠社／孝社」會順便帶埋社別，直接進入該社；撳卡身就一律先入揀社畫面
 function openSystem(url, dorm) {
   const a = portalAuth();
   if (!a) { showLock('登入已過期（15 分鐘），請重新輸入密碼。'); return; }
@@ -322,6 +322,13 @@ function openSystem(url, dorm) {
     } else if (url === '/roster/') {
       target = '/roster/?house=' + dorm;
     }
+  } else if (url === '/duties/') {
+    // 冇指定社別：清除上次抽籤嘅社別狀態，確保返去揀社畫面
+    try {
+      sessionStorage.removeItem('dorm-duty-dorm');
+      sessionStorage.removeItem('dorm-duty-unlocked');
+      sessionStorage.removeItem('dorm-duty-offline');
+    } catch (e) {}
   }
   location.href = target + '#key=' + encodeURIComponent(a.p) + '&t=' + Date.now();
 }
