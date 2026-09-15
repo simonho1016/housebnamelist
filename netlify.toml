@@ -5,6 +5,14 @@
 [functions]
   node_bundler = "esbuild"
 
+# 舊書籤相容：/?house=xiao|zhong 自動轉到 /roster/
+[[redirects]]
+  from = "/"
+  query = { house = ":house" }
+  to = "/roster/?house=:house"
+  status = 301
+  force = true
+
 # 名單載有個人資料：不讓搜尋引擎收錄，也不允許被其他網站嵌入
 [[headers]]
   for = "/*"

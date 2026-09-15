@@ -1,1208 +1,303 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex, nofollow">
-<title>香港扶幼會則仁中心 忠孝舍友名單</title>
+<title>香港扶幼會則仁中心 忠孝宿舍服務</title>
+<meta name="description" content="則仁中心忠孝宿舍服務入口：舍務抽籤及舍友名單。登入後 15 分鐘自動登出。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Huninn&family=Iansui&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#111827; --muted:#6b7280; --line:#1f2937; --line-soft:#d1d5db;
-    --bed-bg:#dcefd8; --bg:#e5e7eb; --accent:#2563eb; --danger:#dc2626;
+    /* 舍友名單（漫畫風選擇畫面） */
+    --paper:#fffdf6; --dot:#dde3ea; --ink:#111; --yellow:#fde047;
+    --muted:#6b7280; --sub:#374151;
+    /* 舍務抽籤（綠色主題） */
+    --green:#075e4e; --green-dark:#034436; --mint:#e9f4ef; --duty-yellow:#f6d566;
+    /* 兩社代表色 */
+    --zhong:#ffe4e6; --xiao:#dbeafe;
   }
   *{box-sizing:border-box}
-  [hidden]{display:none !important}
-  html,body{margin:0;background:var(--bg);color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC","Noto Sans CJK TC","Helvetica Neue",Arial,sans-serif}
-  body{padding-bottom:48px}
-  button{font:inherit;cursor:pointer}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;
+    background-color:var(--paper);
+    background-image:radial-gradient(var(--dot) 1.2px,transparent 1.6px);
+    background-size:10px 10px;
+    color:var(--ink);
+    font-family:"Huninn","PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC",sans-serif;
+  }
+  .box{text-align:center;max-width:760px;width:100%}
+  .org{margin:0 0 18px;font-size:20px;letter-spacing:.14em}
+  .title{
+    display:inline-block;margin:0;padding:8px 36px;background:var(--yellow);color:var(--ink);
+    border:3px solid var(--ink);border-radius:10px;box-shadow:6px 6px 0 var(--ink);
+    transform:rotate(-1.2deg);font-size:32px;font-weight:400;letter-spacing:.12em;
+  }
+  .sub{color:var(--sub);font-size:17px;margin:22px 0 26px}
 
-  /* ── 工具列（不會列印） ─────────────────────────── */
-  .toolbar{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #d1d5db;
-    padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  .toolbar .brand{font-weight:700;font-size:16px}
-  .toolbar .spacer{flex:1}
-  .status{font-size:13px;padding:6px 10px;border-radius:999px;background:#f3f4f6;color:#374151;white-space:nowrap}
-  .status.ok{background:#dcfce7;color:#166534}
-  .status.busy{background:#fef9c3;color:#854d0e}
-  .status.err{background:#fee2e2;color:#991b1b}
-  .btn{border:1px solid #d1d5db;background:#fff;color:var(--ink);border-radius:8px;padding:8px 14px;font-size:14px;line-height:1.2}
-  .btn:hover{background:#f3f4f6}
-  .btn:disabled{opacity:.5;cursor:default}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{background:#1d4ed8}
-  .btn.danger{color:var(--danger);border-color:#fca5a5}
-  .btn.danger:hover{background:#fef2f2}
-  .hint{width:100%;font-size:13px;color:var(--muted);margin:0}
+  /* ── 登入閘 ───────────────────────────── */
+  .lock{
+    max-width:420px;margin:0 auto;padding:28px 26px;background:#fff;
+    border:3px solid var(--ink);border-radius:16px;box-shadow:7px 7px 0 var(--ink);
+    background-image:radial-gradient(rgba(0,0,0,.05) 1.1px,transparent 1.5px);background-size:8px 8px;
+  }
+  .lock-icon{
+    width:64px;height:64px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;
+    font-size:32px;background:var(--mint);border:3px solid var(--ink);border-radius:14px;
+    box-shadow:3px 3px 0 var(--ink);transform:rotate(-3deg);
+  }
+  .lock p{margin:0 0 16px;font-size:15px;color:var(--sub);line-height:1.6}
+  .lock-row{display:flex;gap:10px}
+  .lock input{
+    flex:1;min-width:0;font:inherit;font-size:17px;padding:10px 14px;
+    border:3px solid var(--ink);border-radius:10px;background:#fff;color:var(--ink);
+  }
+  .lock input:focus-visible{outline:3px solid #b07500;outline-offset:2px}
+  .btn{
+    font:inherit;cursor:pointer;border:3px solid var(--ink);border-radius:10px;
+    padding:10px 20px;background:var(--yellow);color:var(--ink);
+    box-shadow:4px 4px 0 var(--ink);transition:transform .08s,box-shadow .08s;
+  }
+  .btn:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--ink)}
+  .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+  .btn:disabled{opacity:.5;cursor:default;transform:none;box-shadow:4px 4px 0 var(--ink)}
+  .btn.green{background:var(--green);color:#fff}
+  .lock-msg{min-height:22px;margin:12px 0 0;font-size:14px;color:#b91c1c}
+  .lock-skip{margin:10px 0 0;font-size:13px}
+  .lock-skip button{border:0;background:none;padding:0;color:#2563eb;text-decoration:underline;font:inherit;cursor:pointer}
 
-  /* ── A4 紙張預覽 ───────────────────────────────── */
-  .sheet-wrap{display:flex;justify-content:center;padding:20px 12px}
-  .sheet{width:210mm;height:297mm;padding:10mm;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.18);
-    display:flex;flex-direction:column;flex-shrink:0}
-  .sheet-title{border:0.5mm solid var(--line);border-bottom:0;text-align:center;
-    font-size:20pt;font-weight:700;letter-spacing:.12em;padding:3mm 4mm;line-height:1.25;height:14mm;
-    display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden}
-  .grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(8,1fr);/* 列數由程式依舍號數目設定 */
-    grid-auto-flow:column;border-top:0.5mm solid var(--line);border-left:0.5mm solid var(--line)}
-  .cell{display:flex;min-height:0;min-width:0;border-right:0.5mm solid var(--line);border-bottom:0.5mm solid var(--line);
-    cursor:pointer;position:relative}
-  .cell:hover,.cell:focus-visible{outline:3px solid var(--accent);outline-offset:-3px;z-index:1}
-  .bed{width:12mm;flex-shrink:0;background:#f3f4f6;display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:11.5pt;letter-spacing:.02em;border-right:0.3mm solid var(--line)}
-  .body{flex:1;min-width:0;display:flex;flex-direction:column}
-  .top{flex:1;min-height:0;display:flex}
-  .name{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;
-    font-size:16pt;font-weight:600;letter-spacing:.1em;padding:1mm 1.5mm;white-space:nowrap;overflow:hidden}
-  .name.long{font-size:12pt;letter-spacing:.04em}
-  .name.xlong{font-size:9.5pt;letter-spacing:0;white-space:normal;line-height:1.2;text-align:center}
-  .workers{width:8.5mm;flex-shrink:0;border-left:0.3mm solid var(--line);display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:0.6mm;font-size:11pt;font-weight:600;line-height:1.1;padding:1mm 0}
-  .tags{border-top:0.3mm solid var(--line);min-height:10.5mm;padding:1mm 1.4mm;display:flex;flex-wrap:wrap;gap:1mm;align-content:flex-start}
-  .tag{font-size:8pt;line-height:1.25;padding:0.7mm 1.5mm;border-radius:1mm;font-weight:600;
-    border:0.2mm solid rgba(0,0,0,.28);white-space:nowrap}
-  .bed.long{font-size:8.5pt;letter-spacing:0}
-  .grid.dense .name{font-size:13pt}
-  .grid.dense .name.long{font-size:10.5pt}
-  .grid.dense .name.xlong{font-size:8.5pt}
-  .grid.dense .bed{font-size:10pt}
-  .grid.dense .workers{font-size:9.5pt}
-  .grid.dense .tags{min-height:8mm;padding:0.7mm 1.2mm}
-  .grid.dense .tag{font-size:7pt}
-  .sheet-foot{height:7mm;display:flex;align-items:flex-end;justify-content:space-between;gap:4mm;font-size:9.5pt;color:#374151;padding-top:2mm}
-  .legend{display:flex;flex-wrap:wrap;gap:1mm 4mm;font-size:9pt;min-width:0}
-  .legend span{display:inline-flex;align-items:center;gap:1.2mm;white-space:nowrap}
-  .legend i{display:inline-block;width:4mm;height:3.2mm;border:0.2mm solid rgba(0,0,0,.35);border-radius:0.6mm}
-  .color-rows{display:flex;flex-direction:column;gap:6px}
-  .color-row{display:flex;align-items:center;gap:10px}
-  .color-row b{min-width:2.5em;font-size:16px}
-  .color-row select{font:inherit;font-size:15px;padding:6px 8px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:var(--ink)}
+  /* ── 功能卡 ───────────────────────────── */
+  .session-bar{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+    margin:0 0 20px;font-size:14px;color:var(--sub);
+  }
+  .session-bar .pill{
+    padding:5px 14px;background:var(--mint);color:var(--green);
+    border:2px solid var(--ink);border-radius:999px;box-shadow:2px 2px 0 var(--ink);
+  }
+  .session-bar .logout{
+    font:inherit;font-size:13px;padding:5px 14px;background:#fff;color:var(--sub);
+    border:2px solid var(--ink);border-radius:999px;box-shadow:2px 2px 0 var(--ink);cursor:pointer;
+  }
+  .session-bar .logout:hover{background:#f3f4f6}
 
-  /* ── 對話框 ────────────────────────────────────── */
-  dialog{border:0;border-radius:14px;padding:0;width:min(92vw,440px);box-shadow:0 20px 50px rgba(0,0,0,.3);color:var(--ink)}
-  dialog::backdrop{background:rgba(17,24,39,.45)}
-  .dlg{padding:18px 20px 16px}
-  .dlg-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-  .dlg-head h2{margin:0;font-size:17px;flex:1;white-space:nowrap}
-  .ed-bed{display:inline-block;background:var(--bed-bg);border:1px solid #86c27a;border-radius:8px;padding:4px 12px;font-weight:700;font-size:20px}
-  .icon{border:0;background:transparent;font-size:20px;line-height:1;padding:6px;border-radius:8px;color:var(--muted)}
-  .icon:hover{background:#f3f4f6;color:var(--ink)}
-  .field{margin:12px 0}
-  .lbl{font-size:13px;color:var(--muted);margin-bottom:6px}
-  input[type=text],input[type=password],input[type=date],textarea{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:var(--ink)}
-  input[type=text]:focus,input[type=password]:focus,textarea:focus,input[type=date]:focus{outline:2px solid var(--accent);border-color:var(--accent)}
-  textarea{min-height:96px;resize:vertical;line-height:1.5}
-  .choices{display:flex;flex-wrap:wrap;gap:8px}
-  .choice{border:1.5px solid #d1d5db;background:#fff;border-radius:999px;padding:8px 16px;font-size:15px;color:var(--ink)}
-  .choice[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
-  .choice.tag-choice[aria-pressed="true"]{color:var(--ink);border-color:rgba(0,0,0,.5)}
-  .choices .empty{font-size:13px;color:var(--muted)}
-  .seg{display:inline-flex;border:1.5px solid #d1d5db;border-radius:999px;overflow:hidden}
-  .seg .choice{border:0;border-radius:0;border-right:1.5px solid #d1d5db}
-  .seg .choice:last-child{border-right:0}
-  .dlg-foot{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
-  .dlg-foot .spacer{flex:1}
-  .sub{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
-  .msg{font-size:14px;color:var(--danger);min-height:1.4em;margin-top:6px}
-  hr{border:0;border-top:1px solid #e5e7eb;margin:16px 0}
+  .cards{display:flex;flex-wrap:wrap;gap:26px;justify-content:center}
+  .card{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    width:260px;min-height:220px;padding:20px 16px;
+    border:3px solid var(--ink);border-radius:16px;box-shadow:7px 7px 0 var(--ink);
+    text-decoration:none;color:var(--ink);
+    background-image:radial-gradient(rgba(0,0,0,.07) 1.1px,transparent 1.5px);
+    background-size:8px 8px;
+    transition:transform .08s,box-shadow .08s;
+  }
+  .card:hover{transform:translate(-2px,-2px);box-shadow:9px 9px 0 var(--ink)}
+  .card:active{transform:translate(4px,4px);box-shadow:3px 3px 0 var(--ink)}
+  .card:focus-visible{outline:3px solid #b07500;outline-offset:4px}
+  .card-name{font-size:26px;letter-spacing:.1em}
+  .card-desc{font-size:14px;color:var(--sub);line-height:1.5}
+  .card-url{font-size:12px;color:var(--muted);letter-spacing:.03em}
 
-  .sel{font:inherit;font-size:15px;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;width:100%;color:var(--ink)}
+  /* 舍務抽籤卡：綠色主題 + 品牌點陣標記 */
+  .card-duty{background-color:var(--mint)}
+  .brandmark{
+    display:grid;grid-template-columns:repeat(2,10px);gap:6px;padding:16px;
+    background:var(--green);border-radius:16px;transform:rotate(-7deg);
+    border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);
+  }
+  .brandmark i{width:10px;height:10px;border-radius:50%;background:var(--duty-yellow)}
 
-  /* ── 選擇社（開首畫面） ─────────────────────────── */
-  .chooser{min-height:calc(100vh - 48px);display:flex;align-items:center;justify-content:center;padding:24px;
-    background-color:#fffdf6;background-image:radial-gradient(#dde3ea 1.2px,transparent 1.6px);background-size:10px 10px;
-    font-family:"Huninn","PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
-  .chooser-box{text-align:center;max-width:720px;width:100%}
-  .chooser-title{display:inline-block;margin:0;padding:8px 36px;background:#fde047;color:#111;border:3px solid #111;border-radius:10px;
-    box-shadow:6px 6px 0 #111;transform:rotate(-1.2deg);font-size:32px;font-weight:400;letter-spacing:.12em}
-  .chooser-org{margin:0 0 18px;font-size:20px;letter-spacing:.14em;color:#111}
-  .chooser-sub{color:#374151;font-size:17px;margin:22px 0 26px}
-  @media (max-width:520px){.chooser-title{font-size:26px;padding:8px 22px}.chooser-org{font-size:17px}}
-  .chooser-cards{display:flex;flex-wrap:wrap;gap:26px;justify-content:center}
-  .house-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:240px;height:200px;
-    border:3px solid #111;border-radius:16px;box-shadow:7px 7px 0 #111;text-decoration:none;color:#111;
-    background-image:radial-gradient(rgba(0,0,0,.07) 1.1px,transparent 1.5px);background-size:8px 8px;
-    transition:transform .08s,box-shadow .08s}
-  .house-card:hover{transform:translate(-2px,-2px);box-shadow:9px 9px 0 #111}
-  .house-card:active{transform:translate(4px,4px);box-shadow:3px 3px 0 #111}
-  .house-big{font-size:84px;line-height:1}
-  .house-name{font-size:19px;letter-spacing:.06em}
-  .chooser-note{margin-top:28px;font-size:13px;color:#6b7280}
-  .chooser-foot{margin-top:10px;font-size:13px;color:#6b7280}
-  .linkbtn{border:0;background:none;padding:0;color:#2563eb;text-decoration:underline;font:inherit;cursor:pointer}
-  .linkbtn:hover{color:#1d4ed8}
-  .about{font-size:13px;color:#6b7280;margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
-  .ver-list{max-height:min(60vh,520px);overflow:auto;padding-right:4px}
-  .ver{border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:10px}
-  .ver-head{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
-  .ver-head b{font-size:16px}
-  .ver-head span{font-size:12px;color:#6b7280}
-  .ver ul{margin:0;padding-left:18px;font-size:14px;line-height:1.55}
-  .ver li{margin:2px 0}
-  .ver h4{margin:8px 0 2px;font-size:13px;color:#374151}
-  .credit{margin-top:12px;font-size:14px}
+  /* 舍友名單卡：忠孝雙社床位標記 */
+  .card-roster{background-color:#fff}
+  .beds{display:flex;gap:12px}
+  .bed{
+    width:64px;height:64px;display:flex;align-items:center;justify-content:center;
+    font-size:34px;line-height:1;border:3px solid var(--ink);border-radius:12px;
+    box-shadow:3px 3px 0 var(--ink);
+    background-image:radial-gradient(rgba(0,0,0,.06) 1px,transparent 1.4px);background-size:7px 7px;
+  }
+  .bed.zhong{background-color:var(--zhong);transform:rotate(-2deg)}
+  .bed.xiao{background-color:var(--xiao);transform:rotate(2deg)}
 
-  /* ── 字體與風格（由「設定」選擇，套用在整張名單） ── */
-  :root{--sheet-font:-apple-system,BlinkMacSystemFont,"PingFang TC","Heiti TC","Microsoft JhengHei","Noto Sans TC","Noto Sans CJK TC","Helvetica Neue",Arial,sans-serif}
-  body[data-font="huninn"]{--sheet-font:"Huninn","PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
-  body[data-font="iansui"]{--sheet-font:"Iansui","PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
-  .sheet{font-family:var(--sheet-font)}
+  .note{margin-top:28px;font-size:13px;color:var(--muted)}
+  .foot{margin-top:10px;font-size:13px;color:var(--muted)}
 
-  /* 可愛漫畫風格：粗黑邊、硬陰影、網點、貼紙式標籤 */
-  body[data-theme="comic"] .sheet{background-color:#fffdf6;background-image:radial-gradient(#dde3ea 0.32mm,transparent 0.4mm);background-size:2.4mm 2.4mm}
-  body[data-theme="comic"] .sheet-title{align-self:center;height:auto;margin:0.5mm auto 3.5mm;padding:1.2mm 9mm;
-    background:#fde047;color:#111;border:0.7mm solid #111;border-radius:2mm;box-shadow:1.6mm 1.6mm 0 #111;
-    transform:rotate(-1.2deg);font-size:24pt;font-weight:400;letter-spacing:.1em}
-  body[data-theme="comic"] .sheet-title::before,body[data-theme="comic"] .sheet-title::after{content:"★";font-size:14pt;margin:0 3mm;color:#111}
-  body[data-theme="comic"] .grid{border:0;gap:2.4mm;padding:0 1.8mm 1.8mm 0}
-  body[data-theme="comic"] .cell{border:0.6mm solid #111;border-radius:2.2mm;box-shadow:1.3mm 1.3mm 0 #111;overflow:hidden;
-    background-image:radial-gradient(rgba(0,0,0,.085) 0.3mm,transparent 0.36mm);background-size:1.9mm 1.9mm}
-  body[data-theme="comic"] .cell:hover,body[data-theme="comic"] .cell:focus-visible{outline-offset:-4px}
-  body[data-theme="comic"] .bed{font-family:"Bangers",var(--sheet-font);font-size:16pt;font-weight:400;letter-spacing:.06em;border-right:0.5mm solid #111;padding-top:0.5mm}
-  body[data-theme="comic"] .bed.long{font-size:11pt;letter-spacing:0}
-  body[data-theme="comic"] .grid.dense{gap:1.6mm}
-  body[data-theme="comic"] .grid.dense .name{font-size:14pt}
-  body[data-theme="comic"] .grid.dense .bed{font-size:13pt}
-  body[data-theme="comic"] .name{font-size:18pt;font-weight:400;letter-spacing:.06em}
-  body[data-theme="comic"] .name.long{font-size:13pt}
-  body[data-theme="comic"] .name.xlong{font-size:10pt}
-  body[data-theme="comic"] .workers{border-left:0.5mm dashed #111;font-size:12.5pt;font-weight:400}
-  body[data-theme="comic"] .tags{border-top:0.5mm solid #111;padding:1.2mm 1.6mm;gap:1.2mm}
-  body[data-theme="comic"] .tag{border:0.42mm solid #111;border-radius:1.2mm;box-shadow:0.7mm 0.7mm 0 #111;font-size:8.5pt;font-weight:400;padding:0.5mm 1.7mm;margin:0 0.7mm 0.7mm 0}
-  body[data-theme="comic"] .legend i{border:0.35mm solid #111;box-shadow:0.45mm 0.45mm 0 #111;border-radius:0.8mm}
-  body[data-theme="comic"] .sheet-foot .date{border:0.45mm solid #111;background:#fff;padding:0.6mm 2.5mm;border-radius:1mm;box-shadow:0.7mm 0.7mm 0 #111}
-
-  /* ── 列印 ──────────────────────────────────────── */
-  @page{size:A4 portrait;margin:0}
-  @media print{
-    html,body{background:#fff;padding:0;margin:0;width:210mm;height:297mm;overflow:hidden}
-    .toolbar,dialog{display:none !important}
-    .sheet-wrap{padding:0 !important;zoom:1 !important;display:block}
-    .sheet{box-shadow:none;margin:0;break-inside:avoid;page-break-inside:avoid}
-    .cell{cursor:default}
-    .cell:hover{outline:none}
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @media (max-width:520px){
+    .title{font-size:26px;padding:8px 22px}
+    .org{font-size:17px}
+    .card{width:100%;max-width:320px}
+    .lock-row{flex-direction:column}
   }
 </style>
 </head>
 <body>
+  <main class="box">
+    <p class="org">香港扶幼會則仁中心</p>
+    <h1 class="title">忠孝宿舍服務</h1>
 
-<section class="chooser" id="chooser" hidden>
-  <div class="chooser-box">
-    <p class="chooser-org">香港扶幼會則仁中心</p>
-    <h1 class="chooser-title">忠孝舍友名單</h1>
-    <p class="chooser-sub">請選擇要開啟的社</p>
-    <div class="chooser-cards" id="houseCards"></div>
-    <p class="chooser-note">兩份名單各自獨立儲存，使用同一個存取密碼。</p>
-    <p class="chooser-foot">版本 <span class="ver-num">1.0.1</span> ・ <button type="button" class="linkbtn ver-open">版本紀錄</button> ・ 創作者：何文諾社工</p>
-  </div>
-</section>
+    <!-- 登入閘：密碼統一在此輸入 -->
+    <section class="lock" id="lockView" hidden>
+      <div class="lock-icon" aria-hidden="true">🔒</div>
+      <p>舍務抽籤及舍友名單載有舍友個人資料，只供獲授權的職員使用。<br>請輸入共用密碼；登入後 <strong>15 分鐘</strong>會自動登出。</p>
+      <form class="lock-row" id="lockForm">
+        <input type="password" id="lockInput" autocomplete="current-password" placeholder="共用密碼" maxlength="200" aria-label="共用密碼">
+        <button type="submit" class="btn green" id="lockGo">進入</button>
+      </form>
+      <p class="lock-msg" id="lockMsg" role="status"></p>
+      <p class="lock-skip" id="lockSkip" hidden>未能連線驗證。<button type="button" id="lockSkipBtn">略過驗證直接進入</button>（密碼錯誤時各系統會要求重新登入）</p>
+    </section>
 
-<header class="toolbar" id="toolbar">
-  <span class="brand" id="brand">孝社 舍友名單</span>
-  <span class="status" id="syncStatus" hidden>連線中…</span>
-  <span class="spacer"></span>
-  <button class="btn primary" id="btnPrint">🖨 列印／儲存為 PDF</button>
-  <button class="btn" id="btnSettings">⚙ 設定與備份</button>
-  <button class="btn" id="btnSwitch" title="返回選擇孝社／忠社">⇄ 切換社</button>
-  <p class="hint" id="hint">點擊任何一格即可編輯姓名、社工短稱及狀態。列印時請選擇 A4 紙張、邊界「無」，並勾選「背景圖形」以保留顏色。</p>
-</header>
+    <!-- 功能選擇（登入後顯示） -->
+    <section id="mainView" hidden>
+      <div class="session-bar">
+        <span class="pill" id="sessionPill">已登入</span>
+        <button type="button" class="logout" id="logoutBtn">登出</button>
+      </div>
+      <p class="sub">請選擇要開啟的功能</p>
 
-<div class="sheet-wrap" id="sheetWrap">
-  <main class="sheet" id="sheet">
-    <div class="sheet-title" id="sheetTitle">孝社 舍友名單</div>
-    <div class="grid" id="grid"></div>
-    <div class="sheet-foot"><div class="legend" id="legend"></div><div class="date">更新日期：<span id="updated"></span></div></div>
+      <div class="cards">
+        <a class="card card-duty" href="/duties/" data-url="/duties/">
+          <span class="brandmark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="card-name">舍務抽籤</span>
+          <span class="card-desc">每星期抽一次，大家一齊做。<br>抽籤結果自動記錄上雲端。</span>
+          <span class="card-url">/duties/</span>
+        </a>
+
+        <a class="card card-roster" href="/roster/" data-url="/roster/">
+          <span class="beds" aria-hidden="true">
+            <span class="bed zhong">忠</span>
+            <span class="bed xiao">孝</span>
+          </span>
+          <span class="card-name">舍友名單</span>
+          <span class="card-desc">忠社・孝社床位名單，<br>任何裝置即時同步，可列印張貼。</span>
+          <span class="card-url">/roster/</span>
+        </a>
+      </div>
+
+      <p class="note">兩個系統各自獨立運作，資料均儲存於雲端。</p>
+    </section>
+
+    <p class="foot">創作者：何文諾社工（香港扶幼會則仁中心）</p>
   </main>
-</div>
-
-<!-- 存取密碼 -->
-<dialog id="auth">
-  <form class="dlg" id="authForm">
-    <div class="dlg-head"><h2>請先經入口頁登入</h2></div>
-    <p class="sub" style="margin:0">此名單載有舍友的個人資料，只供獲授權的職員使用。密碼統一在入口頁輸入，登入後 15 分鐘自動登出。</p>
-    <div class="dlg-foot" style="justify-content:flex-start">
-      <a class="btn primary" id="authPortal" href="https://cycportal.netlify.app/" style="text-decoration:none">前往入口頁登入</a>
-    </div>
-    <p class="sub" style="margin:0"><button type="button" class="linkbtn" id="authDirectToggle">在此裝置直接輸入密碼（緊急備用）</button></p>
-    <div id="authDirect" hidden>
-      <div class="field">
-        <input type="password" id="authInput" autocomplete="current-password" placeholder="存取密碼">
-      </div>
-      <div class="dlg-foot">
-        <button type="submit" class="btn primary" id="authGo">進入</button>
-      </div>
-    </div>
-    <div class="msg" id="authMsg"></div>
-  </form>
-</dialog>
-
-<!-- 編輯舍友 -->
-<dialog id="editor">
-  <form method="dialog" class="dlg" id="editorForm">
-    <div class="dlg-head">
-      <span class="lbl" style="margin:0">舍號</span>
-      <span class="ed-bed" id="edBed">B01</span>
-      <h2>編輯舍友</h2>
-      <button type="button" class="icon" id="edClose" aria-label="關閉">✕</button>
-    </div>
-    <div class="field">
-      <div class="lbl">姓名（沒有名字請留空）</div>
-      <input type="text" id="edName" autocomplete="off" enterkeyhint="next">
-    </div>
-    <div class="field">
-      <div class="lbl">社工短稱（可多選，依點選次序顯示）</div>
-      <div class="choices" id="edWorkers"></div>
-    </div>
-    <div class="field">
-      <div class="lbl">狀態（相連的按鈕為二選一）</div>
-      <div class="choices" id="edTags"></div>
-    </div>
-    <div class="dlg-foot">
-      <button type="button" class="btn" id="edPrev">← 上一位</button>
-      <button type="button" class="btn" id="edNext">下一位 →</button>
-      <span class="spacer"></span>
-      <button type="button" class="btn primary" id="edDone">完成</button>
-    </div>
-  </form>
-</dialog>
-
-<!-- 設定與備份 -->
-<dialog id="settings">
-  <form method="dialog" class="dlg">
-    <div class="dlg-head">
-      <h2>設定與備份</h2>
-      <button type="button" class="icon" id="stClose" aria-label="關閉">✕</button>
-    </div>
-    <div class="field">
-      <div class="lbl">名單標題</div>
-      <input type="text" id="stTitle">
-    </div>
-    <div class="field">
-      <div class="lbl">舍號（以空格或每行一個分隔；依次序由上至下、由左至右排列）</div>
-      <textarea id="stBeds" rows="3"></textarea>
-      <div class="sub">最多 60 個，每個最長 8 個字元。同一位置改名（例如 B01 改為 A01）會保留該格資料；刪除舍號會連同該格資料一併移除。</div>
-    </div>
-    <div class="field">
-      <div class="lbl">列印風格</div>
-      <select id="stTheme" class="sel">
-        <option value="comic">可愛漫畫（粗黑邊、網點、貼紙式標籤）</option>
-        <option value="plain">簡潔表格</option>
-      </select>
-    </div>
-    <div class="field">
-      <div class="lbl">字體</div>
-      <select id="stFont" class="sel">
-        <option value="huninn">粉圓體（圓潤可愛）</option>
-        <option value="iansui">芫荽（手寫感）</option>
-        <option value="system">系統字體（標準黑體）</option>
-      </select>
-      <div class="sub">粉圓體及芫荽由 Google Fonts 提供，開啟網站時自動下載；沒有網絡時會改用系統字體。</div>
-    </div>
-    <div class="field">
-      <div class="lbl">社工短稱（以空格或每行一個分隔）</div>
-      <textarea id="stWorkers" rows="2"></textarea>
-    </div>
-    <div class="field">
-      <div class="lbl">舍友格子底色（按社工；多位社工時以第一位為準）</div>
-      <div class="color-rows" id="stColors"></div>
-      <div class="sub">在上方修改社工短稱後，這裡會即時更新；改名會保留原本選好的顏色。</div>
-    </div>
-    <div class="field">
-      <div class="lbl">有此狀態的舍友整格改為淺灰（優先於社工顏色）</div>
-      <select id="stGrey" style="font:inherit;font-size:15px;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;width:100%"></select>
-    </div>
-    <div class="field">
-      <div class="lbl">狀態標籤（每行一個）</div>
-      <textarea id="stTags" rows="5"></textarea>
-      <div class="sub">同一行以「/」分隔的為互斥選項，只能選其一（例如：長讀/短適）。顏色依次序自動分配；改名後，舍友原有的標籤會自動對應到新名稱。</div>
-    </div>
-    <div class="field">
-      <div class="lbl">更新日期（編輯舍友資料時會自動更新為當天）</div>
-      <input type="date" id="stDate">
-    </div>
-    <div class="dlg-foot">
-      <button type="button" class="btn primary" id="stSave">儲存設定</button>
-      <button type="button" class="btn" id="stCancel">取消</button>
-    </div>
-    <hr>
-    <div class="lbl" id="backupLbl">資料備份</div>
-    <div class="dlg-foot" style="margin-top:8px">
-      <button type="button" class="btn" id="btnExport">⬇ 匯出備份檔</button>
-      <button type="button" class="btn" id="btnImport">⬆ 匯入備份檔</button>
-      <span class="spacer"></span>
-      <button type="button" class="btn danger" id="btnClear">清除所有資料</button>
-    </div>
-    <div id="cloudBox" hidden>
-      <hr>
-      <div class="lbl">此裝置</div>
-      <div class="dlg-foot" style="margin-top:8px">
-        <button type="button" class="btn" id="btnLogout">登出此裝置（下次要再輸入密碼）</button>
-      </div>
-    </div>
-    <div class="about">
-      <span>版本 <span class="ver-num">1.0.1</span></span>
-      <button type="button" class="linkbtn ver-open">版本紀錄</button>
-      <span>創作者：何文諾社工</span>
-    </div>
-    <input type="file" id="fileInput" accept="application/json,.json" hidden>
-  </form>
-</dialog>
-
-<!-- 版本紀錄 -->
-<dialog id="changelog">
-  <form method="dialog" class="dlg">
-    <div class="dlg-head">
-      <h2>版本紀錄</h2>
-      <button type="button" class="icon" id="clClose" aria-label="關閉">✕</button>
-    </div>
-    <div class="ver-list" id="verList"></div>
-    <div class="credit">創作者：<b>何文諾社工</b>（香港扶幼會則仁中心）</div>
-    <div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn primary" id="clDone">關閉</button></div>
-  </form>
-</dialog>
 
 <script>
-(function(){
-  'use strict';
-  // ── 版本紀錄（新版本請加在陣列最前） ─────────────────
-  var APP_VERSION = '1.0.1';
-  var CHANGELOG = [
-    { version: '1.0.1', date: '2026-09-13', sections: [
-      { title: '調整', items: ['開首畫面按鈕次序改為「忠」在前、「孝」在後'] }
-    ]},
-    { version: '1.0.0', date: '2026-09-13', sections: [
-      { title: '名單', items: [
-        '忠社、孝社兩份舍友名單，開首畫面選擇後進入；可用網址直接開啟指定的社（?house=xiao / ?house=zhong）',
-        '舍號按社各自設定：預設孝社 B01–B24（沒有 B08）及 B26，忠社 A01–A24；可在「設定」增刪改，改名保留該格資料',
-        '每格記錄姓名、社工短稱（宙、諾、容、軒，可多選）及狀態：可申請外出、長讀／短適（二選一）、回原校、返家適應',
-        '格子底色按第一位社工顯示（容淺綠、諾淺藍、軒淺橙），「回原校」整格淺灰；名單底部有顏色圖例'
-      ]},
-      { title: '列印', items: [
-        '一頁 A4 直向，3 欄排列，按「列印／儲存為 PDF」即可張貼',
-        '列印風格：可愛漫畫（粗黑邊、網點、貼紙式標籤）或簡潔表格',
-        '字體：粉圓體、芫荽、系統字體；列印前會等字體載入完成'
-      ]},
-      { title: '儲存與同步', items: [
-        '資料自動儲存到雲端（Netlify Blobs），任何裝置開啟都看到最新版本',
-        '多人同時編輯不同舍號會自動合併；斷線時保留本機暫存並自動重試',
-        '存取密碼保護，每部裝置輸入一次；網站不被搜尋引擎收錄',
-        '可匯出／匯入 JSON 備份檔'
-      ]},
-      { title: '設定', items: [
-        '名單標題、舍號、社工短稱、狀態標籤、社工顏色、灰色狀態、列印風格、字體、更新日期',
-        '修改社工短稱或狀態標籤時，顏色與灰色狀態的選項即時跟隨並保留選擇'
-      ]}
-    ]}
-  ];
-  (function setupChangelog() {
-    var dlg = document.getElementById('changelog'), list = document.getElementById('verList');
-    Array.prototype.forEach.call(document.querySelectorAll('.ver-num'), function (el) { el.textContent = APP_VERSION; });
-    function build() {
-      list.innerHTML = '';
-      CHANGELOG.forEach(function (v) {
-        var box = document.createElement('div'); box.className = 'ver';
-        var head = document.createElement('div'); head.className = 'ver-head';
-        var b = document.createElement('b'); b.textContent = '版本 ' + v.version;
-        var d = document.createElement('span'); d.textContent = v.date;
-        head.appendChild(b); head.appendChild(d); box.appendChild(head);
-        v.sections.forEach(function (sec) {
-          var h = document.createElement('h4'); h.textContent = sec.title; box.appendChild(h);
-          var ul = document.createElement('ul');
-          sec.items.forEach(function (t) { var li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
-          box.appendChild(ul);
-        });
-        list.appendChild(box);
-      });
+'use strict';
+// ── 統一登入：密碼只在此頁輸入，經網址 hash 帶到各系統（不會送上伺服器），15 分鐘後自動登出 ──
+const AUTH_SESSION_KEY = 'cyc-portal-auth', AUTH_TTL = 15 * 60 * 1000;
+const ROSTER_API = '/api/roster?house=xiao';
+const DUTY_VERIFY = 'https://pkziogchjqgcvezmeteq.supabase.co/rest/v1/rpc/duty_records_verify';
+const DUTY_KEY = 'sb_publishable_GiDTfksX6FnyKGokiIjulQ_IJbtGIH1';
+
+const $ = id => document.getElementById(id);
+
+function portalAuth() {
+  try {
+    const a = JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY));
+    if (a && typeof a.p === 'string' && a.p && Number.isFinite(a.exp)) {
+      if (Date.now() < a.exp) return a;
+      sessionStorage.removeItem(AUTH_SESSION_KEY);
     }
-    Array.prototype.forEach.call(document.querySelectorAll('.ver-open'), function (btn) {
-      btn.addEventListener('click', function () { build(); dlg.showModal(); });
+  } catch (e) {}
+  return null;
+}
+function portalLogin(p) {
+  try { sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ p, exp: Date.now() + AUTH_TTL })); } catch (e) {}
+}
+function portalLogout() {
+  try { sessionStorage.removeItem(AUTH_SESSION_KEY); } catch (e) {}
+}
+
+function showLock(msg) {
+  $('mainView').hidden = true;
+  $('lockView').hidden = false;
+  $('lockMsg').textContent = msg || '';
+  $('lockSkip').hidden = true;
+  $('lockInput').focus();
+}
+function showMain() {
+  $('lockView').hidden = true;
+  $('mainView').hidden = false;
+  tickSession();
+}
+function tickSession() {
+  const a = portalAuth();
+  if (!a) { showLock('登入已過期（15 分鐘），請重新輸入密碼。'); return; }
+  const mins = Math.max(1, Math.ceil((a.exp - Date.now()) / 60000));
+  const until = new Date(a.exp).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' });
+  $('sessionPill').textContent = `已登入 · ${until} 自動登出（約 ${mins} 分鐘）`;
+}
+setInterval(tickSession, 15000);
+
+// 驗證密碼：先試舍友名單 API（GET 讀取），網絡失敗再試舍務抽籤的驗證 RPC
+async function verifyPassword(p) {
+  try {
+    const res = await fetch(ROSTER_API, {
+      cache: 'no-store',
+      headers: { 'x-roster-key': encodeURIComponent(p) },
     });
-    document.getElementById('clClose').addEventListener('click', function () { dlg.close(); });
-    document.getElementById('clDone').addEventListener('click', function () { dlg.close(); });
-    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
-  })();
-
-  var SITE_NAME = '香港扶幼會則仁中心 忠孝舍友名單';
-  var ORG_NAME = '香港扶幼會則仁中心';
-  // 各社名單：網址以 ?house=xiao 或 ?house=zhong 指定；沒有指定時顯示選擇畫面
-  function bedRange(prefix, from, to, skip) {
-    var out = [];
-    for (var i = from; i <= to; i++) { if (skip && skip.indexOf(i) !== -1) continue; out.push(prefix + String(i).padStart(2, '0')); }
-    return out;
-  }
-  // 次序即開首畫面的按鈕次序（忠在前、孝在後）
-  var HOUSES = [
-    { id: 'zhong', title: '忠社 舍友名單', big: '忠', color: '#ffe4e6', beds: bedRange('A', 1, 24) },
-    { id: 'xiao',  title: '孝社 舍友名單', big: '孝', color: '#dbeafe', beds: bedRange('B', 1, 24, [8]).concat(['B26']) }
-  ];
-  var MAX_BEDS = 60, MAX_BED_LEN = 8;
-  var HOUSE = null;
-  (function () {
-    var id = '';
-    try { id = new URLSearchParams(location.search).get('house') || ''; } catch (e) {}
-    for (var i = 0; i < HOUSES.length; i++) { if (HOUSES[i].id === id) HOUSE = HOUSES[i]; }
-  })();
-  if (!HOUSE) {
-    var cards = document.getElementById('houseCards');
-    HOUSES.forEach(function (h) {
-      var a = document.createElement('a');
-      a.className = 'house-card'; a.href = '?house=' + encodeURIComponent(h.id); a.style.backgroundColor = h.color;
-      var big = document.createElement('span'); big.className = 'house-big'; big.textContent = h.big;
-      var nm = document.createElement('span'); nm.className = 'house-name'; nm.textContent = h.title;
-      a.appendChild(big); a.appendChild(nm); cards.appendChild(a);
+    if (res.status === 401) return 'wrong';
+    if (res.ok) return 'ok';
+  } catch (e) { /* 網絡或 CORS 問題，試下一個 */ }
+  try {
+    const res = await fetch(DUTY_VERIFY, {
+      method: 'POST',
+      headers: { apikey: DUTY_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_passcode: p }),
+      cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer',
     });
-    document.getElementById('toolbar').hidden = true;
-    document.getElementById('sheetWrap').hidden = true;
-    document.getElementById('chooser').hidden = false;
-    document.title = SITE_NAME;
-    return;
-  }
+    if (res.status === 401 || res.status === 403) return 'wrong';
+    if (res.ok) return 'ok';
+  } catch (e) { /* 仍未能連線 */ }
+  return 'unknown';
+}
 
-  var KEY = HOUSE.id === 'xiao' ? 'hs-roster-v1' : 'hs-roster-v1-' + HOUSE.id;   // 本機暫存（孝社沿用原有的鍵）
-  var KEY_STORE = 'hs-roster-key';   // 此裝置記住的存取密碼（兩社共用）
-  var API = '/api/roster?house=' + encodeURIComponent(HOUSE.id);
-  // 由網站（http/https）開啟時使用雲端儲存；直接開啟本機檔案（file:）時只用本機儲存
-  var CLOUD = location.protocol === 'http:' || location.protocol === 'https:';
-
-  // 舍號列表存在各社的資料內（state.beds），可在「設定」修改；預設為 HOUSE.beds
-  function cleanBeds(list) {
-    if (!Array.isArray(list)) return null;
-    var out = [];
-    list.forEach(function (x) {
-      if (typeof x !== 'string') return;
-      var v = x.trim();
-      if (v && v.length <= MAX_BED_LEN && out.indexOf(v) === -1) out.push(v);
-    });
-    return out.length && out.length <= MAX_BEDS ? out : null;
-  }
-  function emptyResident() { return { name: '', workers: [], tags: [] }; }
-  function hasData(r) { return !!(r && (r.name || (r.workers && r.workers.length) || (r.tags && r.tags.length))); }
-  // 舊版資料沒有 beds 欄位：若已有舍友資料，沿用其舍號次序，避免資料被藏起
-  function inferBeds(raw, fallback) {
-    var b = cleanBeds(raw.beds);
-    if (b) return b;
-    var res = raw.residents && typeof raw.residents === 'object' ? raw.residents : {};
-    var keys = Object.keys(res);
-    var any = keys.some(function (k) { return hasData(res[k]); });
-    if (any) { var inferred = cleanBeds(keys); if (inferred) return inferred; }
-    return fallback;
-  }
-
-  var TAG_COLORS = ['#fde047', '#93c5fd', '#fdba74', '#86efac', '#f9a8d4', '#c4b5fd', '#fca5a5', '#a5f3fc'];
-  // 格子底色：[格子, 舍號欄]
-  var CELL_COLORS = {
-    green:  ['#dcfce7', '#bbf7d0'],
-    blue:   ['#dbeafe', '#bfdbfe'],
-    orange: ['#ffedd5', '#fed7aa'],
-    yellow: ['#fef9c3', '#fef08a'],
-    purple: ['#f3e8ff', '#e9d5ff'],
-    pink:   ['#fce7f3', '#fbcfe8'],
-    grey:   ['#e5e7eb', '#d1d5db']
-  };
-  var CELL_COLOR_NAMES = [['none', '無'], ['green', '淺綠'], ['blue', '淺藍'], ['orange', '淺橙'], ['yellow', '淺黃'], ['purple', '淺紫'], ['pink', '淺粉'], ['grey', '淺灰']];
-  var CELL_NONE = ['#ffffff', '#f3f4f6'];
-
-  function today() {
-    var d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  }
-  function timeNow() {
-    var d = new Date();
-    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-  }
-  function fmtDate(s) { return s ? s.replace(/-/g, '/') : ''; }
-
-  function defaults() {
-    return {
-      version: 1,
-      title: HOUSE.title,
-      beds: HOUSE.beds.slice(),
-      workers: ['宙', '諾', '容', '軒'],
-      tags: ['可申請外出', '長讀/短適', '回原校', '返家適應'],
-      workerColors: { '容': 'green', '諾': 'blue', '軒': 'orange' },
-      greyTag: '回原校',
-      theme: 'comic',
-      font: 'huninn',
-      residents: {},
-      updated: today()
-    };
-  }
-  var THEMES = ['comic', 'plain'];
-  var FONTS = ['huninn', 'iansui', 'system'];
-  function cleanColors(obj) {
-    var out = {};
-    if (!obj || typeof obj !== 'object') return out;
-    Object.keys(obj).forEach(function (k) {
-      if (typeof obj[k] === 'string' && (obj[k] === 'none' || CELL_COLORS[obj[k]])) out[k] = obj[k];
-    });
-    return out;
-  }
-
-  function normalize(raw) {
-    var d = defaults();
-    if (!raw || typeof raw !== 'object') raw = d;
-    var s = {
-      version: 1,
-      title: typeof raw.title === 'string' && raw.title.trim() ? raw.title : d.title,
-      workers: Array.isArray(raw.workers) ? raw.workers.filter(function (x) { return typeof x === 'string' && x.trim(); }) : d.workers,
-      tags: Array.isArray(raw.tags) ? raw.tags.filter(function (x) { return typeof x === 'string' && x.trim(); }) : d.tags,
-      // 顏色：空白（未設定）→ 預設；有內容（包括明確的「無」）→ 依設定
-      workerColors: (function () { var c = cleanColors(raw.workerColors); return Object.keys(c).length ? c : d.workerColors; })(),
-      // 灰色狀態：null 代表刻意設為「無」；空字串或缺少 → 預設
-      greyTag: raw.greyTag === null ? null : (typeof raw.greyTag === 'string' && raw.greyTag.trim() ? raw.greyTag : d.greyTag),
-      theme: THEMES.indexOf(raw.theme) !== -1 ? raw.theme : d.theme,
-      font: FONTS.indexOf(raw.font) !== -1 ? raw.font : d.font,
-      beds: inferBeds(raw, d.beds),
-      residents: {},
-      updated: typeof raw.updated === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.updated) ? raw.updated : d.updated
-    };
-    var res = raw.residents && typeof raw.residents === 'object' ? raw.residents : {};
-    s.beds.forEach(function (bed) {
-      var r = res[bed] || {};
-      s.residents[bed] = {
-        name: typeof r.name === 'string' ? r.name : '',
-        workers: Array.isArray(r.workers) ? r.workers.filter(function (x) { return typeof x === 'string'; }) : [],
-        tags: Array.isArray(r.tags) ? r.tags.filter(function (x) { return typeof x === 'string'; }) : []
-      };
-    });
-    return s;
-  }
-
-  // ── 本機暫存 ──────────────────────────────────────
-  var state, rev = 0;
-  (function loadCache() {
-    var raw = null;
-    try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
-    state = normalize(raw);
-    rev = (raw && Number(raw.rev)) || 0;
-  })();
-  function saveCache() {
-    try { localStorage.setItem(KEY, JSON.stringify(Object.assign({}, state, { rev: rev }))); }
-    catch (e) {}
-  }
-  function exportable() {
-    return { version: 1, title: state.title, beds: state.beds, workers: state.workers, tags: state.tags, workerColors: state.workerColors, greyTag: state.greyTag, theme: state.theme, font: state.font, residents: state.residents, updated: state.updated };
-  }
-
-  var $ = function (id) { return document.getElementById(id); };
-  var grid = $('grid'), sheetTitle = $('sheetTitle'), updatedEl = $('updated'), brand = $('brand');
-
-  // 狀態標籤：每行一個；同一行以「/」分隔的為互斥選項（只能選其一）
-  function tagGroups() {
-    return state.tags.map(function (t, i) {
-      return {
-        options: t.split('/').map(function (x) { return x.trim(); }).filter(Boolean),
-        color: TAG_COLORS[i % TAG_COLORS.length]
-      };
-    });
-  }
-  function allTagOptions(list) {
-    var out = [];
-    list.forEach(function (t) {
-      t.split('/').forEach(function (x) { x = x.trim(); if (x && out.indexOf(x) === -1) out.push(x); });
-    });
-    return out;
-  }
-
-  // 決定格子底色：有灰色狀態 → 淺灰；否則按第一位有顏色的社工
-  function cellColor(r) {
-    if (state.greyTag && r.tags.indexOf(state.greyTag) !== -1) return CELL_COLORS.grey;
-    for (var i = 0; i < r.workers.length; i++) {
-      var c = state.workerColors[r.workers[i]];
-      if (c && CELL_COLORS[c]) return CELL_COLORS[c];
-    }
-    return CELL_NONE;
-  }
-  function renderLegend() {
-    var box = $('legend');
-    box.innerHTML = '';
-    state.workers.forEach(function (w) {
-      var c = state.workerColors[w];
-      if (!c || !CELL_COLORS[c]) return;
-      var s = document.createElement('span');
-      var sw = document.createElement('i'); sw.style.background = CELL_COLORS[c][0];
-      s.appendChild(sw); s.appendChild(document.createTextNode(w));
-      box.appendChild(s);
-    });
-    if (state.greyTag) {
-      var g = document.createElement('span');
-      var gsw = document.createElement('i'); gsw.style.background = CELL_COLORS.grey[0];
-      g.appendChild(gsw); g.appendChild(document.createTextNode(state.greyTag));
-      box.appendChild(g);
-    }
-  }
-
-  // ── 繪製名單 ──────────────────────────────────────
-  function render() {
-    document.body.setAttribute('data-theme', state.theme);
-    document.body.setAttribute('data-font', state.font);
-    renderLegend();
-    sheetTitle.textContent = state.title;
-    brand.textContent = state.title;
-    document.title = state.title + '｜' + ORG_NAME;
-    updatedEl.textContent = fmtDate(state.updated);
-    grid.innerHTML = '';
-    var rows = Math.max(1, Math.ceil(state.beds.length / 3));
-    grid.style.gridTemplateRows = 'repeat(' + rows + ', 1fr)';
-    grid.classList.toggle('dense', rows > 8);
-    state.beds.forEach(function (bed) {
-      var r = state.residents[bed] || (state.residents[bed] = emptyResident());
-      var cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.tabIndex = 0;
-      cell.setAttribute('role', 'button');
-      cell.setAttribute('aria-label', bed + (r.name ? ' ' + r.name : '') + '，點擊編輯');
-
-      var colors = cellColor(r);
-      cell.style.backgroundColor = colors[0];
-      var bedEl = document.createElement('div'); bedEl.className = 'bed' + (bed.length > 3 ? ' long' : ''); bedEl.textContent = bed;
-      bedEl.style.backgroundColor = colors[1];
-      var body = document.createElement('div'); body.className = 'body';
-      var top = document.createElement('div'); top.className = 'top';
-      var nameEl = document.createElement('div'); nameEl.className = 'name'; nameEl.textContent = r.name;
-      var len = r.name.replace(/\s+/g, '').length;
-      if (len > 5) nameEl.classList.add('long');
-      if (len > 9) nameEl.classList.add('xlong');
-      var workersEl = document.createElement('div'); workersEl.className = 'workers';
-      r.workers.forEach(function (w) {
-        if (state.workers.indexOf(w) === -1) return;
-        var s = document.createElement('span'); s.textContent = w; workersEl.appendChild(s);
-      });
-      var tagsEl = document.createElement('div'); tagsEl.className = 'tags';
-      tagGroups().forEach(function (g) {
-        var chosen = null;
-        for (var k = 0; k < g.options.length; k++) {
-          if (r.tags.indexOf(g.options[k]) !== -1) { chosen = g.options[k]; break; }
-        }
-        if (chosen === null) return;
-        var s = document.createElement('span'); s.className = 'tag';
-        s.style.background = g.color;
-        s.textContent = chosen; tagsEl.appendChild(s);
-      });
-      top.appendChild(nameEl); top.appendChild(workersEl);
-      body.appendChild(top); body.appendChild(tagsEl);
-      cell.appendChild(bedEl); cell.appendChild(body);
-      cell.addEventListener('click', function () { openEditor(bed); });
-      cell.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openEditor(bed); }
-      });
-      grid.appendChild(cell);
-    });
-  }
-
-  // 舍友資料有更改：更新日期、暫存、重繪，並排程上傳
-  function commit(bed) {
-    state.updated = today();
-    saveCache();
-    render();
-    markDirty({ bed: bed });
-  }
-
-  // ── 編輯舍友 ──────────────────────────────────────
-  var editor = $('editor'), edBed = $('edBed'), edName = $('edName'), edWorkers = $('edWorkers'), edTags = $('edTags');
-  var current = null;
-
-  function openEditor(bed) {
-    current = bed;
-    fillEditor();
-    if (!editor.open) editor.showModal();
-    edName.focus(); edName.select();
-  }
-  function toggleIn(arr, v) {
-    var i = arr.indexOf(v);
-    if (i === -1) arr.push(v); else arr.splice(i, 1);
-  }
-  function renderWorkerChoices(container) {
-    var r = state.residents[current];
-    container.innerHTML = '';
-    if (!state.workers.length) {
-      var e = document.createElement('span'); e.className = 'empty'; e.textContent = '（尚未設定，請到「設定」新增）';
-      container.appendChild(e); return;
-    }
-    state.workers.forEach(function (opt) {
-      var b = document.createElement('button');
-      b.type = 'button'; b.className = 'choice'; b.textContent = opt;
-      b.setAttribute('aria-pressed', r.workers.indexOf(opt) !== -1 ? 'true' : 'false');
-      b.addEventListener('click', function () {
-        toggleIn(state.residents[current].workers, opt);
-        commit(current); fillEditor();
-      });
-      container.appendChild(b);
-    });
-  }
-  function renderTagChoices(container) {
-    var r = state.residents[current];
-    container.innerHTML = '';
-    var groups = tagGroups();
-    if (!groups.length) {
-      var e = document.createElement('span'); e.className = 'empty'; e.textContent = '（尚未設定，請到「設定」新增）';
-      container.appendChild(e); return;
-    }
-    groups.forEach(function (g) {
-      var holder = container;
-      if (g.options.length > 1) {
-        holder = document.createElement('span'); holder.className = 'seg'; holder.title = '只能選其一';
-        container.appendChild(holder);
-      }
-      g.options.forEach(function (opt) {
-        var b = document.createElement('button');
-        b.type = 'button'; b.className = 'choice tag-choice'; b.textContent = opt;
-        var on = r.tags.indexOf(opt) !== -1;
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
-        if (on) b.style.background = g.color;
-        b.addEventListener('click', function () {
-          var rr = state.residents[current];
-          var wasOn = rr.tags.indexOf(opt) !== -1;
-          // 同組其他選項一律取消（互斥）
-          rr.tags = rr.tags.filter(function (x) { return g.options.indexOf(x) === -1; });
-          if (!wasOn) rr.tags.push(opt);
-          commit(current); fillEditor();
-        });
-        holder.appendChild(b);
-      });
-    });
-  }
-  function fillEditor() {
-    var r = state.residents[current];
-    edBed.textContent = current;
-    if (edName.value !== r.name) edName.value = r.name;
-    renderWorkerChoices(edWorkers);
-    renderTagChoices(edTags);
-  }
-  function step(delta) {
-    var i = state.beds.indexOf(current);
-    current = state.beds[(i + delta + state.beds.length) % state.beds.length];
-    fillEditor(); edName.focus(); edName.select();
-  }
-  edName.addEventListener('input', function () {
-    state.residents[current].name = edName.value.trim();
-    commit(current);
-  });
-  edName.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); step(1); }
-  });
-  $('edPrev').addEventListener('click', function () { step(-1); });
-  $('edNext').addEventListener('click', function () { step(1); });
-  $('edDone').addEventListener('click', function () { editor.close(); });
-  $('edClose').addEventListener('click', function () { editor.close(); });
-  $('editorForm').addEventListener('submit', function (e) { e.preventDefault(); });
-  editor.addEventListener('click', function (e) { if (e.target === editor) editor.close(); });
-
-  // ── 設定 ──────────────────────────────────────────
-  var settings = $('settings'), stTitle = $('stTitle'), stWorkers = $('stWorkers'), stTags = $('stTags'), stDate = $('stDate');
-
-  function uniq(arr) { return arr.filter(function (x, i) { return arr.indexOf(x) === i; }); }
-  function parseList(text, splitSpaces) {
-    var re = splitSpaces ? /[\s,，、;；]+/ : /[\n\r,，、;；]+/;
-    return uniq(text.split(re).map(function (x) { return x.trim(); }).filter(Boolean));
-  }
-  // 舊名稱 → 新名稱：同名保留；同位置換了新名字視為改名
-  function listMap(oldList, newList) {
-    var map = {};
-    oldList.forEach(function (o, i) {
-      if (newList.indexOf(o) !== -1) map[o] = o;
-      else if (i < newList.length && oldList.indexOf(newList[i]) === -1) map[o] = newList[i];
-    });
-    return map;
-  }
-  function remap(field, oldList, newList) {
-    var map = listMap(oldList, newList);
-    state.beds.forEach(function (bed) {
-      var r = state.residents[bed];
-      r[field] = uniq(r[field].map(function (x) { return map[x]; }).filter(Boolean));
-    });
-    return map;
-  }
-  var stColors = $('stColors'), stGrey = $('stGrey'), stTheme = $('stTheme'), stFont = $('stFont'), stBeds = $('stBeds');
-  // 對話框開啟時的基準（用來在改名時保留顏色與灰色狀態的選擇）
-  var dlgBaseWorkers = [], dlgBaseColors = {}, dlgPicked = {};
-  var dlgBaseTagOpts = [], dlgGrey = { name: '', base: '' };
-
-  function harvestColors() {
-    var out = {};
-    Array.prototype.forEach.call(stColors.querySelectorAll('select'), function (sel) { out[sel.dataset.worker] = sel.value; });
-    return out;
-  }
-  function inverse(map) {
-    var inv = {};
-    Object.keys(map).forEach(function (k) { inv[map[k]] = k; });
-    return inv;
-  }
-  // 依目前輸入的社工短稱重繪顏色列；顏色來源：本次對話框內的選擇 → 開啟時的設定（跟隨改名）→ 無
-  function renderColorRows(workers) {
-    var map = listMap(dlgBaseWorkers, workers), inv = inverse(map);
-    stColors.innerHTML = '';
-    if (!workers.length) {
-      var e = document.createElement('div'); e.className = 'sub'; e.textContent = '（請先在上方輸入社工短稱）'; stColors.appendChild(e);
-    }
-    workers.forEach(function (w) {
-      var base = inv[w];
-      var v = dlgPicked[w] || (base && (dlgPicked[base] || dlgBaseColors[base])) || 'none';
-      if (v !== 'none' && !CELL_COLORS[v]) v = 'none';
-      var row = document.createElement('div'); row.className = 'color-row';
-      var b = document.createElement('b'); b.textContent = w;
-      var sel = document.createElement('select'); sel.dataset.worker = w;
-      CELL_COLOR_NAMES.forEach(function (pair) {
-        var o = document.createElement('option'); o.value = pair[0]; o.textContent = pair[1];
-        sel.appendChild(o);
-      });
-      sel.value = v;
-      sel.addEventListener('change', function () {
-        dlgPicked[w] = sel.value;
-        if (base) dlgPicked[base] = sel.value;
-      });
-      row.appendChild(b); row.appendChild(sel); stColors.appendChild(row);
-    });
-  }
-  // 依目前輸入的狀態標籤重繪「灰色狀態」選項，並保留選擇（跟隨改名）
-  function renderGreyOptions(tags) {
-    var opts = allTagOptions(tags);
-    var map = listMap(dlgBaseTagOpts, opts);
-    var chosen = dlgGrey.base ? (map[dlgGrey.base] || '') : dlgGrey.name;
-    if (opts.indexOf(chosen) === -1) chosen = '';
-    stGrey.innerHTML = '';
-    var none = document.createElement('option'); none.value = ''; none.textContent = '無'; stGrey.appendChild(none);
-    opts.forEach(function (t) {
-      var o = document.createElement('option'); o.value = t; o.textContent = t; stGrey.appendChild(o);
-    });
-    stGrey.value = chosen;
-  }
-  function renderColorSettings() {
-    dlgBaseWorkers = state.workers.slice();
-    dlgBaseColors = {}; Object.keys(state.workerColors).forEach(function (k) { dlgBaseColors[k] = state.workerColors[k]; });
-    dlgPicked = {};
-    dlgBaseTagOpts = allTagOptions(state.tags);
-    var g = state.greyTag && dlgBaseTagOpts.indexOf(state.greyTag) !== -1 ? state.greyTag : '';
-    dlgGrey = { name: g, base: g };
-    renderColorRows(dlgBaseWorkers);
-    renderGreyOptions(state.tags);
-  }
-  stWorkers.addEventListener('input', function () { renderColorRows(parseList(stWorkers.value, true)); });
-  stTags.addEventListener('input', function () { renderGreyOptions(parseList(stTags.value, false)); });
-  stGrey.addEventListener('change', function () {
-    var opts = allTagOptions(parseList(stTags.value, false));
-    var inv = inverse(listMap(dlgBaseTagOpts, opts));
-    dlgGrey = { name: stGrey.value, base: stGrey.value ? (inv[stGrey.value] || '') : '' };
-  });
-  function openSettings() {
-    stTitle.value = state.title;
-    stBeds.value = state.beds.join(' ');
-    stWorkers.value = state.workers.join(' ');
-    stTags.value = state.tags.join('\n');
-    stDate.value = state.updated;
-    stTheme.value = state.theme;
-    stFont.value = state.font;
-    renderColorSettings();
-    settings.showModal();
-  }
-  $('btnSettings').addEventListener('click', openSettings);
-  $('stSave').addEventListener('click', function () {
-    // 舍號：檢查、確認是否移除有資料的格，然後依對照表搬移資料
-    var newBeds = parseList(stBeds.value, true);
-    if (!newBeds.length) { alert('請至少輸入一個舍號。'); stBeds.focus(); return; }
-    if (newBeds.length > MAX_BEDS) { alert('舍號最多 ' + MAX_BEDS + ' 個。'); stBeds.focus(); return; }
-    var tooLong = newBeds.filter(function (b) { return b.length > MAX_BED_LEN; });
-    if (tooLong.length) { alert('以下舍號太長（最多 ' + MAX_BED_LEN + ' 個字元）：\n' + tooLong.join('、')); stBeds.focus(); return; }
-    var bedMap = listMap(state.beds, newBeds);
-    var dropped = state.beds.filter(function (b) { return !bedMap[b] && hasData(state.residents[b]); });
-    if (dropped.length && !confirm('以下舍號有舍友資料，移除後資料會消失：\n' + dropped.join('、') + '\n\n確定要繼續嗎？')) return;
-    var bedsChanged = newBeds.join('\n') !== state.beds.join('\n');
-    if (bedsChanged) {
-      var newRes = {};
-      newBeds.forEach(function (b) { newRes[b] = emptyResident(); });
-      state.beds.forEach(function (b) { if (bedMap[b]) newRes[bedMap[b]] = state.residents[b]; });
-      state.beds = newBeds; state.residents = newRes;
-    }
-    var newWorkers = parseList(stWorkers.value, true);
-    var newTags = parseList(stTags.value, false);
-    remap('workers', state.workers, newWorkers);
-    remap('tags', allTagOptions(state.tags), allTagOptions(newTags));
-    // 社工顏色與灰色狀態：對話框內的列已跟隨上方輸入即時更新，直接讀取
-    renderColorRows(newWorkers); renderGreyOptions(newTags);
-    var picked = harvestColors(), colors = {};
-    newWorkers.forEach(function (w) { colors[w] = (picked[w] === 'none' || CELL_COLORS[picked[w]]) ? picked[w] : 'none'; });
-    state.workerColors = colors;
-    state.greyTag = stGrey.value || null;
-    state.theme = THEMES.indexOf(stTheme.value) !== -1 ? stTheme.value : 'comic';
-    state.font = FONTS.indexOf(stFont.value) !== -1 ? stFont.value : 'huninn';
-    state.workers = newWorkers;
-    state.tags = newTags;
-    state.title = stTitle.value.trim() || defaults().title;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(stDate.value)) state.updated = stDate.value;
-    saveCache(); render(); settings.close();
-    markDirty(bedsChanged ? { all: true } : { settings: true });
-  });
-  $('stCancel').addEventListener('click', function () { settings.close(); });
-  $('stClose').addEventListener('click', function () { settings.close(); });
-  settings.addEventListener('click', function (e) { if (e.target === settings) settings.close(); });
-
-  // ── 備份 ──────────────────────────────────────────
-  $('btnExport').addEventListener('click', function () {
-    var blob = new Blob([JSON.stringify(exportable(), null, 2)], { type: 'application/json' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = state.title.replace(/\s+/g, '') + '-備份-' + state.updated.replace(/-/g, '') + '.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-  });
-  var fileInput = $('fileInput');
-  $('btnImport').addEventListener('click', function () { fileInput.value = ''; fileInput.click(); });
-  fileInput.addEventListener('change', function () {
-    var f = fileInput.files && fileInput.files[0];
-    if (!f) return;
-    var reader = new FileReader();
-    reader.onload = function () {
-      try {
-        var parsed = JSON.parse(reader.result);
-        if (!parsed || typeof parsed !== 'object' || !parsed.residents) throw new Error('bad');
-        if (!confirm('匯入會取代目前所有資料' + (CLOUD ? '（所有裝置都會看到）' : '') + '，確定要繼續嗎？')) return;
-        state = normalize(parsed); saveCache(); render(); settings.close();
-        markDirty({ all: true });
-        alert('已成功匯入備份。');
-      } catch (e) { alert('檔案格式不正確，無法匯入。'); }
-    };
-    reader.readAsText(f);
-  });
-  $('btnClear').addEventListener('click', function () {
-    if (!confirm('確定要清除所有舍友資料及設定？' + (CLOUD ? '所有裝置都會受影響，' : '') + '此動作無法復原。\n建議先匯出備份檔。')) return;
-    state = normalize(defaults()); saveCache(); render(); settings.close();
-    markDirty({ all: true });
-  });
-
-  // ── 列印 ──────────────────────────────────────────
-  $('btnSwitch').addEventListener('click', function () { location.href = location.pathname; });
-  $('btnPrint').addEventListener('click', function () {
-    var ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-    ready.then(function () { window.print(); }, function () { window.print(); });
-  });
-
-  // ── 細屏幕縮放預覽 ────────────────────────────────
-  var wrap = $('sheetWrap');
-  function fitZoom() {
-    var pageW = 210 * 96 / 25.4 + 24;
-    var z = Math.min(1, document.documentElement.clientWidth / pageW);
-    wrap.style.zoom = z < 1 ? String(z) : '';
-  }
-  window.addEventListener('resize', fitZoom);
-  window.addEventListener('afterprint', fitZoom);
-
-  // ── 雲端同步（Netlify Function + Blobs） ──────────
-  var statusEl = $('syncStatus');
-  var auth = $('auth'), authInput = $('authInput'), authMsg = $('authMsg'), authGo = $('authGo');
-  var accessKey = '';
-
-  // ── 入口頁統一登入：密碼只在前置頁面輸入，經網址 hash 傳入（不會送上伺服器），15 分鐘後自動登出 ──
-  var PORTAL_URL = 'https://cycportal.netlify.app/';
-  var AUTH_SESSION_KEY = 'cyc-portal-auth', AUTH_TTL = 15 * 60 * 1000;
-  (function () {
-    try {
-      var h = new URLSearchParams(location.hash.slice(1));
-      var k = h.get('key'), t = Number(h.get('t'));
-      if (k && isFinite(t) && Math.abs(Date.now() - t) < AUTH_TTL) {
-        sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ p: k, exp: t + AUTH_TTL }));
-      }
-      if (k || h.get('t')) history.replaceState(null, '', location.pathname + location.search);
-    } catch (e) {}
-    try { localStorage.removeItem(KEY_STORE); } catch (e) {}   // 舊版記住的密碼一律清除，改用 15 分鐘時限
-  })();
-  function portalAuth() {
-    try {
-      var a = JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY));
-      if (a && typeof a.p === 'string' && a.p && isFinite(a.exp)) {
-        if (Date.now() < a.exp) return a;
-        sessionStorage.removeItem(AUTH_SESSION_KEY);
-      }
-    } catch (e) {}
-    return null;
-  }
-  var changeSeq = 0, savedSeq = 0;      // 本機更改次數 / 已成功儲存的更改次數
-  var dirtyBeds = {}, dirtySettings = false;   // 自上次成功儲存後改過的項目（用於衝突合併）
-  var saving = false, saveTimer = null, retryTimer = null, retryDelay = 5000, conflicts = 0;
-
-  function setStatus(kind, text) { statusEl.hidden = false; statusEl.className = 'status ' + kind; statusEl.textContent = text; }
-  function hasUnsaved() { return changeSeq !== savedSeq; }
-
-  function markDirty(o) {
-    if (!CLOUD) return;
-    changeSeq++;
-    if (o.all) { state.beds.forEach(function (b) { dirtyBeds[b] = true; }); dirtySettings = true; }
-    if (o.bed) dirtyBeds[o.bed] = true;
-    if (o.settings) dirtySettings = true;
-    setStatus('busy', '未儲存…');
-    scheduleSave();
-  }
-  function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(pushNow, 400); }
-
-  function apiFetch(method, body) {
-    return fetch(API, {
-      method: method, cache: 'no-store',
-      headers: { 'x-roster-key': encodeURIComponent(accessKey), 'content-type': 'application/json' },
-      body: body
-    }).then(function (r) {
-      return r.text().then(function (t) {
-        var b = null; try { b = t ? JSON.parse(t) : null; } catch (e) {}
-        return { status: r.status, body: b };
-      });
-    });
-  }
-
-  // 以伺服器版本為底，再套回本機尚未儲存的更改
-  function mergeFromServer(data) {
-    var merged = normalize(data);
-    Object.keys(dirtyBeds).forEach(function (b) { merged.residents[b] = state.residents[b]; });
-    if (dirtySettings) { merged.title = state.title; merged.beds = state.beds; merged.workers = state.workers; merged.tags = state.tags; merged.workerColors = state.workerColors; merged.greyTag = state.greyTag; merged.theme = state.theme; merged.font = state.font; }
-    if (state.updated > merged.updated) merged.updated = state.updated;
-    rev = (data && Number(data.rev)) || 0;
-    state = merged; saveCache(); render();
-    if (editor.open) fillEditor();
-  }
-
-  function showAuth(msg) {
-    authMsg.textContent = msg || '';
-    if (!auth.open) auth.showModal();
-    authInput.focus();
-  }
-  function handleUnauthorized(fromAuth) {
-    accessKey = '';
-    try { sessionStorage.removeItem(AUTH_SESSION_KEY); } catch (e) {}
-    setStatus('err', '需要登入');
-    showAuth(fromAuth ? '密碼不正確，請再試一次。' : '密碼不正確、已更改或登入已過期，請經入口頁重新登入。');
-  }
-  function describeFailure(status) {
-    if (status === 404) return '找不到雲端儲存功能（/api/roster），請確認已按說明部署';
-    if (status === 503) return '伺服器尚未設定存取密碼（ROSTER_PASSWORD）';
-    return '未能連線';
-  }
-
-  function pullFromServer(fromAuth) {
-    if (!CLOUD || !accessKey) return Promise.resolve('noauth');
-    setStatus('busy', fromAuth ? '檢查密碼…' : '同步中…');
-    lastPull = Date.now();
-    return apiFetch('GET').then(function (res) {
-      if (res.status === 401) { handleUnauthorized(fromAuth); return 'auth'; }
-      if (res.status !== 200 || !res.body) {
-        var why = describeFailure(res.status);
-        setStatus('err', why);
-        if (fromAuth) authMsg.textContent = why + '。';
-        return 'fail';
-      }
-      try { if (!portalAuth()) sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ p: accessKey, exp: Date.now() + AUTH_TTL })); } catch (e) {}
-      if (auth.open) auth.close();
-      var data = res.body.data;
-      if (!data) {
-        // 雲端仍是空白：把目前的名單（本機暫存或空白表）上傳作為第一版
-        rev = 0;
-        markDirty({ all: true });
-      } else if (hasUnsaved()) {
-        mergeFromServer(data);
-        scheduleSave();
-      } else {
-        rev = Number(data.rev) || 0;
-        state = normalize(data); saveCache(); render();
-        if (editor.open) fillEditor();
-        setStatus('ok', '✓ 已同步 ' + timeNow());
-      }
-      return 'ok';
-    }).catch(function () {
-      setStatus('err', '未能連線' + (hasUnsaved() ? '，有未儲存的更改' : '，顯示的是本機暫存'));
-      if (fromAuth) authMsg.textContent = '未能連線到伺服器，請檢查網絡後再試。';
-      return 'fail';
-    });
-  }
-
-  function pushNow() {
-    clearTimeout(saveTimer); clearTimeout(retryTimer);
-    if (!CLOUD || !accessKey || saving || !hasUnsaved()) return;
-    saving = true;
-    var seqAtSend = changeSeq;
-    setStatus('busy', '儲存中…');
-    var body = JSON.stringify(Object.assign(exportable(), { baseRev: rev }));
-    apiFetch('PUT', body).then(function (res) {
-      if (res.status === 200 && res.body && res.body.data) {
-        rev = Number(res.body.data.rev) || (rev + 1);
-        savedSeq = seqAtSend; conflicts = 0; retryDelay = 5000;
-        if (!hasUnsaved()) { dirtyBeds = {}; dirtySettings = false; setStatus('ok', '✓ 已儲存 ' + timeNow()); }
-        saveCache();
-        return 'saved';
-      }
-      if (res.status === 409) {
-        conflicts++;
-        if (conflicts > 5) { setStatus('err', '同步衝突，請重新整理頁面'); return 'stop'; }
-        mergeFromServer(res.body && res.body.data);
-        return 'conflict';
-      }
-      if (res.status === 401) { handleUnauthorized(false); return 'stop'; }
-      setStatus('err', describeFailure(res.status) + '，稍後自動重試');
-      return 'fail';
-    }).catch(function () {
-      setStatus('err', '未能儲存，稍後自動重試');
-      return 'fail';
-    }).then(function (outcome) {
-      saving = false;
-      if (outcome === 'fail') {
-        retryTimer = setTimeout(pushNow, retryDelay);
-        retryDelay = Math.min(retryDelay * 2, 60000);
-        return;
-      }
-      if (outcome === 'stop') return;
-      if (hasUnsaved()) scheduleSave();
-    });
-  }
-
-  var lastPull = 0;
-  function maybeRefresh() {
-    if (!CLOUD || !accessKey || saving || hasUnsaved() || editor.open || document.visibilityState !== 'visible') return;
-    if (Date.now() - lastPull < 15000) return;   // 最多每 15 秒向雲端查一次
-    pullFromServer(false);
-  }
-
-  if (CLOUD) {
-    try { var _a = portalAuth(); accessKey = _a ? _a.p : ''; } catch (e) {}
-    $('hint').textContent = '點擊任何一格即可編輯姓名、社工短稱及狀態。資料會自動儲存到雲端，任何裝置開啟都會看到最新版本。列印時請選擇 A4 紙張、邊界「無」，並勾選「背景圖形」以保留顏色。';
-    $('backupLbl').textContent = '資料備份（雲端會自動儲存；匯出檔案可作額外備份）';
-    $('cloudBox').hidden = false;
-    $('btnLogout').addEventListener('click', function () {
-      try { sessionStorage.removeItem(AUTH_SESSION_KEY); } catch (e) {}
-      location.href = PORTAL_URL;
-    });
-    auth.addEventListener('cancel', function (e) { e.preventDefault(); });
-    $('authDirectToggle').addEventListener('click', function () {
-      $('authDirect').hidden = false; this.hidden = true; authInput.focus();
-    });
-    $('authForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var v = authInput.value.trim();
-      if (!v) return;
-      accessKey = v; authMsg.textContent = ''; authGo.disabled = true;
-      pullFromServer(true).then(function (outcome) {
-        authGo.disabled = false;
-        if (outcome === 'ok') authInput.value = '';
-      });
-    });
-    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') maybeRefresh(); });
-    setInterval(maybeRefresh, 60000);
-    setInterval(function () {   // 15 分鐘時限一到即自動登出
-      if (accessKey && !portalAuth()) {
-        accessKey = '';
-        setStatus('err', '已登出');
-        showAuth('登入已過期（15 分鐘），請經入口頁重新登入。');
-      }
-    }, 15000);
-    window.addEventListener('online', function () { if (hasUnsaved()) pushNow(); else maybeRefresh(); });
-    window.addEventListener('beforeunload', function (e) { if (hasUnsaved()) { e.preventDefault(); e.returnValue = ''; } });
+let lastTry = '';
+$('lockForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const p = $('lockInput').value.trim();
+  if (!p) { $('lockMsg').textContent = '請先輸入密碼。'; return; }
+  lastTry = p;
+  $('lockGo').disabled = true;
+  $('lockMsg').textContent = '正在驗證…';
+  $('lockSkip').hidden = true;
+  const outcome = await verifyPassword(p);
+  $('lockGo').disabled = false;
+  if (outcome === 'ok') {
+    portalLogin(p);
+    $('lockInput').value = '';
+    showMain();
+  } else if (outcome === 'wrong') {
+    $('lockMsg').textContent = '密碼不正確，請再試一次。';
   } else {
-    $('hint').textContent = '點擊任何一格即可編輯姓名、社工短稱及狀態，資料會自動儲存在此瀏覽器內。列印時請選擇 A4 紙張、邊界「無」，並勾選「背景圖形」以保留顏色。';
+    $('lockMsg').textContent = '未能連線驗證密碼，請檢查網絡。';
+    $('lockSkip').hidden = false;
   }
+});
+$('lockSkipBtn').addEventListener('click', () => {
+  if (!lastTry) return;
+  portalLogin(lastTry);
+  $('lockInput').value = '';
+  showMain();
+});
+$('logoutBtn').addEventListener('click', () => {
+  portalLogout();
+  showLock('已登出。');
+});
 
-  render();
-  fitZoom();
-  if (CLOUD) {
-    if (accessKey) pullFromServer(false); else showAuth('');
-  }
-})();
+// 進入各系統時，把密碼及進入時間附加在網址 hash（只留在瀏覽器，不會送上伺服器）
+document.querySelectorAll('.card[data-url]').forEach(card => {
+  card.addEventListener('click', e => {
+    const a = portalAuth();
+    if (!a) { e.preventDefault(); showLock('登入已過期（15 分鐘），請重新輸入密碼。'); return; }
+    e.preventDefault();
+    location.href = card.dataset.url + '#key=' + encodeURIComponent(a.p) + '&t=' + Date.now();
+  });
+});
+
+// 開啟時：已有有效登入就直接顯示功能頁
+if (portalAuth()) showMain(); else showLock('');
 </script>
 </body>
 </html>
