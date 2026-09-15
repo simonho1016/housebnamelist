@@ -39,7 +39,7 @@
 
   /* ── 登入閘 ───────────────────────────── */
   .lock{
-    max-width:420px;margin:0 auto;padding:28px 26px;background:#fff;
+    max-width:420px;margin:34px auto 0;padding:28px 26px;background:#fff;
     border:3px solid var(--ink);border-radius:16px;box-shadow:7px 7px 0 var(--ink);
     background-image:radial-gradient(rgba(0,0,0,.05) 1.1px,transparent 1.5px);background-size:8px 8px;
   }
@@ -86,7 +86,7 @@
   .cards{display:flex;flex-wrap:wrap;gap:26px;justify-content:center}
   .card{
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
-    width:260px;min-height:220px;padding:20px 16px;
+    width:260px;min-height:220px;padding:20px 16px;cursor:pointer;
     border:3px solid var(--ink);border-radius:16px;box-shadow:7px 7px 0 var(--ink);
     text-decoration:none;color:var(--ink);
     background-image:radial-gradient(rgba(0,0,0,.07) 1.1px,transparent 1.5px);
@@ -120,6 +120,18 @@
   }
   .bed.zhong{background-color:var(--zhong);transform:rotate(-2deg)}
   .bed.xiao{background-color:var(--xiao);transform:rotate(2deg)}
+
+  /* 卡內忠／孝直達掣 */
+  .dorm-btns{display:flex;gap:12px;margin-top:2px}
+  .dorm-btn{
+    font:inherit;font-size:16px;font-weight:700;letter-spacing:.08em;padding:6px 20px;cursor:pointer;
+    color:var(--ink);border:3px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink);
+    transition:transform .08s,box-shadow .08s;
+  }
+  .dorm-btn.zhong{background-color:var(--zhong)}
+  .dorm-btn.xiao{background-color:var(--xiao)}
+  .dorm-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+  .dorm-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
 
   .note{margin-top:28px;font-size:13px;color:var(--muted)}
   .foot{margin-top:10px;font-size:13px;color:var(--muted)}
@@ -155,25 +167,33 @@
         <span class="pill" id="sessionPill">已登入</span>
         <button type="button" class="logout" id="logoutBtn">登出</button>
       </div>
-      <p class="sub">請選擇要開啟的功能</p>
+      <p class="sub">請選擇要開啟的功能，撳卡內「忠社／孝社」可直達該社</p>
 
       <div class="cards">
-        <a class="card card-duty" href="/duties/" data-url="/duties/">
+        <div class="card card-duty" data-url="/duties/" role="link" tabindex="0" aria-label="舍務抽籤">
           <span class="brandmark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
           <span class="card-name">舍務抽籤</span>
           <span class="card-desc">每星期抽一次，大家一齊做。<br>抽籤結果自動記錄上雲端。</span>
+          <span class="dorm-btns">
+            <button type="button" class="dorm-btn zhong" data-dorm="chung">忠社</button>
+            <button type="button" class="dorm-btn xiao" data-dorm="hau">孝社</button>
+          </span>
           <span class="card-url">/duties/</span>
-        </a>
+        </div>
 
-        <a class="card card-roster" href="/roster/" data-url="/roster/">
+        <div class="card card-roster" data-url="/roster/" role="link" tabindex="0" aria-label="舍友名單">
           <span class="beds" aria-hidden="true">
             <span class="bed zhong">忠</span>
             <span class="bed xiao">孝</span>
           </span>
           <span class="card-name">舍友名單</span>
           <span class="card-desc">忠社・孝社床位名單，<br>任何裝置即時同步，可列印張貼。</span>
+          <span class="dorm-btns">
+            <button type="button" class="dorm-btn zhong" data-dorm="zhong">忠社</button>
+            <button type="button" class="dorm-btn xiao" data-dorm="xiao">孝社</button>
+          </span>
           <span class="card-url">/roster/</span>
-        </a>
+        </div>
       </div>
 
       <p class="note">兩個系統各自獨立運作，資料均儲存於雲端。</p>
@@ -287,12 +307,34 @@ $('logoutBtn').addEventListener('click', () => {
 });
 
 // 進入各系統時，把密碼及進入時間附加在網址 hash（只留在瀏覽器，不會送上伺服器）
+// 撳「忠社／孝社」會順便帶埋社別，直接進入該社，唔使再揀一次
+function openSystem(url, dorm) {
+  const a = portalAuth();
+  if (!a) { showLock('登入已過期（15 分鐘），請重新輸入密碼。'); return; }
+  let target = url;
+  if (dorm) {
+    if (url === '/duties/') {
+      try {
+        sessionStorage.setItem('dorm-duty-dorm', dorm);
+        sessionStorage.setItem('dorm-duty-unlocked', '1');
+        sessionStorage.removeItem('dorm-duty-offline');
+      } catch (e) {}
+    } else if (url === '/roster/') {
+      target = '/roster/?house=' + dorm;
+    }
+  }
+  location.href = target + '#key=' + encodeURIComponent(a.p) + '&t=' + Date.now();
+}
 document.querySelectorAll('.card[data-url]').forEach(card => {
   card.addEventListener('click', e => {
-    const a = portalAuth();
-    if (!a) { e.preventDefault(); showLock('登入已過期（15 分鐘），請重新輸入密碼。'); return; }
-    e.preventDefault();
-    location.href = card.dataset.url + '#key=' + encodeURIComponent(a.p) + '&t=' + Date.now();
+    if (e.target.closest('.dorm-btn')) return;
+    openSystem(card.dataset.url, null);
+  });
+  card.addEventListener('keydown', e => {
+    if (e.target === card && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openSystem(card.dataset.url, null); }
+  });
+  card.querySelectorAll('.dorm-btn').forEach(btn => {
+    btn.addEventListener('click', () => openSystem(card.dataset.url, btn.dataset.dorm));
   });
 });
 

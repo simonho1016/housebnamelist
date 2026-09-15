@@ -178,13 +178,13 @@ input:focus-visible,select:focus-visible{outline:3px solid #2563eb;outline-offse
    <section class="gate-records" aria-label="上次抽籤記錄"><div class="gate-records-head"><h3>上次抽籤記錄</h3><div class="seg" role="group" aria-label="記錄檢視方式"><button type="button" class="active" data-record-view="jobs" aria-pressed="true">按舍務種類</button><button type="button" data-record-view="residents" aria-pressed="false">按舍友</button></div><select id="gateRecordSelect" aria-label="選擇記錄" hidden></select><button class="quiet" id="gateRefresh" type="button">重新載入</button><button class="secondary" id="gatePrintBtn" type="button" hidden>列印</button><button class="secondary" id="gateCsvBtn" type="button" hidden>下載此記錄 CSV</button></div><p class="muted" id="gateRecordStatus">請先選擇舍別。</p><div id="gateRecordBody"></div></section>
   </div>
   <p class="decision-note">如有任何疑問或爭議，一概以當值導師的決定為準。</p>
-  <p class="gate-links"><button type="button" class="quiet" id="gateVersionBtn">版本紀錄</button></p>
+  <p class="gate-links"><button type="button" class="quiet" onclick="location.href='/'">← 返回主頁</button> <button type="button" class="quiet" id="gateVersionBtn">版本紀錄</button></p>
  </div>
 </section>
 <main class="wrap" hidden>
  <header class="top">
   <div class="brand"><div class="brandmark" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h1 id="appTitle">孝社 舍務抽籤</h1><p class="sub">每星期抽一次，大家一齊做。</p></div></div>
-  <div class="top-actions"><button class="quiet" id="switchDormBtn">⇄ 切換舍別</button><button class="quiet" id="historyBtn">舍務記錄</button><button class="quiet" id="settingsBtn">⚙ 設定</button><button class="quiet" id="resetBtn">重新抽籤</button><button class="quiet" id="versionBtn">版本紀錄</button></div>
+  <div class="top-actions"><button class="quiet" type="button" onclick="location.href='/'">← 返回主頁</button><button class="quiet" id="switchDormBtn">⇄ 切換舍別</button><button class="quiet" id="historyBtn">舍務記錄</button><button class="quiet" id="settingsBtn">⚙ 設定</button><button class="quiet" id="resetBtn">重新抽籤</button><button class="quiet" id="versionBtn">版本紀錄</button></div>
  </header>
  <div class="week-bar"><label for="weekStart">舍務週期</label><input id="weekStart" type="date" aria-label="週期開始日期"><span class="week-to">至</span><input id="weekEnd" type="date" aria-label="週期結束日期"><span id="weekRange"></span><small>開始及結束日期可修改</small></div>
  <div class="print-title"><h1 id="printTitle">孝社 本週舍務</h1><p id="printMeta"></p></div>
@@ -975,7 +975,7 @@ const VERSION_HISTORY=[
 ];
 function renderVersions(){
  $('versionCurrent').textContent=`現時版本 ${APP_VERSION}`;$('versionLabel').textContent=APP_VERSION;
- $('versionBody').innerHTML=VERSION_HISTORY.map(v=>`<article class="version-entry"><div class="version-entry-head"><span class="version-tag">v${esc(v.version)}</span><strong>${esc(v.title)}</strong><span class="muted">${esc(v.date.replaceAll('-','/'))}</span></div>${v.sections.map(([name,items])=>`<h4>${esc(name)}</h4><ul>${items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`).join('')}<p class="version-credit">創作者：${esc(v.author)}</p></article>`).join('');
+ $('versionBody').innerHTML=VERSION_HISTORY.map(v=>`<article class="version-entry"><div class="version-entry-head"><span class="version-tag">v${esc(v.version)}</span><strong>${esc(v.title)}</strong><span class="muted">${esc(v.date.replaceAll('-','/'))}</span></div>${v.sections.map(([name,items])=>`<h4>${esc(name)}</h4><ul>${items.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>`).join('')}</article>`).join('');
 }
 function openVersions(){if(busy)return;renderVersions();$('versionDialog').showModal()}
 $('versionBtn').addEventListener('click',openVersions);$('gateVersionBtn').addEventListener('click',openVersions);$('versionFooterBtn').addEventListener('click',openVersions);$('versionClose').addEventListener('click',()=>$('versionDialog').close());

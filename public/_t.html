@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>portal e2e</title></head>
+<body><pre id="log">RUNNING
+</pre>
+<script>
+const log=m=>{document.getElementById('log').textContent+=m+'\n'};
+const pass=m=>log('PASS: '+m),fail=m=>log('FAIL: '+m);
+const KEYS=['dorm-duty-dorm','dorm-duty-unlocked','dorm-duty-passcode','dorm-duty-offline','dorm-duty-auth-exp','cyc-portal-auth'];
+const clearKeys=()=>KEYS.forEach(k=>sessionStorage.removeItem(k));
+function loadFrame(url){return new Promise((res,rej)=>{const f=document.createElement('iframe');f.style.cssText='width:1280px;height:860px';f.onload=()=>setTimeout(()=>res(f),350);f.onerror=rej;f.src=url;document.body.appendChild(f)})}
+function waitReload(f){return new Promise(res=>{f.onload=()=>setTimeout(res,450)})}
+const rm=f=>f.remove();
+const login=()=>sessionStorage.setItem('cyc-portal-auth',JSON.stringify({p:'testpass',exp:Date.now()+15*60*1000}));
+(async()=>{
+try{
+ // P1 入口頁：登入後主畫面有直達掣
+ clearKeys();login();
+ let f=await loadFrame('/?cb=p1');
+ let d=f.contentDocument;
+ if(!d.getElementById('mainView').hidden)pass('P1 有效登入顯示主畫面');else fail('P1 主畫面未顯示');
+ const dutyBtns=[...d.querySelectorAll('.card-duty .dorm-btn')].map(b=>b.dataset.dorm).join(',');
+ const rosterBtns=[...d.querySelectorAll('.card-roster .dorm-btn')].map(b=>b.dataset.dorm).join(',');
+ if(dutyBtns==='chung,hau'&&rosterBtns==='zhong,xiao')pass('P1 兩卡各有忠/孝直達掣');else fail('P1 直達掣異常: '+dutyBtns+' / '+rosterBtns);
+ if(d.body.textContent.includes('創作者：何文諾社工'))pass('P1 入口頁保留署名');else fail('P1 入口頁缺署名');
+
+ // P2 撳抽籤卡「忠社」→ 直達忠社 app（免再揀社、免密碼）
+ let nav=waitReload(f);
+ d.querySelector('.card-duty .dorm-btn[data-dorm="chung"]').click();
+ await nav;
+ let w=f.contentWindow;d=f.contentDocument;
+ if(w.eval("$('gate').hidden"))pass('P2 直達抽籤 app（跳過閘頁）');else fail('P2 仍停留閘頁');
+ if(w.eval("DORM_ID")==='chung')pass('P2 DORM_ID=chung');else fail('P2 DORM_ID='+w.eval("DORM_ID"));
+ if(w.eval("dutyAuthValid()"))pass('P2 登入狀態有效');else fail('P2 登入無效');
+
+ // P3 抽籤 app 返回主頁掣
+ const homeBtn=[...d.querySelectorAll('.top-actions button')].find(b=>b.textContent.includes('返回主頁'));
+ if(homeBtn)pass('P3 抽籤 app 有返回主頁掣');else fail('P3 抽籤 app 缺返回主頁掣');
+ nav=waitReload(f);
+ homeBtn.click();
+ await nav;
+ d=f.contentDocument;
+ if(f.contentWindow.location.pathname==='/')pass('P3 返回主頁成功');else fail('P3 返回失敗: '+f.contentWindow.location.pathname);
+ rm(f);
+
+ // P4 撳名單卡「孝社」→ 直達孝社名單
+ login();
+ f=await loadFrame('/?cb=p4');
+ d=f.contentDocument;
+ nav=waitReload(f);
+ d.querySelector('.card-roster .dorm-btn[data-dorm="xiao"]').click();
+ await nav;
+ w=f.contentWindow;d=f.contentDocument;
+ if(w.location.pathname==='/roster/'&&w.location.search.includes('house=xiao'))pass('P4 直達孝社名單網址');else fail('P4 網址異常: '+w.location.pathname+w.location.search);
+ if(d.getElementById('brand')&&d.getElementById('brand').textContent.includes('孝'))pass('P4 名單頁顯示孝社');else fail('P4 名單頁未入孝社');
+ if(d.getElementById('btnHome'))pass('P4 名單頁有返回主頁掣');else fail('P4 名單頁缺返回主頁掣');
+ if(!d.body.textContent.includes('創作者'))pass('P4 名單頁已移除署名');else fail('P4 名單頁仍有署名');
+ rm(f);
+
+ // P5 抽籤閘頁有返回主頁掣（未登入直開 /duties/ 的情況）
+ clearKeys();
+ f=await loadFrame('/duties/?cb=p5');
+ d=f.contentDocument;
+ const gateHome=[...d.querySelectorAll('.gate-links button')].find(b=>b.textContent.includes('返回主頁'));
+ if(gateHome)pass('P5 抽籤閘頁有返回主頁掣');else fail('P5 抽籤閘頁缺返回主頁掣');
+ if(!d.body.textContent.includes('創作者'))pass('P5 抽籤頁已移除署名');else fail('P5 抽籤頁仍有署名');
+ rm(f);
+
+ // P6 名單選社頁（無 house 參數）有返回主頁掣
+ clearKeys();login();
+ f=await loadFrame('/roster/?cb=p6');
+ d=f.contentDocument;
+ if(d.getElementById('chooser')&&!d.getElementById('chooser').hidden)pass('P6 顯示選社畫面');else fail('P6 未顯示選社畫面');
+ const chooserHome=[...d.querySelectorAll('.chooser-foot button')].find(b=>b.textContent.includes('返回主頁'));
+ if(chooserHome)pass('P6 選社畫面有返回主頁掣');else fail('P6 選社畫面缺返回主頁掣');
+ rm(f);
+ clearKeys();
+}catch(e){fail('異常: '+(e&&e.message||e))}
+log('DONE');
+})();
+</script></body></html>

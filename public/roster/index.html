@@ -196,7 +196,7 @@
     <p class="chooser-sub">請選擇要開啟的社</p>
     <div class="chooser-cards" id="houseCards"></div>
     <p class="chooser-note">兩份名單各自獨立儲存，使用同一個存取密碼。</p>
-    <p class="chooser-foot">版本 <span class="ver-num">1.0.1</span> ・ <button type="button" class="linkbtn ver-open">版本紀錄</button> ・ 創作者：何文諾社工</p>
+    <p class="chooser-foot"><button type="button" class="linkbtn" onclick="location.href='/'">← 返回主頁</button> ・ 版本 <span class="ver-num">1.0.1</span> ・ <button type="button" class="linkbtn ver-open">版本紀錄</button></p>
   </div>
 </section>
 
@@ -206,6 +206,7 @@
   <span class="spacer"></span>
   <button class="btn primary" id="btnPrint">🖨 列印／儲存為 PDF</button>
   <button class="btn" id="btnSettings">⚙ 設定與備份</button>
+  <button class="btn" id="btnHome" type="button" onclick="location.href='/'">← 返回主頁</button>
   <button class="btn" id="btnSwitch" title="返回選擇孝社／忠社">⇄ 切換社</button>
   <p class="hint" id="hint">點擊任何一格即可編輯姓名、社工短稱及狀態。列印時請選擇 A4 紙張、邊界「無」，並勾選「背景圖形」以保留顏色。</p>
 </header>
@@ -345,7 +346,6 @@
     <div class="about">
       <span>版本 <span class="ver-num">1.0.1</span></span>
       <button type="button" class="linkbtn ver-open">版本紀錄</button>
-      <span>創作者：何文諾社工</span>
     </div>
     <input type="file" id="fileInput" accept="application/json,.json" hidden>
   </form>
@@ -359,7 +359,6 @@
       <button type="button" class="icon" id="clClose" aria-label="關閉">✕</button>
     </div>
     <div class="ver-list" id="verList"></div>
-    <div class="credit">創作者：<b>何文諾社工</b>（香港扶幼會則仁中心）</div>
     <div class="dlg-foot"><span class="spacer"></span><button type="button" class="btn primary" id="clDone">關閉</button></div>
   </form>
 </dialog>
