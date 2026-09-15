@@ -221,15 +221,21 @@
 <!-- 存取密碼 -->
 <dialog id="auth">
   <form class="dlg" id="authForm">
-    <div class="dlg-head"><h2>請輸入存取密碼</h2></div>
-    <p class="sub" style="margin:0">此名單載有舍友的個人資料，只供獲授權的職員使用。密碼輸入一次後，此裝置會記住。</p>
-    <div class="field">
-      <input type="password" id="authInput" autocomplete="current-password" placeholder="存取密碼">
+    <div class="dlg-head"><h2>請先經入口頁登入</h2></div>
+    <p class="sub" style="margin:0">此名單載有舍友的個人資料，只供獲授權的職員使用。密碼統一在入口頁輸入，登入後 15 分鐘自動登出。</p>
+    <div class="dlg-foot" style="justify-content:flex-start">
+      <a class="btn primary" id="authPortal" href="https://cycportal.netlify.app/" style="text-decoration:none">前往入口頁登入</a>
+    </div>
+    <p class="sub" style="margin:0"><button type="button" class="linkbtn" id="authDirectToggle">在此裝置直接輸入密碼（緊急備用）</button></p>
+    <div id="authDirect" hidden>
+      <div class="field">
+        <input type="password" id="authInput" autocomplete="current-password" placeholder="存取密碼">
+      </div>
+      <div class="dlg-foot">
+        <button type="submit" class="btn primary" id="authGo">進入</button>
+      </div>
     </div>
     <div class="msg" id="authMsg"></div>
-    <div class="dlg-foot">
-      <button type="submit" class="btn primary" id="authGo">進入</button>
-    </div>
   </form>
 </dialog>
 
@@ -987,6 +993,31 @@
   var statusEl = $('syncStatus');
   var auth = $('auth'), authInput = $('authInput'), authMsg = $('authMsg'), authGo = $('authGo');
   var accessKey = '';
+
+  // ── 入口頁統一登入：密碼只在前置頁面輸入，經網址 hash 傳入（不會送上伺服器），15 分鐘後自動登出 ──
+  var PORTAL_URL = 'https://cycportal.netlify.app/';
+  var AUTH_SESSION_KEY = 'cyc-portal-auth', AUTH_TTL = 15 * 60 * 1000;
+  (function () {
+    try {
+      var h = new URLSearchParams(location.hash.slice(1));
+      var k = h.get('key'), t = Number(h.get('t'));
+      if (k && isFinite(t) && Math.abs(Date.now() - t) < AUTH_TTL) {
+        sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ p: k, exp: t + AUTH_TTL }));
+      }
+      if (k || h.get('t')) history.replaceState(null, '', location.pathname + location.search);
+    } catch (e) {}
+    try { localStorage.removeItem(KEY_STORE); } catch (e) {}   // 舊版記住的密碼一律清除，改用 15 分鐘時限
+  })();
+  function portalAuth() {
+    try {
+      var a = JSON.parse(sessionStorage.getItem(AUTH_SESSION_KEY));
+      if (a && typeof a.p === 'string' && a.p && isFinite(a.exp)) {
+        if (Date.now() < a.exp) return a;
+        sessionStorage.removeItem(AUTH_SESSION_KEY);
+      }
+    } catch (e) {}
+    return null;
+  }
   var changeSeq = 0, savedSeq = 0;      // 本機更改次數 / 已成功儲存的更改次數
   var dirtyBeds = {}, dirtySettings = false;   // 自上次成功儲存後改過的項目（用於衝突合併）
   var saving = false, saveTimer = null, retryTimer = null, retryDelay = 5000, conflicts = 0;
@@ -1036,9 +1067,9 @@
   }
   function handleUnauthorized(fromAuth) {
     accessKey = '';
-    try { localStorage.removeItem(KEY_STORE); } catch (e) {}
-    setStatus('err', '需要密碼');
-    showAuth(fromAuth ? '密碼不正確，請再試一次。' : '密碼不正確或已更改，請重新輸入。');
+    try { sessionStorage.removeItem(AUTH_SESSION_KEY); } catch (e) {}
+    setStatus('err', '需要登入');
+    showAuth(fromAuth ? '密碼不正確，請再試一次。' : '密碼不正確、已更改或登入已過期，請經入口頁重新登入。');
   }
   function describeFailure(status) {
     if (status === 404) return '找不到雲端儲存功能（/api/roster），請確認已按說明部署';
@@ -1058,7 +1089,7 @@
         if (fromAuth) authMsg.textContent = why + '。';
         return 'fail';
       }
-      try { localStorage.setItem(KEY_STORE, accessKey); } catch (e) {}
+      try { if (!portalAuth()) sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ p: accessKey, exp: Date.now() + AUTH_TTL })); } catch (e) {}
       if (auth.open) auth.close();
       var data = res.body.data;
       if (!data) {
@@ -1129,15 +1160,18 @@
   }
 
   if (CLOUD) {
-    try { accessKey = localStorage.getItem(KEY_STORE) || ''; } catch (e) {}
+    try { var _a = portalAuth(); accessKey = _a ? _a.p : ''; } catch (e) {}
     $('hint').textContent = '點擊任何一格即可編輯姓名、社工短稱及狀態。資料會自動儲存到雲端，任何裝置開啟都會看到最新版本。列印時請選擇 A4 紙張、邊界「無」，並勾選「背景圖形」以保留顏色。';
     $('backupLbl').textContent = '資料備份（雲端會自動儲存；匯出檔案可作額外備份）';
     $('cloudBox').hidden = false;
     $('btnLogout').addEventListener('click', function () {
-      try { localStorage.removeItem(KEY_STORE); } catch (e) {}
-      location.reload();
+      try { sessionStorage.removeItem(AUTH_SESSION_KEY); } catch (e) {}
+      location.href = PORTAL_URL;
     });
     auth.addEventListener('cancel', function (e) { e.preventDefault(); });
+    $('authDirectToggle').addEventListener('click', function () {
+      $('authDirect').hidden = false; this.hidden = true; authInput.focus();
+    });
     $('authForm').addEventListener('submit', function (e) {
       e.preventDefault();
       var v = authInput.value.trim();
@@ -1150,6 +1184,13 @@
     });
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') maybeRefresh(); });
     setInterval(maybeRefresh, 60000);
+    setInterval(function () {   // 15 分鐘時限一到即自動登出
+      if (accessKey && !portalAuth()) {
+        accessKey = '';
+        setStatus('err', '已登出');
+        showAuth('登入已過期（15 分鐘），請經入口頁重新登入。');
+      }
+    }, 15000);
     window.addEventListener('online', function () { if (hasUnsaved()) pushNow(); else maybeRefresh(); });
     window.addEventListener('beforeunload', function (e) { if (hasUnsaved()) { e.preventDefault(); e.returnValue = ''; } });
   } else {

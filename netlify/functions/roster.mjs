@@ -25,7 +25,12 @@ const MAX_BODY_BYTES = 200_000;
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      // 允許入口頁（不同網域）驗證密碼及讀取名單；所有要求仍須附正確密碼
+      "access-control-allow-origin": "*",
+    },
   });
 }
 
@@ -122,6 +127,18 @@ function sanitize(input, house) {
 }
 
 export default async (req) => {
+  // 跨域預檢（入口頁驗證密碼時瀏覽器會先送 OPTIONS）
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "GET, PUT, OPTIONS",
+        "access-control-allow-headers": "x-roster-key, content-type",
+        "access-control-max-age": "86400",
+      },
+    });
+  }
   const password = (globalThis.Netlify && Netlify.env.get("ROSTER_PASSWORD")) || process.env.ROSTER_PASSWORD || "";
   if (!password) {
     return json({ error: "server_not_configured", message: "尚未在 Netlify 設定環境變數 ROSTER_PASSWORD" }, 503);
