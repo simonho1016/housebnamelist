@@ -3,7 +3,7 @@
 <pre id="log">RUNNING</pre>
 <iframe id="f" style="width:1200px;height:700px"></iframe>
 <script>
-const log=[]; const L=(n,ok,d='')=>log.push((ok?'PASS':'FAIL')+' | '+n+(d?' | '+d:''));
+const log=[]; const L=(n,ok,d='')=>{log.push((ok?'PASS':'FAIL')+' | '+n+(d?' | '+d:''));document.getElementById('log').textContent=log.join('\n');};
 const F=document.getElementById('f');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function load(src){return new Promise(res=>{F.onload=()=>res(F.contentWindow);F.src=src;});}
