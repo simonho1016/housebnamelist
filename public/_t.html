@@ -53,7 +53,7 @@ function load(src){return new Promise(res=>{F.onload=()=>res(F.contentWindow);F.
   L('roster dialog portal link is /', w.document.getElementById('authPortal') && w.document.getElementById('authPortal').getAttribute('href')==='/');
   L('roster hash stripped', w.location.hash==='');
   // 8 名單頁：過期 hash → 直接顯示登入對話框
-  w=await load('/roster/?house=xiao#key=secret&t='+(Date.now()-20*60*1000));
+  w=await load('/roster/?house=xiao&cb=expired#key=secret&t='+(Date.now()-20*60*1000));
   await sleep(800);
   L('roster expired hash shows login dialog', w.document.getElementById('auth').open);
  }catch(e){L('harness error', false, String(e&&e.message||e))}
