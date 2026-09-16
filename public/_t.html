@@ -1,28 +1,29 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>t</title></head><body>
 <pre id="log">TEST-START</pre>
-<iframe id="f1" src="/apply/" style="width:1200px;height:900px"></iframe>
 <script>
 const log = m => document.getElementById('log').textContent += '\n' + m;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 window.addEventListener('error', e => log('PAGE-ERR ' + e.message));
 
-const f1 = document.getElementById('f1');
+// 模擬入口頁已登入（sessionStorage 同 tab 同 origin 共享）
+sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'test', exp: Date.now() + 900000 }));
+
+const f1 = document.createElement('iframe');
+f1.src = '/apply/';
+f1.style.cssText = 'width:1200px;height:900px';
+document.body.appendChild(f1);
+
 f1.addEventListener('load', async () => {
   await sleep(2500);
   const w = f1.contentWindow;
   try {
-    log('DOC-READY: ' + (w.document ? 'yes' : 'no'));
-    log('IFRAME-URL: ' + w.location.href);
-    log('IFRAME-TITLE: ' + w.document.title);
-    log('BODY-LEN: ' + w.document.body.innerHTML.length);
-    log('BODY-HEAD: ' + w.document.body.innerHTML.slice(0,200).replace(/\n/g,' '));
+    log('IFRAME-URL: ' + w.location.pathname);
     const vis = id => { const el = w.document.getElementById(id); return el ? !el.classList.contains('hidden') : 'NULL'; };
     log('APPLY-FORM-VISIBLE: ' + vis('sFormScreen'));
     log('APPLY-LOGIN-VISIBLE: ' + vis('sLoginScreen'));
-    log('APPLY-HOME-HIDDEN-ON-FORM: ' + (w.document.getElementById('homeBtn') || {}).classList?.contains('hidden'));
+    log('APPLY-HOME-HIDDEN-ON-FORM: ' + w.document.getElementById('homeBtn').classList.contains('hidden'));
     const staffSel = w.document.getElementById('f_staff');
-    if (!staffSel) { log('F_STAFF-NULL'); log('TEST-END'); return; }
     const names = [...staffSel.options].map(o => o.value).filter(Boolean);
     log('STAFF-OPTIONS: ' + JSON.stringify(names));
 
@@ -66,7 +67,6 @@ f1.addEventListener('load', async () => {
     await sleep(300);
     log('SETTINGS-LOGIN-SHOWN: ' + vis('sLoginScreen'));
     log('SETTINGS-LOGIN-TITLE: ' + w.document.getElementById('sLoginTitle').textContent);
-    // 返回填單掣
     w.document.getElementById('goSettings').click();
     await sleep(300);
     log('BACK-TO-FORM: ' + vis('sFormScreen'));
