@@ -13,6 +13,10 @@ f1.addEventListener('load', async () => {
   const w = f1.contentWindow;
   try {
     log('DOC-READY: ' + (w.document ? 'yes' : 'no'));
+    log('IFRAME-URL: ' + w.location.href);
+    log('IFRAME-TITLE: ' + w.document.title);
+    log('BODY-LEN: ' + w.document.body.innerHTML.length);
+    log('BODY-HEAD: ' + w.document.body.innerHTML.slice(0,200).replace(/\n/g,' '));
     const vis = id => { const el = w.document.getElementById(id); return el ? !el.classList.contains('hidden') : 'NULL'; };
     log('APPLY-FORM-VISIBLE: ' + vis('sFormScreen'));
     log('APPLY-LOGIN-VISIBLE: ' + vis('sLoginScreen'));
