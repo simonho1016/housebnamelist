@@ -432,7 +432,7 @@ create policy "anon access" on settings
     <!-- Supabase Storage 電子存檔 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">Supabase Storage 電子存檔</h3>
-      <p class="text-xs text-slate-500">「電子存檔」會將 PDF 上傳到 Supabase Storage 嘅 <strong>apply-archive</strong> bucket，按 <strong>社別／舍友編號_姓名／檔案</strong> 分類；本機同時會下載一份做後備。免費計劃（1 GB）大約可儲存 2,500–5,000 張 PDF。</p>
+      <p class="text-xs text-slate-500">「電子存檔」會將 PDF 上傳到 Supabase Storage 嘅 <strong>apply-archive</strong> bucket，按 <strong>zhong／xiao（社別）→ 舍友編號 → 檔案</strong> 分類（Supabase 唔支援中文路徑，所以用英文編碼）；本機同時會下載一份做後備，本機檔名維持「舍友編號_日期」。免費計劃（1 GB）大約可儲存 2,500–5,000 張 PDF。</p>
       <p class="text-xs text-slate-400">Bucket 未開通時，存檔仍會儲存雲端記錄同本機下載 PDF，只係冇雲端檔案；記錄頁嘅「下載 PDF」掣會喺該記錄有雲端檔案時先出現。</p>
     </div>
 
@@ -451,7 +451,7 @@ create policy "anon access" on settings
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
-              <li>電子存檔改為上傳 Supabase Storage（apply-archive bucket），唔再經 Google Drive；按「社別／舍友編號_姓名／檔案」分類</li>
+              <li>電子存檔改為上傳 Supabase Storage（apply-archive bucket），唔再經 Google Drive；按「zhong／xiao → 舍友編號 → 檔案」分類（Storage 唔支援中文路徑）；同日同舍友再存自動加時間後綴</li>
               <li>記錄頁新增「下載 PDF」掣（有雲端檔案嘅記錄先顯示，用限時簽名連結）；刪除記錄時雲端 PDF 一併刪除</li>
               <li>介面字體改用粉圓體（Huninn）；單據及 PDF 維持原本字體</li>
             </ul>
@@ -1054,15 +1054,29 @@ function archiveFileName(d){
   return `${d.payeeId || '其他'}_${ymd}.pdf`;   // 例：B14_20260916.pdf
 }
 
-// ---- Supabase Storage：PDF 上傳到 apply-archive bucket（社別／舍友編號_姓名／檔案）----
+// ---- Supabase Storage：PDF 上傳到 apply-archive bucket ----
+// 注意：Supabase Storage 唔支援中文路徑，所以用 zhong/xiao + 舍友編號（全部英文數字）
 const ARCHIVE_BUCKET = 'apply-archive';
 function archivePath(d, fname){
-  return `${d.house || '未分類'}/${d.payeeId || '其他'}_${d.payee}/${fname}`;
+  const house = d.house === '孝社' ? 'xiao' : (d.house === '忠社' ? 'zhong' : 'other');
+  const pid = (d.payeeId || 'other').replace(/[^A-Za-z0-9_-]/g, '') || 'other';
+  const safeName = fname.replace(/[^A-Za-z0-9._-]/g, '') || ('archive_' + Date.now() + '.pdf');
+  return `${house}/${pid}/${safeName}`;
 }
+// 上傳；同日同舍友再存會撞名，自動加時間後綴。成功時回傳實際路徑。
 async function storageUpload(pdfBlob, path){
   if (!sb) throw new Error('未連接雲端（試用模式）。');
-  const { error } = await sb.storage.from(ARCHIVE_BUCKET).upload(path, pdfBlob, { contentType: 'application/pdf', upsert: false });
-  if (error) throw new Error(error.message + (/not found|bucket/i.test(error.message) ? '（請去 Supabase → Storage 建立 apply-archive bucket，詳見系統設定說明）' : ''));
+  let p = path;
+  for (let i = 0; i < 3; i++) {
+    const { error } = await sb.storage.from(ARCHIVE_BUCKET).upload(p, pdfBlob, { contentType: 'application/pdf', upsert: false });
+    if (!error) return p;
+    if (/already exists|duplicate/i.test(error.message)) {
+      p = path.replace(/\.pdf$/i, `_${String(Date.now()).slice(-6)}.pdf`);
+      continue;
+    }
+    throw new Error(error.message + (/not found|bucket/i.test(error.message) ? '（請去 Supabase → Storage 建立 apply-archive bucket，詳見系統設定說明）' : ''));
+  }
+  throw new Error('同名檔案已存在，請稍後再試。');
 }
 // 私密 bucket：用限時簽名連結下載（2 分鐘有效）
 async function storageSignedUrl(path){
@@ -1091,12 +1105,10 @@ $('f_archive').addEventListener('click', async () => {
   const fname = archiveFileName(d);
   pdf.save(fname);                             // 本機下載一份做後備
   // 自動上傳到 Supabase Storage（apply-archive bucket）
-  const path = archivePath(d, fname);
   let cloudMsg, pdfPath = null;
   try {
-    await storageUpload(pdf.output('blob'), path);
+    pdfPath = await storageUpload(pdf.output('blob'), archivePath(d, fname));
     cloudMsg = '，並已上傳到雲端檔案庫';
-    pdfPath = path;
   } catch (e) {
     cloudMsg = '；雲端上傳失敗：' + e.message;
   }
