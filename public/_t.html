@@ -1,0 +1,100 @@
+<!doctype html><meta charset="utf-8"><title>t</title>
+<pre id="log"></pre>
+<iframe id="w" style="width:1200px;height:900px"></iframe>
+<script>
+const log = m => document.getElementById('log').textContent += m + '\n';
+const w = document.getElementById('w');
+const load = src => new Promise(r => { w.onload = () => setTimeout(r, 500); w.src = src; });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+(async () => {
+  let recId = null;
+  try {
+    await load('/');
+    w.contentWindow.sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'x', exp: Date.now() + 900000 }));
+    await load('/apply/');
+    const d = w.contentDocument;
+    const ev = s => w.contentWindow.eval(s);
+    ev('window.__alerts=[]; window.alert=m=>window.__alerts.push(m)');
+
+    // 1) 職員登入
+    d.getElementById('s_name').value = d.getElementById('s_name').options[1].value;
+    d.getElementById('s_pw').value = '0001';
+    d.getElementById('s_login_btn').click();
+    await sleep(800);
+    log('T1 formVisible=' + !d.getElementById('sFormScreen').classList.contains('hidden'));
+
+    // 2) 填單
+    d.getElementById('f_no').value = 'TEST-001';
+    d.getElementById('f_notion').value = 'T99';
+    d.querySelector('[data-house="忠社"]').click();
+    await sleep(200);
+    const sel = d.getElementById('f_payee');
+    sel.value = sel.options[1].value;
+    sel.dispatchEvent(new w.contentWindow.Event('change'));
+    d.getElementById('f_amount').value = '10.00';
+    d.querySelector('#f_cats input[value="零用金"]').click();
+    await sleep(200);
+    log('T2 payee=' + sel.value);
+
+    // 3) 攔截 pdf.save，然後撳確認列印
+    ev('window.__saved=[]; const P=w.contentWindow?null:null;');
+    ev('(function(){ const J = window.jspdf.jsPDF; const orig = J.prototype.save; J.prototype.save = function(n){ window.__saved.push(n); return this; }; })()');
+    d.getElementById('f_print').click();
+    await sleep(800);
+    // 簽名板應彈出
+    log('T3 signShown=' + !d.getElementById('signModal').classList.contains('hidden'));
+    // 畫簽名
+    ev('sctx.beginPath(); sctx.moveTo(80, 100); sctx.lineTo(300, 140); sctx.lineTo(200, 200); sctx.stroke(); signDrawn = true; $("signOk").disabled = false;');
+    d.getElementById('signOk').click();
+    // 等 PDF + 入庫
+    let toast = '';
+    for (let i = 0; i < 40; i++) {
+      await sleep(500);
+      toast = d.getElementById('toast').textContent || '';
+      if (toast.includes('序號') || ev('window.__alerts.length')) break;
+    }
+    log('T3 saved=' + JSON.stringify(ev('window.__saved')));
+    log('T3 toast=' + toast);
+    log('T3 alerts=' + JSON.stringify(ev('window.__alerts')));
+
+    // 4) 查雲端記錄
+    const rows = await ev('DB.list({ status: "done", limit: 5 })');
+    const rec = rows.find(r => r.doc_no === 'TEST-001');
+    if (rec) {
+      recId = rec.id;
+      log('T4 serial=' + rec.serial);
+      log('T4 notion=' + rec.notion_id);
+      log('T4 hasSign=' + (typeof rec.payee_sign === 'string' && rec.payee_sign.startsWith('data:image/png')));
+      log('T4 signLen=' + (rec.payee_sign || '').length);
+    } else {
+      log('T4 RECORD NOT FOUND');
+    }
+
+    // 5) 重印（應直接用雲端簽名，唔彈簽名板）
+    if (rec) {
+      ev('window.__saved.length = 0');
+      // 去記錄頁撳重印
+      ev('show("sListScreen")');
+      await ev('loadHistory()');
+      await sleep(500);
+      const btn = d.querySelector(`button[data-act="reprint"][data-id="${rec.id}"]`);
+      log('T5 reprintBtn=' + (btn !== null));
+      log('T5 delBtn=' + (d.querySelector(`button[data-act="del"][data-id="${rec.id}"]`) !== null));
+      btn.click();
+      for (let i = 0; i < 40; i++) {
+        await sleep(500);
+        if (ev('window.__saved.length') || !d.getElementById('toast').classList.contains('hidden')) break;
+      }
+      log('T5 signPadStayedHidden=' + d.getElementById('signModal').classList.contains('hidden'));
+      log('T5 reprintSaved=' + JSON.stringify(ev('window.__saved')));
+      log('T5 toast=' + d.getElementById('toast').textContent);
+    }
+  } catch (e) { log('ERR ' + e.message); }
+  // 6) 清理：刪測試記錄
+  if (recId) {
+    try { await w.contentWindow.eval(`DB.remove("${recId}")`); log('T6 cleaned=' + recId); }
+    catch (e) { log('T6 cleanFail=' + e.message); }
+  }
+  log('DONE');
+})();
+</script>
