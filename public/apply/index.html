@@ -306,7 +306,7 @@
           <button id="f_print" class="flex-[2] py-2.5 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow transition">🖨️ 確認列印</button>
           <button id="f_archive" class="flex-[2] py-2.5 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow transition">🗂️ 電子存檔</button>
         </div>
-        <p class="text-xs text-slate-400">列印／存檔前會彈出簽名板，請舍友即場簽名。職員簽署、入數同事簽署於列印後實體簽名。「電子存檔」會下載 PDF，並自動上傳到 Google Drive（按社別及舍友分類）。</p>
+        <p class="text-xs text-slate-400">列印／存檔前會彈出簽名板，請舍友即場簽名。職員簽署、入數同事簽署於列印後實體簽名。「電子存檔」會下載 PDF，並自動上傳到 Supabase Storage（按社別及舍友分類）。</p>
       </div>
 
       <!-- 列印預覽 -->
@@ -429,15 +429,11 @@ create policy "anon access" on settings
       </div>
     </div>
 
-    <!-- Google Drive 電子存檔 -->
+    <!-- Supabase Storage 電子存檔 -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-      <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">Google Drive 電子存檔</h3>
-      <p class="text-xs text-slate-500">「電子存檔」會將 PDF 上傳到 Google Drive，自動按 <strong>零用金電子存檔／社別／舍友編號_姓名</strong> 分類資料夾。首次上傳時會彈出 Google 登入授權。使用前請貼上 Google OAuth Client ID（所有裝置共用，只需設定一次）：</p>
-      <div class="flex gap-2">
-        <input id="gdriveClientId" type="text" autocomplete="off" class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="xxxx.apps.googleusercontent.com">
-        <button id="saveGdriveBtn" class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-slate-700 hover:bg-slate-800 transition">儲存</button>
-      </div>
-      <p class="text-xs text-slate-400">攞 Client ID：Google Cloud Console → 建立專案 → 啟用 Google Drive API →「憑證」建立 OAuth 用戶端 ID（網頁應用程式）→ 已授權的 JavaScript 來源填 <strong>https://cycportal.netlify.app</strong>。</p>
+      <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">Supabase Storage 電子存檔</h3>
+      <p class="text-xs text-slate-500">「電子存檔」會將 PDF 上傳到 Supabase Storage 嘅 <strong>apply-archive</strong> bucket，按 <strong>社別／舍友編號_姓名／檔案</strong> 分類；本機同時會下載一份做後備。免費計劃（1 GB）大約可儲存 2,500–5,000 張 PDF。</p>
+      <p class="text-xs text-slate-400">Bucket 未開通時，存檔仍會儲存雲端記錄同本機下載 PDF，只係冇雲端檔案；記錄頁嘅「下載 PDF」掣會喺該記錄有雲端檔案時先出現。</p>
     </div>
 
     <!-- 入場密碼（已取消） -->
@@ -451,9 +447,20 @@ create policy "anon access" on settings
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">版本記錄</h3>
       <div class="text-sm space-y-3">
         <div class="flex gap-3">
-          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.5</span>
+          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.6</span>
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
+            <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>電子存檔改為上傳 Supabase Storage（apply-archive bucket），唔再經 Google Drive；按「社別／舍友編號_姓名／檔案」分類</li>
+              <li>記錄頁新增「下載 PDF」掣（有雲端檔案嘅記錄先顯示，用限時簽名連結）；刪除記錄時雲端 PDF 一併刪除</li>
+              <li>介面字體改用粉圓體（Huninn）；單據及 PDF 維持原本字體</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="shrink-0 text-xs font-bold text-white bg-blue-600 rounded-full px-2.5 py-1 h-fit">v1.2.5</span>
+          <div>
+            <div class="font-bold text-slate-900">免密碼填單版 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>取消全員職員登入：入到系統直接填單，支款人改為單上揀選</li>
               <li>只有何文諾、何樂軒（有簽名檔案）被揀做支款人時，要先輸入佢哋嘅個人密碼，保護簽名檔案</li>
@@ -649,7 +656,6 @@ const CFG = {
   members: JSON.parse(JSON.stringify(DEFAULT_MEMBERS)),
   staff: DEFAULT_STAFF.map(s => ({...s})),
   entryPw: DEFAULT_ENTRY_PW,
-  gdriveClientId: '',  // Google OAuth Client ID（電子存檔用）
   settingsDbOk: true   // settings 表係咪存在
 };
 function staffPwOf(name){ const s = CFG.staff.find(s => s.name === name); return s ? s.pw : null; }
@@ -684,7 +690,7 @@ const DB = {
       const { error } = await sb.from('applications').insert(app);
       if (error) {
         const colHint = /column|schema cache/i.test(error.message)
-          ? '（請去 Supabase → SQL Editor 跑：alter table applications add column if not exists serial text, add column if not exists payee_sign text;）' : '';
+          ? '（請去 Supabase → SQL Editor 跑：alter table applications add column if not exists serial text, add column if not exists payee_sign text, add column if not exists pdf_path text;）' : '';
         throw new Error('送出失敗：' + error.message + colHint);
       }
       return;
@@ -760,9 +766,7 @@ async function loadSettings(){
     if (s.members && s.members['忠社'] && s.members['孝社']) CFG.members = s.members;
     if (Array.isArray(s.staff) && s.staff.length) CFG.staff = s.staff;
     if (typeof s.entry_pw === 'string' && s.entry_pw) CFG.entryPw = s.entry_pw;
-    if (typeof s.gdrive_client_id === 'string') CFG.gdriveClientId = s.gdrive_client_id;
   } catch { /* 用預設值 */ }
-  if (!CFG.gdriveClientId) CFG.gdriveClientId = localStorage.getItem('gdrive-client-id') || '';
   window.__entryPw = CFG.entryPw;
   // 職員登入下拉（系統設定用）＋ 支款人下拉（填單用）
   fillStaffSelects();
@@ -1050,86 +1054,25 @@ function archiveFileName(d){
   return `${d.payeeId || '其他'}_${ymd}.pdf`;   // 例：B14_20260916.pdf
 }
 
-// Google Identity Services：按需載入 + 攞 access token（首次要授權）
-let gisPromise = null, driveToken = '', driveTokenExp = 0, driveConsented = false;
-function loadGIS(){
-  if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
-  if (!gisPromise) {
-    gisPromise = new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('載入 Google 登入元件失敗，請檢查網絡。'));
-      document.head.appendChild(s);
-    });
-  }
-  return gisPromise;
+// ---- Supabase Storage：PDF 上傳到 apply-archive bucket（社別／舍友編號_姓名／檔案）----
+const ARCHIVE_BUCKET = 'apply-archive';
+function archivePath(d, fname){
+  return `${d.house || '未分類'}/${d.payeeId || '其他'}_${d.payee}/${fname}`;
 }
-function getDriveToken(){
-  return loadGIS().then(() => new Promise((resolve, reject) => {
-    if (driveToken && Date.now() < driveTokenExp - 60000) return resolve(driveToken);
-    const cid = (CFG.gdriveClientId || '').trim();
-    if (!cid) return reject(new Error('未設定 Google Client ID，請到「系統設定 → Google Drive 電子存檔」填寫。'));
-    const tc = google.accounts.oauth2.initTokenClient({
-      client_id: cid,
-      scope: 'https://www.googleapis.com/auth/drive.file',
-      callback: resp => {
-        if (resp.error) return reject(new Error('Google 授權失敗：' + resp.error));
-        driveToken = resp.access_token;
-        driveTokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
-        driveConsented = true;
-        resolve(driveToken);
-      },
-      error_callback: () => reject(new Error('Google 登入授權被取消。'))
-    });
-    tc.requestAccessToken({ prompt: driveConsented ? '' : 'consent' });
-  }));
+async function storageUpload(pdfBlob, path){
+  if (!sb) throw new Error('未連接雲端（試用模式）。');
+  const { error } = await sb.storage.from(ARCHIVE_BUCKET).upload(path, pdfBlob, { contentType: 'application/pdf', upsert: false });
+  if (error) throw new Error(error.message + (/not found|bucket/i.test(error.message) ? '（請去 Supabase → Storage 建立 apply-archive bucket，詳見系統設定說明）' : ''));
 }
-async function driveApi(token, path, options = {}){
-  const res = await fetch('https://www.googleapis.com/drive/v3' + path, {
-    ...options,
-    headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json', ...(options.headers || {}) }
-  });
-  const j = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(j.error?.message || ('Drive HTTP ' + res.status));
-  return j;
+// 私密 bucket：用限時簽名連結下載（2 分鐘有效）
+async function storageSignedUrl(path){
+  const { data, error } = await sb.storage.from(ARCHIVE_BUCKET).createSignedUrl(path, 120);
+  if (error) throw new Error(error.message);
+  return data.signedUrl;
 }
-// 搵／建資料夾（結果缓存喺本機，下次即刻用到）
-function folderCache(){ try { return JSON.parse(localStorage.getItem('gdrive-folders') || '{}'); } catch { return {}; } }
-async function driveFolder(token, name, parentId){
-  const cache = folderCache();
-  const key = (parentId || 'root') + '/' + name;
-  if (cache[key]) return cache[key];
-  const q = `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false` + (parentId ? ` and '${parentId}' in parents` : '');
-  const found = await driveApi(token, '/files?q=' + encodeURIComponent(q) + '&fields=files(id)&pageSize=1');
-  let id = found.files && found.files[0] && found.files[0].id;
-  if (!id) {
-    const created = await driveApi(token, '/files', {
-      method: 'POST',
-      body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', ...(parentId ? { parents: [parentId] } : {}) })
-    });
-    id = created.id;
-  }
-  cache[key] = id;
-  localStorage.setItem('gdrive-folders', JSON.stringify(cache));
-  return id;
-}
-// 上傳 PDF 到 零用金電子存檔／社別／舍友編號_姓名
-async function driveUpload(pdfBlob, fname, d){
-  const token = await getDriveToken();
-  const rootId = await driveFolder(token, '零用金電子存檔');
-  const houseId = await driveFolder(token, d.house, rootId);
-  const memberId = await driveFolder(token, `${d.payeeId || '其他'}_${d.payee}`, houseId);
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify({ name: fname, parents: [memberId] })], { type: 'application/json' }));
-  form.append('file', pdfBlob, fname);
-  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name', {
-    method: 'POST', headers: { authorization: 'Bearer ' + token }, body: form
-  });
-  if (!res.ok) {
-    const j = await res.json().catch(() => ({}));
-    throw new Error(j.error?.message || ('上傳失敗 HTTP ' + res.status));
-  }
+async function storageRemove(path){
+  if (!sb || !path) return;
+  try { await sb.storage.from(ARCHIVE_BUCKET).remove([path]); } catch { /* 刪唔到都唔阻刪記錄 */ }
 }
 
 $('f_archive').addEventListener('click', async () => {
@@ -1147,13 +1090,15 @@ $('f_archive').addEventListener('click', async () => {
   if (!pdf) return;
   const fname = archiveFileName(d);
   pdf.save(fname);                             // 本機下載一份做後備
-  // 自動上傳到 Google Drive（首次會彈出 Google 登入授權）
-  let driveMsg;
+  // 自動上傳到 Supabase Storage（apply-archive bucket）
+  const path = archivePath(d, fname);
+  let cloudMsg, pdfPath = null;
   try {
-    await driveUpload(pdf.output('blob'), fname, d);
-    driveMsg = '，並已上傳到 Google Drive';
+    await storageUpload(pdf.output('blob'), path);
+    cloudMsg = '，並已上傳到雲端檔案庫';
+    pdfPath = path;
   } catch (e) {
-    driveMsg = '；Google Drive 上傳失敗：' + e.message;
+    cloudMsg = '；雲端上傳失敗：' + e.message;
   }
   try {
     await DB.insert({
@@ -1161,10 +1106,10 @@ $('f_archive').addEventListener('click', async () => {
       amount: parseFloat(d.amount).toFixed(2), cats: d.cats,
       cat_other: d.catOther, remark: d.remark,
       status: 'approved', doc_no: d.no, notion_id: d.notion,
-      serial: d.serial, payee_sign: sig,
+      serial: d.serial, payee_sign: sig, pdf_path: pdfPath,
       staff: staffUser, decided_at: new Date().toISOString()
     });
-    toast('已電子存檔：' + fname + '（序號 ' + d.serial + '）' + driveMsg + '。');
+    toast('已電子存檔：' + fname + '（序號 ' + d.serial + '）' + cloudMsg + '。');
   } catch (e) {
     alert('PDF 已生成，但儲存記錄失敗：' + e.message);
   }
@@ -1194,6 +1139,7 @@ async function loadHistory(){
           <div class="flex flex-col gap-2 items-stretch shrink-0">
             <button data-act="load" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 transition">載入</button>
             <button data-act="reprint" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition">重印 PDF</button>
+            ${r.pdf_path ? `<button data-act="download" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-sm font-medium hover:bg-emerald-100 transition">下載 PDF</button>` : ''}
             <button data-act="del" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition">刪除</button>
           </div>
         </div>
@@ -1227,10 +1173,16 @@ $('s_list').addEventListener('click', async e => {
     }
     const ok = await makePDF();
     if (ok) toast('已重印 PDF。');
+  } else if (btn.dataset.act === 'download') {
+    try {
+      const url = await storageSignedUrl(rec.pdf_path);
+      window.open(url, '_blank');
+    } catch (e) { alert('下載失敗：' + e.message); }
   } else if (btn.dataset.act === 'del') {
-    if (!confirm(`確定刪除 ${rec.payee} 嘅記錄（序號 ${rec.serial || '—'}）？\n刪除後呢個序號唔會重用，下一張會用下一個新序號。`)) return;
+    if (!confirm(`確定刪除 ${rec.payee} 嘅記錄（序號 ${rec.serial || '—'}）？\n刪除後呢個序號唔會重用，下一張會用下一個新序號。${rec.pdf_path ? '\n雲端檔案庫嘅 PDF 會一併刪除。' : ''}`)) return;
     try {
       await DB.remove(rec.id);
+      if (rec.pdf_path) storageRemove(rec.pdf_path);   // 雲端 PDF 一併刪（唔阻流程）
       toast('已刪除記錄。');
       loadHistory();
     } catch (e) { alert(e.message); }
@@ -1556,27 +1508,10 @@ let setHouse = '忠社';
 function openSettings(){
   $('set_who').textContent = staffUser;
   $('setDbWarn').classList.toggle('hidden', CFG.settingsDbOk);
-  $('gdriveClientId').value = CFG.gdriveClientId;
   renderSetMembers();
   renderSetStaff();
   show('settingsScreen');
 }
-
-// ---- Google Drive Client ID ----
-$('saveGdriveBtn').addEventListener('click', async () => {
-  const v = $('gdriveClientId').value.trim();
-  if (v && !v.endsWith('.apps.googleusercontent.com')) {
-    if (!confirm('Client ID 一般以 .apps.googleusercontent.com 結尾，你貼嘅似乎唔係。確定儲存？')) return;
-  }
-  CFG.gdriveClientId = v;
-  localStorage.setItem('gdrive-client-id', v);
-  try {
-    await DB.setSetting('gdrive_client_id', v);
-    toast('已儲存 Google Client ID（所有裝置生效）。');
-  } catch (e) {
-    toast('已儲存喺呢部機（資料庫未開通，其他裝置要再填）。');
-  }
-});
 
 // ---- 舍友名單編輯 ----
 document.querySelectorAll('.set-house-tab').forEach(btn => {
