@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>則仁中心 — 零用金後台管理</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#141414; --pow:#fdf6ec; }
+  body { font-family: "ZCOOL KuaiLe", "Noto Sans TC", sans-serif; background-color: var(--pow);
+    background-image: radial-gradient(rgba(20,20,20,.14) 1.6px, transparent 1.7px); background-size: 15px 15px; }
+  .card { border: 3px solid var(--ink) !important; box-shadow: 5px 5px 0 var(--ink) !important; border-radius: 16px !important; }
+  #toast { background: var(--ink) !important; border: 3px solid #fff !important; box-shadow: 4px 4px 0 rgba(20,20,20,.35) !important;
+    font-family: "ZCOOL KuaiLe", sans-serif !important; font-size: 15px; }
+  th { font-weight: 700; }
+</style>
+</head>
+<body class="text-slate-800">
+
+<script>
+// ====================== 入口頁統一登入 ======================
+(function(){
+  try {
+    var h = new URLSearchParams(location.hash.slice(1)), k = h.get('key'), t = Number(h.get('t'));
+    if (k && isFinite(t) && Math.abs(Date.now() - t) < 900000) {
+      sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: k, exp: t + 900000 }));
+    }
+    if (k || h.get('t')) history.replaceState(null, '', location.pathname + location.search);
+  } catch (e) {}
+  function ok(){
+    try {
+      var a = JSON.parse(sessionStorage.getItem('cyc-portal-auth') || 'null');
+      return a && typeof a.p === 'string' && a.p && Number.isFinite(a.exp) && Date.now() < a.exp;
+    } catch (e) { return false; }
+  }
+  if (!ok()) { location.replace('/'); return; }
+  setInterval(function(){ if (!ok()) location.replace('/'); }, 15000);
+})();
+</script>
+
+<header class="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+    <div class="min-w-0">
+      <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">香港扶幼會 則仁中心 · 零用金後台管理</h1>
+      <p class="text-xs text-slate-500">數據總覽 → 計數 → 結算</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="location.href='/'" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">⌂ 宿舍服務主頁</button>
+      <button id="adminLogout" class="hidden px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">登出後台</button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- ====================== 後台密碼閘 ====================== -->
+  <section id="gateScreen" class="hidden max-w-sm mx-auto mt-10">
+    <div class="card bg-white p-6 space-y-4">
+      <h2 class="text-sm font-bold text-indigo-600 uppercase tracking-wide">後台登入</h2>
+      <p class="text-xs text-slate-500">後台載有所有支錢數據，請輸入後台密碼。</p>
+      <input id="gate_pw" type="password" autocomplete="off" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="後台密碼">
+      <p id="gate_err" class="text-xs text-red-500 h-4"></p>
+      <button id="gate_btn" class="w-full py-2.5 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition">進入後台</button>
+    </div>
+  </section>
+
+  <!-- ====================== 主畫面 ====================== -->
+  <section id="mainScreen" class="hidden space-y-6">
+
+    <!-- 篩選 -->
+    <div class="card bg-white p-4 flex flex-wrap items-end gap-3">
+      <label class="block">
+        <span class="text-xs font-medium text-slate-500">社別</span>
+        <select id="q_house" class="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white outline-none">
+          <option value="">全部</option><option>忠社</option><option>孝社</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-slate-500">舍友</span>
+        <select id="q_payee" class="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white outline-none">
+          <option value="">全部</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-slate-500">由</span>
+        <input id="q_from" type="date" class="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none">
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-slate-500">至</span>
+        <input id="q_to" type="date" class="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none">
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-slate-500">狀態</span>
+        <select id="q_settled" class="mt-1 rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white outline-none">
+          <option value="unsettled">未結算</option>
+          <option value="settled">已結算</option>
+          <option value="">全部</option>
+        </select>
+      </label>
+      <button id="q_go" class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition">查詢</button>
+      <button id="q_reset" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">重設</button>
+    </div>
+
+    <!-- 總覽卡 -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="card bg-white p-4"><div class="text-xs text-slate-500">總支出（已篩選）</div><div id="sum_total" class="text-2xl font-black text-slate-900 mt-1">$0.00</div><div id="sum_count" class="text-xs text-slate-400 mt-0.5">0 張單</div></div>
+      <div class="card bg-white p-4"><div class="text-xs text-slate-500">忠社</div><div id="sum_zhong" class="text-2xl font-black text-rose-600 mt-1">$0.00</div><div id="sum_zhong_n" class="text-xs text-slate-400 mt-0.5">0 張單</div></div>
+      <div class="card bg-white p-4"><div class="text-xs text-slate-500">孝社</div><div id="sum_xiao" class="text-2xl font-black text-blue-600 mt-1">$0.00</div><div id="sum_xiao_n" class="text-xs text-slate-400 mt-0.5">0 張單</div></div>
+      <div class="card bg-white p-4"><div class="text-xs text-slate-500">未結算金額</div><div id="sum_unsettled" class="text-2xl font-black text-amber-600 mt-1">$0.00</div><div id="sum_unsettled_n" class="text-xs text-slate-400 mt-0.5">0 張單</div></div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <!-- 按舍友統計 -->
+      <div class="card bg-white p-5">
+        <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide mb-3">按舍友統計</h3>
+        <div id="by_payee" class="text-sm space-y-1.5"></div>
+      </div>
+      <!-- 按類別統計 -->
+      <div class="card bg-white p-5">
+        <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide mb-3">按支出類別統計</h3>
+        <div id="by_cat" class="text-sm space-y-1.5"></div>
+      </div>
+    </div>
+
+    <!-- 記錄列表 + 結算 -->
+    <div class="card bg-white p-5 space-y-3">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide">支錢記錄</h3>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-500 flex items-center gap-1"><input type="checkbox" id="sel_all" class="accent-indigo-600"> 全選</label>
+          <button id="settle_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition" disabled>💰 結算所選</button>
+        </div>
+      </div>
+      <div id="rec_list" class="space-y-2"></div>
+    </div>
+
+    <!-- 更改後台密碼 -->
+    <div class="card bg-white p-5 space-y-3">
+      <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">更改後台密碼</h3>
+      <div class="flex gap-2 flex-wrap">
+        <input id="pw_old" type="password" autocomplete="off" class="flex-1 min-w-32 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none" placeholder="現時密碼">
+        <input id="pw_new" type="text" autocomplete="off" class="flex-1 min-w-32 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none" placeholder="新密碼">
+        <button id="pw_save" class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-slate-700 hover:bg-slate-800 transition">儲存</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 結算確認 modal -->
+<div id="settleModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/50"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="card bg-white p-6 w-full max-w-md space-y-4">
+      <h3 class="font-bold text-slate-900">💰 確認結算</h3>
+      <div id="settle_summary" class="text-sm space-y-1.5 max-h-60 overflow-y-auto"></div>
+      <label class="block">
+        <span class="text-xs font-medium text-slate-500">經手人（結算同事）</span>
+        <input id="settle_by" type="text" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none" placeholder="你嘅姓名">
+      </label>
+      <div class="flex gap-2">
+        <button id="settle_cancel" class="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">取消</button>
+        <button id="settle_ok" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition">確認結算</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-white text-sm shadow-lg"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SUPABASE_URL = 'https://abtsyfbbtpvozywqaofs.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_beq8adbuLrISIgnpbAaLEw_Da1Fva-r';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const DEFAULT_ADMIN_PW = '8888';
+
+let toastTimer;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 3000);
+}
+function escapeHtml(s){ return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const money = n => '$' + Number(n || 0).toFixed(2);
+function fmtTime(iso){
+  if (!iso) return '';
+  const d = new Date(iso), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+
+// ---- 後台密碼 ----
+async function getAdminPw(){
+  try {
+    const { data, error } = await sb.from('settings').select('value').eq('key', 'admin_pw').maybeSingle();
+    if (!error && data && typeof data.value === 'string' && data.value) return data.value;
+  } catch {}
+  return DEFAULT_ADMIN_PW;
+}
+async function tryGate(){
+  const pw = $('gate_pw').value;
+  const real = await getAdminPw();
+  if (pw === real) {
+    sessionStorage.setItem('cyc-admin-auth', '1');
+    showMain();
+  } else {
+    $('gate_err').textContent = '密碼錯誤。';
+  }
+}
+$('gate_btn').addEventListener('click', tryGate);
+$('gate_pw').addEventListener('keydown', e => { if (e.key === 'Enter') tryGate(); });
+$('adminLogout').addEventListener('click', () => {
+  sessionStorage.removeItem('cyc-admin-auth');
+  location.reload();
+});
+
+function showMain(){
+  $('gateScreen').classList.add('hidden');
+  $('mainScreen').classList.remove('hidden');
+  $('adminLogout').classList.remove('hidden');
+  loadData();
+}
+
+// ---- 數據 ----
+let rows = [];
+let settleColsOk = true;   // settled_at / settled_by 欄位係咪已開通
+const SETTLE_SQL = 'alter table applications add column if not exists settled_at timestamptz, add column if not exists settled_by text;';
+async function loadData(){
+  $('rec_list').innerHTML = '<p class="text-sm text-slate-400">載入中…</p>';
+  try {
+    const house = $('q_house').value, payee = $('q_payee').value;
+    const from = $('q_from').value, to = $('q_to').value, settled = $('q_settled').value;
+    const build = withSettle => {
+      let q = sb.from('applications').select('*').order('created_at', { ascending: false }).limit(500);
+      if (house) q = q.eq('house', house);
+      if (payee) q = q.eq('payee', payee);
+      if (from) q = q.gte('created_at', from + 'T00:00:00');
+      if (to) q = q.lte('created_at', to + 'T23:59:59');
+      if (withSettle && settled === 'unsettled') q = q.is('settled_at', null);
+      if (withSettle && settled === 'settled') q = q.not('settled_at', 'is', null);
+      return q;
+    };
+    let { data, error } = await build(true);
+    if (error && /settled_at|42703|schema cache/i.test(error.message)) {
+      // 結算欄位未開通：照顯示數據（全部當未結算），並提示要跑 SQL
+      settleColsOk = false;
+      ({ data, error } = await build(false));
+    } else {
+      settleColsOk = true;
+    }
+    if (error) throw new Error(error.message);
+    rows = data || [];
+    renderAll();
+  } catch (e) {
+    $('rec_list').innerHTML = `<p class="text-sm text-red-500">${escapeHtml(e.message)}</p>`;
+  }
+}
+$('q_go').addEventListener('click', loadData);
+$('q_reset').addEventListener('click', () => {
+  ['q_house','q_payee','q_from','q_to'].forEach(id => $(id).value = '');
+  $('q_settled').value = 'unsettled';
+  loadData();
+});
+
+function renderAll(){
+  // 舍友下拉（保持選項）
+  const cur = $('q_payee').value;
+  const names = [...new Set(rows.map(r => r.payee).filter(Boolean))].sort();
+  $('q_payee').innerHTML = '<option value="">全部</option>' + names.map(n => `<option${n === cur ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('');
+
+  // 總覽
+  const sum = arr => arr.reduce((a, r) => a + Number(r.amount || 0), 0);
+  const zhong = rows.filter(r => r.house === '忠社');
+  const xiao = rows.filter(r => r.house === '孝社');
+  const unsettled = rows.filter(r => !r.settled_at);
+  $('sum_total').textContent = money(sum(rows));
+  $('sum_count').textContent = rows.length + ' 張單';
+  $('sum_zhong').textContent = money(sum(zhong));
+  $('sum_zhong_n').textContent = zhong.length + ' 張單';
+  $('sum_xiao').textContent = money(sum(xiao));
+  $('sum_xiao_n').textContent = xiao.length + ' 張單';
+  $('sum_unsettled').textContent = money(sum(unsettled));
+  $('sum_unsettled_n').textContent = unsettled.length + ' 張單';
+
+  // 按舍友
+  const byP = {};
+  rows.forEach(r => {
+    const k = r.payee || '（未填）';
+    byP[k] = byP[k] || { total: 0, n: 0, house: r.house || '', unsettled: 0 };
+    byP[k].total += Number(r.amount || 0); byP[k].n++;
+    if (!r.settled_at) byP[k].unsettled += Number(r.amount || 0);
+  });
+  const pList = Object.entries(byP).sort((a, b) => b[1].total - a[1].total);
+  $('by_payee').innerHTML = pList.length ? pList.map(([name, v]) => `
+    <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
+      <span class="min-w-0 truncate">${escapeHtml(name)} <span class="text-xs text-slate-400">${escapeHtml(v.house)} · ${v.n} 張</span></span>
+      <span class="shrink-0 font-bold">${money(v.total)}${v.unsettled ? ` <span class="text-xs font-normal text-amber-600">（未結 ${money(v.unsettled)}）</span>` : ''}</span>
+    </div>`).join('') : '<p class="text-slate-400">冇數據。</p>';
+
+  // 按類別
+  const byC = {};
+  rows.forEach(r => (r.cats || []).forEach(c => {
+    const k = c === '其他' && r.cat_other ? `其他（${r.cat_other}）` : c;
+    byC[k] = (byC[k] || 0) + Number(r.amount || 0);
+  }));
+  const cList = Object.entries(byC).sort((a, b) => b[1] - a[1]);
+  $('by_cat').innerHTML = cList.length ? cList.map(([c, v]) => `
+    <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
+      <span>${escapeHtml(c)}</span><span class="font-bold">${money(v)}</span>
+    </div>`).join('') : '<p class="text-slate-400">冇數據。</p>';
+
+  // 記錄列表
+  const warn = settleColsOk ? '' : `<div class="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 mb-2">⚠️ 結算欄位未開通，而家全部記錄當「未結算」顯示，結算功能暫時用唔到。請去 Supabase → SQL Editor 跑：<code class="select-all">${SETTLE_SQL}</code></div>`;
+  $('rec_list').innerHTML = warn + (rows.length ? rows.map(r => `
+    <label class="flex items-start gap-3 border border-slate-200 rounded-xl p-3 text-sm ${r.settled_at ? 'bg-slate-50 opacity-70' : 'bg-white'}">
+      <input type="checkbox" class="sel_rec mt-1 accent-indigo-600" data-id="${r.id}" ${r.settled_at ? 'disabled' : ''}>
+      <span class="flex-1 min-w-0">
+        <span class="font-bold">${escapeHtml(r.payee)}</span>
+        <span class="text-xs text-slate-400">${escapeHtml(r.payee_id || '')} · ${escapeHtml(r.house || '')}</span>
+        <span class="font-bold text-blue-700 ml-2">${money(r.amount)}</span>
+        <span class="block text-xs text-slate-500 mt-0.5">${escapeHtml((r.cats || []).join('、'))}${r.cat_other ? '（' + escapeHtml(r.cat_other) + '）' : ''}${r.remark ? ' · 備註：' + escapeHtml(r.remark) : ''}</span>
+        <span class="block text-xs text-slate-400 mt-0.5">${fmtTime(r.decided_at || r.created_at)} · ${escapeHtml(r.staff || '')}${r.serial ? ' · 序號 ' + escapeHtml(r.serial) : ''}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}</span>
+        ${r.settled_at ? `<span class="block text-xs text-emerald-600 mt-0.5">✅ 已結算：${fmtTime(r.settled_at)}${r.settled_by ? ' · 經手 ' + escapeHtml(r.settled_by) : ''}</span>` : ''}
+      </span>
+    </label>`).join('') : '<p class="text-sm text-slate-400 text-center py-6">冇符合條件嘅記錄。</p>');
+  $('sel_all').checked = false;
+  refreshSettleBtn();
+}
+$('sel_all').addEventListener('change', () => {
+  document.querySelectorAll('.sel_rec:not(:disabled)').forEach(cb => cb.checked = $('sel_all').checked);
+  refreshSettleBtn();
+});
+$('rec_list').addEventListener('change', refreshSettleBtn);
+function selectedIds(){
+  return [...document.querySelectorAll('.sel_rec:checked')].map(cb => cb.dataset.id);
+}
+function refreshSettleBtn(){
+  const n = selectedIds().length;
+  $('settle_btn').disabled = !n;
+  $('settle_btn').textContent = n ? `💰 結算所選（${n} 張）` : '💰 結算所選';
+}
+
+// ---- 結算 ----
+$('settle_btn').addEventListener('click', () => {
+  if (!settleColsOk) { alert('結算欄位未開通，請先去 Supabase → SQL Editor 跑：\n' + SETTLE_SQL); return; }
+  const ids = selectedIds();
+  const sel = rows.filter(r => ids.includes(String(r.id)));
+  const byP = {};
+  sel.forEach(r => {
+    const k = r.payee || '（未填）';
+    byP[k] = byP[k] || { total: 0, n: 0 };
+    byP[k].total += Number(r.amount || 0); byP[k].n++;
+  });
+  const grand = sel.reduce((a, r) => a + Number(r.amount || 0), 0);
+  $('settle_summary').innerHTML =
+    Object.entries(byP).sort((a, b) => b[1].total - a[1].total).map(([name, v]) => `
+      <div class="flex justify-between border-b border-slate-100 pb-1"><span>${escapeHtml(name)} <span class="text-xs text-slate-400">${v.n} 張</span></span><span class="font-bold">${money(v.total)}</span></div>`).join('') +
+    `<div class="flex justify-between pt-2 text-base"><span class="font-bold">合計</span><span class="font-black text-emerald-700">${money(grand)}</span></div>`;
+  $('settleModal').classList.remove('hidden');
+});
+$('settle_cancel').addEventListener('click', () => $('settleModal').classList.add('hidden'));
+$('settle_ok').addEventListener('click', async () => {
+  const by = $('settle_by').value.trim();
+  if (!by) { alert('請填經手人姓名。'); $('settle_by').focus(); return; }
+  const ids = selectedIds();
+  const now = new Date().toISOString();
+  try {
+    const { error } = await sb.from('applications').update({ settled_at: now, settled_by: by }).in('id', ids);
+    if (error) throw new Error(error.message + (/column|schema cache/i.test(error.message) ? '（請去 Supabase → SQL Editor 跑：alter table applications add column if not exists settled_at timestamptz, add column if not exists settled_by text;）' : ''));
+    $('settleModal').classList.add('hidden');
+    $('settle_by').value = '';
+    toast(`已結算 ${ids.length} 張單。`);
+    loadData();
+  } catch (e) { alert('結算失敗：' + e.message); }
+});
+
+// ---- 更改後台密碼 ----
+$('pw_save').addEventListener('click', async () => {
+  const oldPw = $('pw_old').value, newPw = $('pw_new').value.trim();
+  if (!newPw) { alert('新密碼唔可以留空。'); return; }
+  const real = await getAdminPw();
+  if (oldPw !== real) { alert('現時密碼錯誤。'); return; }
+  const { error } = await sb.from('settings').upsert({ key: 'admin_pw', value: newPw });
+  if (error) { alert('儲存失敗：' + error.message); return; }
+  $('pw_old').value = ''; $('pw_new').value = '';
+  toast('已更改後台密碼。');
+});
+
+// ---- 初始化 ----
+if (sessionStorage.getItem('cyc-admin-auth') === '1') showMain();
+else $('gateScreen').classList.remove('hidden');
+</script>
+</body>
+</html>
