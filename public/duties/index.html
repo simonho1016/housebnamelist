@@ -792,12 +792,15 @@ $('historyBtn').addEventListener('click',openHistory);$('settingsHistoryBtn').ad
 $('historyClose').addEventListener('click',()=>$('historyDialog').close());$('historySearch').addEventListener('input',renderHistory);$('historyBackupBtn').addEventListener('click',downloadHistoryBackup);
 $('historyList').addEventListener('click',e=>{const view=e.target.closest('[data-history-view]'),remove=e.target.closest('[data-history-delete]');if(view){historySelected=view.dataset.historyView;renderHistory();$('historyDetail').scrollIntoView?.({block:'nearest',behavior:'smooth'})}if(remove)deleteRecord(remove.dataset.historyDelete);const upload=e.target.closest('[data-history-upload]');if(upload){const r=dutyHistory.find(r=>r.id===upload.dataset.historyUpload);if(r)cloudUpload(r,true)}});
 $('historyCsvBtn').addEventListener('click',()=>{const record=allRecords().find(r=>r.id===historySelected);if(record&&!busy)withSnapshot(record.snapshot,exportCsv)});
-function printRecordSheet(record){
+async function printRecordSheet(record){
  if(!record)return;
  const dormName=record.dorm&&DORMS[record.dorm]?DORMS[record.dorm].name:DORM_NAME;
  const images=withSnapshot(record.snapshot,()=>posterCanvases(dormName).map(c=>c.toDataURL('image/png')));
  $('printRecord').innerHTML=images.map(src=>`<div class="print-page"><img src="${src}" alt="舍務海報"></div>`).join('');
- document.body.classList.add('printing-record');window.print();
+ document.body.classList.add('printing-record');
+ // 海報係大型圖像，必須等完全解碼先列印，否則會印出空白頁
+ try{await Promise.all([...$('printRecord').querySelectorAll('img')].map(img=>img.decode?img.decode().catch(()=>{}):Promise.resolve()))}catch{}
+ window.print();
 }
 $('historyPrintBtn').addEventListener('click',()=>{const record=allRecords().find(r=>r.id===historySelected);if(record&&!busy)printRecordSheet(record)});
 $('gatePrintBtn').addEventListener('click',()=>{const record=gate.records.find(r=>r.id===$('gateRecordSelect').value)||gate.records[0];if(record)printRecordSheet(record)});
