@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>t</title></head><body>
+<pre id="log">TEST-START</pre>
+<iframe id="f1" src="/apply/" style="width:1200px;height:900px"></iframe>
+<iframe id="f2" src="/" style="width:1200px;height:900px"></iframe>
+<script>
+const log = m => document.getElementById('log').textContent += '\n' + m;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+window.addEventListener('error', e => log('PAGE-ERR ' + e.message));
+
+(async () => {
+  await sleep(6000);
+  // ---- 1. portal：冇後台管理卡 ----
+  try {
+    const p = document.getElementById('f2').contentWindow;
+    const cards = [...p.document.querySelectorAll('.card .card-name')].map(e => e.textContent.trim());
+    log('PORTAL-CARDS: ' + JSON.stringify(cards));
+    log('PORTAL-ADMIN-CARD: ' + (p.document.querySelector('.card-admin') ? 'STILL-EXISTS' : 'removed-ok'));
+  } catch (e) { log('PORTAL-ERR ' + e.message); }
+
+  // ---- 2. apply：直入填單頁 ----
+  const w = document.getElementById('f1').contentWindow;
+  try {
+    const vis = id => !w.document.getElementById(id).classList.contains('hidden');
+    log('APPLY-FORM-VISIBLE: ' + vis('sFormScreen'));
+    log('APPLY-LOGIN-VISIBLE: ' + vis('sLoginScreen'));
+    log('APPLY-HOME-HIDDEN-ON-FORM: ' + w.document.getElementById('homeBtn').classList.contains('hidden'));
+    // 支款人下拉有職員
+    await sleep(1500);
+    const staffSel = w.document.getElementById('f_staff');
+    const names = [...staffSel.options].map(o => o.value).filter(Boolean);
+    log('STAFF-OPTIONS: ' + JSON.stringify(names));
+
+    // 3. 揀普通職員（唔使密碼）
+    const normal = names.find(n => !['何文諾','何樂軒'].includes(n));
+    if (normal) {
+      staffSel.value = normal;
+      staffSel.dispatchEvent(new w.Event('change'));
+      await sleep(300);
+      log('NORMAL-PW-HIDDEN: ' + w.document.getElementById('f_staff_pw').classList.contains('hidden'));
+      log('NORMAL-STAFFUSER: ' + w.eval('staffUser'));
+    }
+    // 4. 揀何文諾（要密碼）
+    staffSel.value = '何文諾';
+    staffSel.dispatchEvent(new w.Event('change'));
+    await sleep(300);
+    log('PROTECTED-PW-SHOWN: ' + !w.document.getElementById('f_staff_pw').classList.contains('hidden'));
+    log('PROTECTED-STAFFUSER-EMPTY: ' + (w.eval('staffUser') === ''));
+    // 未驗證 → validateForm 應該彈 alert 擋住
+    w.eval('window.__alertMsg=""; window.alert = m => window.__alertMsg = m;');
+    w.eval('validateForm()');
+    log('VALIDATE-BLOCK: ' + w.eval('window.__alertMsg'));
+    // 輸入正確密碼
+    const pw = w.eval('staffPwOf("何文諾")');
+    w.document.getElementById('f_staff_pw').value = pw;
+    w.document.getElementById('f_staff_pw').dispatchEvent(new w.Event('input'));
+    await sleep(300);
+    log('VERIFY-OK-STAFFUSER: ' + w.eval('staffUser'));
+    log('VERIFY-PW-HIDDEN: ' + w.document.getElementById('f_staff_pw').classList.contains('hidden'));
+
+    // 5. 記錄頁有後台管理掣
+    w.document.getElementById('f_history').click();
+    await sleep(1200);
+    log('LIST-VISIBLE: ' + vis('sListScreen'));
+    const adminBtn = [...w.document.querySelectorAll('#sListScreen button')].find(b => b.textContent.includes('後台管理'));
+    log('LIST-ADMIN-BTN: ' + (adminBtn ? 'ok' : 'MISSING'));
+    log('LIST-NO-LOGOUT: ' + (w.document.getElementById('s_logout') ? 'STILL-EXISTS' : 'ok'));
+
+    // 6. 系統設定仍要密碼
+    w.document.getElementById('homeBtn').click();
+    await sleep(300);
+    w.document.getElementById('f_settings').click();
+    await sleep(300);
+    log('SETTINGS-LOGIN-SHOWN: ' + vis('sLoginScreen'));
+    log('SETTINGS-LOGIN-TITLE: ' + w.document.getElementById('sLoginTitle').textContent);
+  } catch (e) { log('APPLY-ERR ' + e.message); }
+
+  // ---- 7. admin：新元素存在 ----
+  try {
+    const a = await (await fetch('/admin/index.html')).text();
+    log('ADMIN-HAS-BY-STAFF: ' + a.includes('id="by_staff"'));
+    log('ADMIN-HAS-BAR: ' + a.includes('rounded-full bg-slate-100 overflow-hidden'));
+    log('ADMIN-SETTLE-BY-STAFF: ' + a.includes('墊支嘅款項'));
+  } catch (e) { log('ADMIN-ERR ' + e.message); }
+
+  log('TEST-END');
+})();
+</script>
+</body></html>
