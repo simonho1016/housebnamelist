@@ -798,8 +798,8 @@ async function printRecordSheet(record){
  const images=withSnapshot(record.snapshot,()=>posterCanvases(dormName).map(c=>c.toDataURL('image/png')));
  $('printRecord').innerHTML=images.map(src=>`<div class="print-page"><img src="${src}" alt="舍務海報"></div>`).join('');
  document.body.classList.add('printing-record');
- // 海報係大型圖像，必須等完全解碼先列印，否則會印出空白頁
- try{await Promise.all([...$('printRecord').querySelectorAll('img')].map(img=>img.decode?img.decode().catch(()=>{}):Promise.resolve()))}catch{}
+ // 海報係大型圖像，要等解碼完成先列印，否則會印出空白頁；加 4 秒上限防呆
+ try{await Promise.race([Promise.all([...$('printRecord').querySelectorAll('img')].map(img=>(img.decode?img.decode():Promise.resolve()).catch(()=>{}))),new Promise(res=>setTimeout(res,4000))])}catch{}
  window.print();
 }
 $('historyPrintBtn').addEventListener('click',()=>{const record=allRecords().find(r=>r.id===historySelected);if(record&&!busy)printRecordSheet(record)});
