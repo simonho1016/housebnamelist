@@ -196,8 +196,8 @@ input:focus-visible,select:focus-visible{outline:3px solid #2563eb;outline-offse
    <div class="play-head"><div class="tabs" role="tablist" aria-label="抽籤模式"><button class="tab active" id="tab-wheel" data-mode="wheel" role="tab" aria-selected="true" aria-controls="stage">◉ 輪盤</button><button class="tab" id="tab-ladder" data-mode="ladder" role="tab" aria-selected="false" aria-controls="stage" tabindex="-1">╫ 畫鬼腳</button><button class="tab" id="tab-cards" data-mode="cards" role="tab" aria-selected="false" aria-controls="stage" tabindex="-1">▧ 抽獎</button><button class="tab" id="tab-custom" data-mode="custom" role="tab" aria-selected="false" aria-controls="stage" tabindex="-1">✎ 自訂</button></div><span class="round-label" id="roundLabel">17 位舍友參與</span></div>
    <div class="stage" id="stage" role="tabpanel" aria-labelledby="tab-wheel">
     <p class="stage-intro" id="stageIntro">轉一轉，抽出下一位當值舍友。</p>
-    <div id="wheelView"><div class="wheel-picker"><label for="wheelJob">選擇要抽的舍務</label><select id="wheelJob"></select></div><div class="wheel-area"><div class="pointer" aria-hidden="true"></div><div class="wheel-shell"><canvas id="wheel" width="800" height="800" role="img" aria-label="參與舍友的舍號及名字輪盤"></canvas></div><div class="wheel-hub" aria-hidden="true">舍務<small>LET'S GO</small></div></div><p class="stage-caption" id="wheelCaption"></p></div>
-    <div id="ladderView" hidden><div class="ladder-toolbar"><span>上方選舍友 · 下方固定舍務</span><div class="ladder-actions"><button class="quiet" id="ladderAdd">增加橫線</button><button class="quiet" id="ladderShuffle">底部舍務洗牌</button></div></div><div class="ladder-scroll" id="ladderScroll"><div class="ladder-board" id="ladderBoard"><svg id="ladderSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="舍友與舍務之間的鬼腳路線"></svg><div class="ladder-picks" id="ladderPicks"></div></div></div><p class="ladder-note">上方選單可更換舍友，再按「沿線揭曉」。「增加橫線」會加入一條新橫線；底部舍務預先顯示；「洗牌」只重排未揭曉的舍務，已揭曉結果保留。可左右滑動查看路線。</p></div>
+    <div id="wheelView"><div class="wheel-picker"><label for="wheelJob">選擇要抽的舍務</label><select id="wheelJob"></select><button class="quiet" id="wheelShuffle" type="button" title="將輪盤上的舍友次序隨機打散，不再按舍號排序">🔀 隨機打散</button></div><div class="wheel-area"><div class="pointer" aria-hidden="true"></div><div class="wheel-shell"><canvas id="wheel" width="800" height="800" role="img" aria-label="參與舍友的舍號及名字輪盤"></canvas></div><div class="wheel-hub" aria-hidden="true">舍務<small>LET'S GO</small></div></div><p class="stage-caption" id="wheelCaption"></p></div>
+    <div id="ladderView" hidden><div class="ladder-toolbar"><span>上方選舍友 · 下方固定舍務</span><div class="ladder-actions"><button class="quiet" id="ladderMix" title="將舍友在路線上的位置隨機打散，不再按舍號排序；已揭曉結果不受影響">🔀 隨機打散舍友位置</button><button class="quiet" id="ladderAdd">增加橫線</button><button class="quiet" id="ladderShuffle">底部舍務洗牌</button></div></div><div class="ladder-scroll" id="ladderScroll"><div class="ladder-board" id="ladderBoard"><svg id="ladderSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="舍友與舍務之間的鬼腳路線"></svg><div class="ladder-picks" id="ladderPicks"></div></div></div><p class="ladder-note">上方選單可更換舍友，再按「沿線揭曉」。「隨機打散舍友位置」會重排舍友位置（不再按舍號排序），「增加橫線」會加入一條新橫線；底部舍務預先顯示；「洗牌」只重排未揭曉的舍務，已揭曉結果保留。可左右滑動查看路線。</p></div>
     <div id="cardsView" hidden><div class="card-picker"><label for="cardResident">① 選擇舍友</label><select id="cardResident" aria-describedby="cardSelectionHint"></select></div><p class="stage-caption" id="cardSelectionHint">先選舍友，再揀格。</p><div class="cards" id="cards"></div><p class="stage-caption">② 選擇抽獎格；每格藏着一項舍務。也可一次過打開餘下所有格。</p></div>
     <div id="customView" hidden><div class="custom-summary" id="customSummary"></div><div class="custom-scroll"><table class="custom-table"><thead><tr><th>舍友</th><th>舍務／狀態</th></tr></thead><tbody id="customRows"></tbody></table></div><p class="notice" id="customNotice" role="status"></p><button class="quiet" id="customBackupBtn">未分配舍友設為後備</button></div>
     <div id="doneView" class="all-done" hidden><div class="check" aria-hidden="true">✓</div><h3>本週舍務，安排好！</h3><p class="sub">所有舍友已完成分配，辛苦大家。</p></div>
@@ -326,7 +326,7 @@ const room=id=>RESIDENTS.find(r=>r.id===id)?.room||'',residentName=id=>RESIDENTS
 let settingsDraft=null;
 function openSettings(){if(busy)return;settingsDraft=configuration();renderSettings();$('settingsNotice').textContent='';configSyncStatus();$('settingsDialog').showModal()}
 function renderSettings(){
- $('settingsResidents').innerHTML=settingsDraft.residents.map((r,i)=>`<tr><td><input data-group="residents" data-index="${i}" data-field="room" value="${esc(r.room)}" maxlength="20" aria-label="第 ${i+1} 位舍友的舍號"></td><td><input data-group="residents" data-index="${i}" data-field="name" value="${esc(r.name)}" maxlength="60" aria-label="第 ${i+1} 位舍友姓名"></td><td><button class="quiet" data-delete="residents" data-index="${i}" aria-label="刪除舍友 ${esc(r.room+' '+r.name)}">刪除</button></td></tr>`).join('');
+ $('settingsResidents').innerHTML=settingsDraft.residents.map((r,i)=>`<tr><td><input data-group="residents" data-index="${i}" data-field="room" value="${esc(r.room)}" maxlength="20" aria-label="第 ${i+1} 位舍友的舍號"></td><td><input data-group="residents" data-index="${i}" data-field="name" value="${esc(r.name)}" maxlength="60" aria-label="第 ${i+1} 位舍友姓名"></td><td class="job-ops"><button class="quiet" data-move="residents" data-index="${i}" data-dir="-1" ${i===0?'disabled':''} aria-label="將 ${esc(r.room+' '+r.name)} 上移" title="上移">▲</button><button class="quiet" data-move="residents" data-index="${i}" data-dir="1" ${i===settingsDraft.residents.length-1?'disabled':''} aria-label="將 ${esc(r.room+' '+r.name)} 下移" title="下移">▼</button><button class="quiet" data-delete="residents" data-index="${i}" aria-label="刪除舍友 ${esc(r.room+' '+r.name)}">刪除</button></td></tr>`).join('');
  $('settingsJobs').innerHTML=settingsDraft.jobs.map((j,i)=>`<tr><td><input data-group="jobs" data-index="${i}" data-field="name" value="${esc(j.name)}" maxlength="60" aria-label="第 ${i+1} 項舍務名稱"></td><td><input data-group="jobs" data-index="${i}" data-field="time" value="${esc(j.time)}" maxlength="60" aria-label="第 ${i+1} 項舍務時間"></td><td><select data-group="jobs" data-index="${i}" data-field="kind" aria-label="第 ${i+1} 項舍務類型"><option value="duty" ${j.kind==='duty'?'selected':''}>一般舍務</option><option value="reserve" ${j.kind==='reserve'?'selected':''}>後備人手</option></select></td><td><input type="number" min="0" max="1000" data-group="jobs" data-index="${i}" data-field="min" value="${j.min}" aria-label="第 ${i+1} 項舍務最低人數"></td><td><input type="number" min="0" max="1000" data-group="jobs" data-index="${i}" data-field="count" value="${j.count??''}" placeholder="不限" aria-label="第 ${i+1} 項舍務最多人數"></td><td><input type="number" min="1" max="999" data-group="jobs" data-index="${i}" data-field="priority" value="${j.priority}" aria-label="第 ${i+1} 項舍務補足次序"></td><td class="job-ops"><button class="quiet" data-move="jobs" data-index="${i}" data-dir="-1" ${i===0?'disabled':''} aria-label="將 ${esc(j.name)} 上移" title="上移">▲</button><button class="quiet" data-move="jobs" data-index="${i}" data-dir="1" ${i===settingsDraft.jobs.length-1?'disabled':''} aria-label="將 ${esc(j.name)} 下移" title="下移">▼</button><button class="quiet" data-delete="jobs" data-index="${i}" aria-label="刪除舍務 ${esc(j.name)}">刪除</button></td></tr>`).join('');
  $('settingsResidentCount').textContent=`${settingsDraft.residents.length} 位舍友`;$('settingsJobCount').textContent=`${settingsDraft.jobs.length} 項舍務`;
 }
@@ -343,7 +343,7 @@ function saveSettings(){const before=JSON.stringify(configuration());const probl
 $('settingsBtn').addEventListener('click',openSettings);$('settingsClose').addEventListener('click',()=>$('settingsDialog').close());$('settingsSave').addEventListener('click',saveSettings);
 $('settingsDialog').addEventListener('input',e=>{const b=e.target;if(!b.dataset.group)return;const {group,index,field}=b.dataset;let value=b.value;if(['min','count','priority'].includes(field))value=value===''?(field==='count'?null:NaN):Number(value);settingsDraft[group][Number(index)][field]=value});
 $('settingsDialog').addEventListener('change',e=>{const b=e.target;if(b.dataset.field==='kind'){settingsDraft.jobs[Number(b.dataset.index)].kind=b.value;if(b.value==='reserve')settingsDraft.jobs[Number(b.dataset.index)].min=0;renderSettings()}});
-$('settingsDialog').addEventListener('click',e=>{const m=e.target.closest('[data-move]');if(m){const list=settingsDraft[m.dataset.move],i=Number(m.dataset.index),t=i+Number(m.dataset.dir);if(t<0||t>=list.length)return;[list[i],list[t]]=[list[t],list[i]];renderSettings();$('settingsJobs').querySelector(`[data-move][data-index="${t}"][data-dir="${m.dataset.dir}"]`)?.focus();return}const b=e.target.closest('[data-delete]');if(!b)return;settingsDraft[b.dataset.delete].splice(Number(b.dataset.index),1);renderSettings()});
+$('settingsDialog').addEventListener('click',e=>{const m=e.target.closest('[data-move]');if(m){const list=settingsDraft[m.dataset.move],i=Number(m.dataset.index),t=i+Number(m.dataset.dir);if(t<0||t>=list.length)return;[list[i],list[t]]=[list[t],list[i]];renderSettings();$('settingsDialog').querySelector(`[data-move="${m.dataset.move}"][data-index="${t}"][data-dir="${m.dataset.dir}"]`)?.focus();return}const b=e.target.closest('[data-delete]');if(!b)return;settingsDraft[b.dataset.delete].splice(Number(b.dataset.index),1);renderSettings()});
 $('addResidentBtn').addEventListener('click',()=>{settingsDraft.residents.push({id:Math.max(0,...ALL,...settingsDraft.residents.map(r=>r.id))+1,room:'',name:''});renderSettings()});
 $('addJobBtn').addEventListener('click',()=>{settingsDraft.jobs.push({name:'',time:'',kind:'duty',min:0,count:1,priority:Math.min(999,Math.max(0,...settingsDraft.jobs.map(j=>j.priority))+1),color:'#3688a4'});renderSettings()});
 
@@ -369,7 +369,7 @@ function makeRound(active,useAvoid=true){
  }
  if(!entries)entries=shuffle(active).map((id,i)=>({id,job:slots[i],revealed:false}));
  const rungs=Array.from({length:active.length>1?58:0},(_,i)=>({left:randomInt(active.length-1),y:72+i*3.65}));
- return{entries,rungs,cardOrder:shuffle(active),ladderOrder:[...active].sort((a,b)=>a-b),created:new Date().toISOString(),last:null,repeatFallback:fallback};
+ return{entries,rungs,cardOrder:shuffle(active),ladderOrder:[...active].sort((a,b)=>a-b),wheelOrder:[...active].sort((a,b)=>a-b),created:new Date().toISOString(),last:null,repeatFallback:fallback};
 }
 // 取最近一筆記錄中各位舍友做過的舍務名稱（以名稱比對，舍務改名後自動略過）
 function lastRoundJobs(){
@@ -436,6 +436,14 @@ function shuffleLadderDuties(){
  if(busy||!ready())return;ensureRound();const list=pending();if(list.length<2)return;
  const jobs=shuffle(list.map(e=>e.job));list.forEach((e,i)=>e.job=jobs[i]);save();renderLadder();renderResults();renderControls();toast('已將未揭曉的底部舍務洗牌；已揭曉結果保留。');
 }
+function shuffleWheelOrder(){
+ if(busy||!ready())return;ensureRound();
+ state.round.wheelOrder=shuffle(state.round.wheelOrder||[...state.active]);save();drawWheel();toast('已隨機打散輪盤上的舍友次序（不再按舍號排序）。');
+}
+function shuffleLadderOrder(){
+ if(busy||!ready())return;ensureRound();
+ state.round.ladderOrder=shuffle(state.round.ladderOrder);save();renderLadder();renderControls();toast('已隨機打散舍友在路線上的位置；已揭曉結果不受影響。');
+}
 function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,3500)}
 function setBusy(value){busy=value;renderControls()}
 function renderControls(){
@@ -495,9 +503,11 @@ function addLadderRung(){
  r.ladderOrder.forEach((id,lane)=>{r.entries.find(e=>e.id===id).job=oldBottom[traceLane(lane,r.rungs).end]});
  save();renderLadder();renderResults();renderControls();toast(`已加入橫線，目前共有 ${r.rungs.length} 條；已揭曉結果保留。`);
 }
+// 輪盤上舍友的排列次序：可用「隨機打散」改為隨機，否則按舍號排序
+function wheelPeopleOrder(){const list=pending().map(e=>e.id),order=state.round?.wheelOrder;return order?list.sort((a,b)=>order.indexOf(a)-order.indexOf(b)):list.sort((a,b)=>a-b)}
 function drawWheel(){
  renderWheelPicker();
- const people=(state.round?pending().map(e=>e.id):[...state.active]).sort((a,b)=>a-b);
+ const people=(state.round?wheelPeopleOrder():[...state.active].sort((a,b)=>a-b));
  const canvas=$('wheel'),c=canvas.getContext('2d'),n=people.length;canvas.style.transform='rotate(0deg)';wheelAngle=0;c.clearRect(0,0,800,800);
  if(!n){c.fillStyle='#edf4ee';c.beginPath();c.arc(400,400,399,0,Math.PI*2);c.fill();$('wheelCaption').textContent='請先選擇參與舍友。';return}
  const colors=['#e7f2db','#fff5c4','#b7dccc','#f3d777','#d9e9e1','#f0e8c9'];
@@ -551,7 +561,7 @@ function render(){renderRoster();renderStage();renderResults();renderControls();
 function revealEntry(entry){entry.revealed=true;state.round.last=entry.id;save();announce(entry);renderResults()}
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function animateWheel(entry){
- drawWheel();const list=pending().slice().sort((a,b)=>a.id-b.id),index=list.findIndex(e=>e.id===entry.id),step=360/list.length;
+ drawWheel();const list=wheelPeopleOrder(),index=list.findIndex(e=>e.id===entry.id),step=360/list.length;
  const landing=(360-((index+.5)*step)%360)%360,target=360*5+landing,from=wheelAngle;
  const duration=reduced()?0:2900,start=performance.now();
  await new Promise(resolve=>{function frame(now){const p=duration?Math.min(1,(now-start)/duration):1;const eased=1-Math.pow(1-p,4);$('wheel').style.transform=`rotate(${from+(target-from)*eased}deg)`;if(p<1)requestAnimationFrame(frame);else resolve()}requestAnimationFrame(frame)});
@@ -705,7 +715,7 @@ function changeWeek(field,value){
 $('weekStart').addEventListener('change',e=>changeWeek('weekStart',e.target.value));$('weekEnd').addEventListener('change',e=>changeWeek('weekEnd',e.target.value));
 $('avoidRepeat').addEventListener('change',e=>{if(busy||state.round){e.target.checked=Boolean(state.avoidRepeat);toast('本輪抽籤已開始，請按「重新抽籤」後再更改此設定。');return}state.avoidRepeat=e.target.checked;save();toast(state.avoidRepeat?'已開啟「避免重複上週舍務」，抽籤時會自動避開舍友上週做過的舍務。':'已關閉「避免重複上週舍務」。')});
 $('wheelJob').addEventListener('change',e=>selectWheelJob(Number(e.target.value)));$('jobList').addEventListener('click',e=>{const b=e.target.closest('.member-cancel');if(b)cancelAssignment(Number(b.dataset.id))});$('ladderAdd').addEventListener('click',addLadderRung);
-$('cardResident').addEventListener('change',e=>selectCardResident(Number(e.target.value)));$('ladderShuffle').addEventListener('click',shuffleLadderDuties);$('ladderPicks').addEventListener('change',e=>{const b=e.target.closest('.ladder-resident');if(b)setLadderResident(Number(b.dataset.lane),Number(b.value))});
+$('cardResident').addEventListener('change',e=>selectCardResident(Number(e.target.value)));$('ladderShuffle').addEventListener('click',shuffleLadderDuties);$('ladderMix').addEventListener('click',shuffleLadderOrder);$('wheelShuffle').addEventListener('click',shuffleWheelOrder);$('ladderPicks').addEventListener('change',e=>{const b=e.target.closest('.ladder-resident');if(b)setLadderResident(Number(b.dataset.lane),Number(b.value))});
 $('cards').addEventListener('click',e=>{const b=e.target.closest('.card');if(b){const id=Number(b.dataset.id);if(entries().find(e=>e.id===id)?.revealed)cancelAssignment(id);else draw(id)}});$('ladderPicks').addEventListener('click',e=>{const b=e.target.closest('.ladder-pick');if(b)draw(Number(b.dataset.id))});
 const HISTORY_KEY=KEY+'-history-v1';
 let dutyHistory=[],historySelected=null,historyReadError=false,historyStorageRaw=null;
@@ -1005,8 +1015,13 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('online',()=>{if(GATE_UNLOCKED&&configSync.pending)cloudConfigPush(false)});
 
 // ---- Version history ----
-const APP_VERSION='1.2.0';
+const APP_VERSION='1.2.1';
 const VERSION_HISTORY=[
+ {version:'1.2.1',date:'2026-09-16',author:'何文諾社工',title:'舍友排序及隨機打散',sections:[
+  ['設定',['舍友名單新增 ▲▼ 上下移動，可自訂舍友排序；舍友名單、自訂分配等畫面跟隨新次序']],
+  ['輪盤及畫鬼腳',['新增「隨機打散」：一按即可將舍友次序隨機打亂，不再按舍號排序','輪盤打散的是輪盤上的排列；畫鬼腳打散的是舍友在路線上的位置；兩者都不影響已揭曉結果']],
+  ['修訂',['記錄海報列印前會等圖像完全載入，避免印出空白頁']]
+ ]},
  {version:'1.2.0',date:'2026-09-16',author:'何文諾社工',title:'避免重複舍務及海報列印',sections:[
   ['新設定：避免重複舍務',['抽籤前可剔選「避免重複上週舍務」，系統會自動識別舍友上週做過的舍務，抽籤時改派其他舍務','若參與人數太少、未能全部避開，會即時提醒「人數較少，未能安排避開上週舍務」，並按一般抽籤處理','自訂分配不受此設定影響，仍由你親自安排']],
   ['列印',['閘頁「上次抽籤記錄」及「舍務記錄」內的列印一律改為漫畫海報風格，與系統內的海報一致','閘頁進入按鈕簡化為「進入抽籤系統」']]

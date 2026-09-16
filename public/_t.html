@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>duties v1.2.1 e2e</title></head>
+<body><pre id="log">RUNNING
+</pre>
+<script>
+const log=m=>{document.getElementById('log').textContent+=m+'\n'};
+const pass=m=>log('PASS: '+m),fail=m=>log('FAIL: '+m);
+function loadFrame(url){return new Promise((res,rej)=>{const f=document.createElement('iframe');f.style.cssText='width:1280px;height:900px';f.onload=()=>setTimeout(()=>res(f),400);f.onerror=rej;f.src=url;document.body.appendChild(f)})}
+(async()=>{
+let f,d,w;
+try{
+ sessionStorage.setItem('cyc-portal-auth',JSON.stringify({p:'testpass',exp:Date.now()+15*60*1000}));
+ sessionStorage.setItem('dorm-duty-dorm','hau');sessionStorage.setItem('dorm-duty-unlocked','1');
+ sessionStorage.setItem('dorm-duty-passcode','testpass');sessionStorage.setItem('dorm-duty-auth-exp',String(Date.now()+15*60*1000));
+ f=await loadFrame('/duties/?cb=v121');
+ w=f.contentWindow;d=f.contentDocument;
+
+ if(w.eval("APP_VERSION")==='1.2.1')pass('V1 版本 1.2.1');else fail('V1 版本='+w.eval("APP_VERSION"));
+
+ // V2 設定舍友 ▲▼ 排序
+ w.eval("settingsDraft=configuration();renderSettings()");
+ if(d.querySelector('[data-move="residents"]'))pass('V2 舍友有上下移動掣');else fail('V2 舍友缺移動掣');
+ const before=w.eval("settingsDraft.residents.map(r=>r.id).join(',')");
+ d.querySelector('[data-move="residents"][data-index="0"][data-dir="1"]').click();
+ const after=w.eval("settingsDraft.residents.map(r=>r.id).join(',')");
+ const b0=before.split(','),a0=after.split(',');
+ if(a0[0]===b0[1]&&a0[1]===b0[0]&&a0.length===b0.length)pass('V2 下移一位正確交換');else fail(`V2 ${before} -> ${after}`);
+
+ // V3 輪盤隨機打散
+ const r3=w.eval(`(()=>{
+  ensureRound();const sorted=[...state.active].sort((a,b)=>a-b).join(',');
+  if(state.round.wheelOrder.join(',')!==sorted)return {err:'初始 wheelOrder 未按舍號排序'};
+  let changed=false;
+  for(let i=0;i<5;i++){shuffleWheelOrder();if(state.round.wheelOrder.join(',')!==sorted){changed=true;break}}
+  const sameSet=[...state.round.wheelOrder].sort((a,b)=>a-b).join(',')===sorted;
+  const wo=wheelPeopleOrder().join(','),expect=state.round.wheelOrder.filter(id=>pending().some(e=>e.id===id)).join(',');
+  return {changed,sameSet,match:wo===expect};
+ })()`);
+ if(r3.err)fail('V3 '+r3.err);
+ else{if(r3.changed)pass('V3 輪盤次序可打散');else fail('V3 打散五次都冇變（極罕見或無效）');
+ if(r3.sameSet)pass('V3 打散後仍係同一班人');else fail('V3 人員改變咗');
+ if(r3.match)pass('V3 輪盤繪製次序跟 wheelOrder');else fail('V3 輪盤次序不一致')}
+
+ // V4 鬼腳隨機打散位置＋已揭曉保留
+ const r4=w.eval(`(()=>{
+  const before=[...state.round.ladderOrder].join(',');
+  const e0=entries()[0];e0.revealed=true;state.round.last=e0.id;
+  let changed=false;
+  for(let i=0;i<5;i++){shuffleLadderOrder();if(state.round.ladderOrder.join(',')!==before){changed=true;break}}
+  const sameSet=[...state.round.ladderOrder].sort((a,b)=>a-b).join(',')===[...state.active].sort((a,b)=>a-b).join(',');
+  const stillRevealed=entries()[0].revealed===true;
+  renderLadder();
+  return {changed,sameSet,stillRevealed,svg:document.getElementById('ladderSvg').innerHTML.length>100};
+ })()`);
+ if(r4.changed)pass('V4 鬼腳位置可打散');else fail('V4 打散無效');
+ if(r4.sameSet)pass('V4 打散後仍係同一班人');else fail('V4 人員改變咗');
+ if(r4.stillRevealed)pass('V4 已揭曉結果保留');else fail('V4 揭曉狀態受影響');
+ if(r4.svg)pass('V4 鬼腳圖正常重繪');else fail('V4 重繪失敗');
+
+ // V5 掣存在
+ if(d.getElementById('wheelShuffle')&&d.getElementById('ladderMix'))pass('V5 兩個打散掣已加入');else fail('V5 掣缺失');
+
+ f.remove();
+ ['cyc-portal-auth','dorm-duty-dorm','dorm-duty-unlocked','dorm-duty-passcode','dorm-duty-auth-exp'].forEach(k=>sessionStorage.removeItem(k));
+}catch(e){fail('異常: '+(e&&e.message||e))}
+log('DONE');
+})();
+</script></body></html>
