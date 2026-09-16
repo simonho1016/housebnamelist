@@ -1,0 +1,42 @@
+<!doctype html><meta charset="utf-8"><title>t</title>
+<pre id="log"></pre>
+<iframe id="w" style="width:480px;height:900px"></iframe>
+<script>
+const log = m => document.getElementById('log').textContent += m + '\n';
+const w = document.getElementById('w');
+const load = src => new Promise(r => { w.onload = () => setTimeout(r, 500); w.src = src; });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+(async () => {
+  try {
+    await load('/');
+    w.contentWindow.sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'x', exp: Date.now() + 900000 }));
+    await load('/apply/');
+    const d = w.contentDocument;
+    const ev = s => w.contentWindow.eval(s);
+    // T1 簽名板結構：適中尺寸 + 滑桿
+    log('T1 slider=' + (d.getElementById('signScale') !== null));
+    log('T1 canvas220=' + (d.getElementById('signCanvas').style.height === '220px'));
+    // T2 彈出簽名板（窄屏 480px 模擬手機）
+    ev('openSignPad("測試")');
+    await sleep(500);
+    log('T2 shown=' + !d.getElementById('signModal').classList.contains('hidden'));
+    const box = ev('document.querySelector("#signModal .max-w-lg") !== null');
+    log('T2 compactCard=' + box);
+    const dim = ev('({w: signCanvas.width, h: signCanvas.height})');
+    log('T2 canvasSize=' + JSON.stringify(dim));
+    // T3 滑桿調整 → applyPayeeSignature 用新尺寸
+    ev('$("signScale").value = 70; $("signScale").dispatchEvent(new Event("input"))');
+    log('T3 label=' + d.getElementById('signScaleVal').textContent);
+    log('T3 saved=' + ev('localStorage.getItem("sign-scale")'));
+    ev('payeeSigData = "data:image/png;base64,x"; applyPayeeSignature(true)');
+    log('T3 imgH=' + d.getElementById('p_payee_sign').style.height);
+    log('T3 imgW=' + d.getElementById('p_payee_sign').style.maxWidth);
+    ev('$("signScale").value = 130; $("signScale").dispatchEvent(new Event("input"))');
+    ev('applyPayeeSignature(true)');
+    log('T3 imgH130=' + d.getElementById('p_payee_sign').style.height);
+    ev('applyPayeeSignature(false); closeSignPad(null)');
+    log('T4 v124=' + d.body.textContent.includes('v1.2.4'));
+  } catch (e) { log('ERR ' + e.message); }
+  log('DONE');
+})();
+</script>
