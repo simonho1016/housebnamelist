@@ -449,9 +449,19 @@ create policy "anon access" on settings
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">版本記錄</h3>
       <div class="text-sm space-y-3">
         <div class="flex gap-3">
-          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.3</span>
+          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.4</span>
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
+            <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>簽名板改返適中尺寸（取消強制全螢幕，手機直向都用到）</li>
+              <li>新增「簽名大小」滑桿（60%–160%），調整放入單據嘅簽名大小，設定會記住</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="shrink-0 text-xs font-bold text-white bg-blue-600 rounded-full px-2.5 py-1 h-fit">v1.2.3</span>
+          <div>
+            <div class="font-bold text-slate-900">序號＋雲端簽名版 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>簽名板改為全螢幕橫向，確認後自動裁剪修正簽名格式先放入單據</li>
               <li>保留 Notion ID：表單方格＋PDF 右上角</li>
@@ -524,25 +534,29 @@ create policy "anon access" on settings
 
 </main>
 
-<!-- ====================== 舍友簽名板（全螢幕橫向） ====================== -->
+<!-- ====================== 舍友簽名板 ====================== -->
 <div id="signModal" class="no-print fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-white flex flex-col">
-    <div class="flex items-center justify-center px-4 py-2.5 border-b border-slate-200">
+  <div class="absolute inset-0 bg-black/50"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 w-full max-w-lg space-y-3">
       <div class="text-center">
-        <h3 class="font-bold text-slate-900">✍️ 舍友簽名</h3>
-        <p class="text-xs text-slate-500">請舍友 <strong id="signWho" class="text-slate-900"></strong> 喺下面空白位用手指／觸控筆簽名</p>
+        <h3 class="font-bold text-slate-900 text-lg">✍️ 舍友簽名</h3>
+        <p class="text-xs text-slate-500 mt-1">請舍友 <strong id="signWho" class="text-slate-900"></strong> 喺下面格仔用手指／觸控筆簽名</p>
       </div>
-    </div>
-    <div class="flex-1 relative min-h-0">
-      <canvas id="signCanvas" class="absolute inset-0 w-full h-full block"></canvas>
-    </div>
-    <div class="px-4 pt-2 pb-1 border-t border-slate-200">
-      <div class="flex gap-2 max-w-lg mx-auto">
+      <div class="rounded-xl overflow-hidden" style="border:3px solid #141414; box-shadow:4px 4px 0 #141414;">
+        <canvas id="signCanvas" class="w-full block" style="height:220px;"></canvas>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs font-medium text-slate-500 shrink-0">簽名大小</span>
+        <input id="signScale" type="range" min="60" max="160" step="5" value="100" class="flex-1 accent-blue-600">
+        <span id="signScaleVal" class="text-xs font-bold text-slate-700 w-10 text-right">100%</span>
+      </div>
+      <div class="flex gap-2">
         <button id="signClear" class="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">🧽 清除重簽</button>
         <button id="signCancel" class="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">取消</button>
         <button id="signOk" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition" disabled>✔️ 確認簽名</button>
       </div>
-      <p class="text-xs text-slate-400 text-center mt-1">簽名會自動裁剪調整後先放入單據，並隨記錄存上雲端方便重印。</p>
+      <p class="text-xs text-slate-400 text-center">簽名會自動裁剪調整後先放入單據，並隨記錄存上雲端方便重印。</p>
     </div>
   </div>
 </div>
@@ -1317,33 +1331,25 @@ function openSignPad(payee){
     signResolve = resolve;
     $('signWho').textContent = payee || '';
     $('signModal').classList.remove('hidden');
-    // 盡量進入全螢幕並鎖定橫向（手機）；電腦本身已係全螢幕 modal
-    try {
-      const el = $('signModal');
-      const req = el.requestFullscreen || el.webkitRequestFullscreen;
-      if (req) {
-        const p = req.call(el);
-        if (p && p.then) p.then(() => {
-          try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch {}
-        }).catch(() => {});
-      }
-    } catch {}
     // 等 modal 顯示先度到 canvas 尺寸
     requestAnimationFrame(() => { sizeSignCanvas(); clearSignPad(); });
   });
 }
 function closeSignPad(result){
   $('signModal').classList.add('hidden');
-  try {
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
-      const exit = document.exitFullscreen || document.webkitExitFullscreen;
-      if (exit) { const p = exit.call(document); if (p && p.catch) p.catch(() => {}); }
-    }
-    if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
-  } catch {}
   const r = signResolve; signResolve = null;
   if (r) r(result);
 }
+
+// ---- 簽名大小（放入單據嘅比例，60%–160%）----
+let signScalePct = Number(localStorage.getItem('sign-scale')) || 100;
+$('signScale').value = signScalePct;
+$('signScaleVal').textContent = signScalePct + '%';
+$('signScale').addEventListener('input', () => {
+  signScalePct = Number($('signScale').value) || 100;
+  $('signScaleVal').textContent = signScalePct + '%';
+  localStorage.setItem('sign-scale', signScalePct);
+});
 // 自動裁剪：截取簽名實際範圍（去走多餘空白），放入單據時大細一致
 function exportSignature(){
   const w = signCanvas.width, h = signCanvas.height;
@@ -1378,7 +1384,12 @@ $('signCancel').addEventListener('click', () => closeSignPad(null));
 
 function applyPayeeSignature(show){
   const img = $('p_payee_sign');
-  if (show && payeeSigData){ img.src = payeeSigData; img.style.display = 'block'; }
+  if (show && payeeSigData){
+    img.src = payeeSigData;
+    img.style.height = Math.round(46 * signScalePct / 100) + 'px';
+    img.style.maxWidth = Math.round(170 * signScalePct / 100) + 'px';
+    img.style.display = 'block';
+  }
   else { img.style.display = 'none'; }
 }
 
