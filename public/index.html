@@ -121,6 +121,16 @@
   .bed.zhong{background-color:var(--zhong);transform:rotate(-2deg)}
   .bed.xiao{background-color:var(--xiao);transform:rotate(2deg)}
 
+  /* 零用金卡：金黃主題 + 硬幣標記 */
+  .card-apply{background-color:#fff3c4}
+  .coin{
+    width:64px;height:64px;display:flex;align-items:center;justify-content:center;
+    font-size:30px;font-weight:900;color:#8a5a00;border-radius:50%;
+    background:var(--duty-yellow);border:3px solid var(--ink);
+    box-shadow:3px 3px 0 var(--ink), inset 0 0 0 4px rgba(255,255,255,.55);
+    transform:rotate(6deg);
+  }
+
   /* 卡內忠／孝直達掣 */
   .dorm-btns{display:flex;gap:12px;margin-top:2px}
   .dorm-btn{
@@ -152,7 +162,7 @@
     <!-- 登入閘：密碼統一在此輸入 -->
     <section class="lock" id="lockView" hidden>
       <div class="lock-icon" aria-hidden="true">🔒</div>
-      <p>舍務抽籤及舍友名單載有舍友個人資料，只供獲授權的職員使用。<br>請輸入共用密碼；登入後 <strong>15 分鐘</strong>會自動登出。</p>
+      <p>舍務抽籤、舍友名單及零用金申請載有舍友個人資料，只供獲授權的職員使用。<br>請輸入共用密碼；登入後 <strong>15 分鐘</strong>會自動登出。</p>
       <form class="lock-row" id="lockForm">
         <input type="password" id="lockInput" autocomplete="current-password" placeholder="共用密碼" maxlength="200" aria-label="共用密碼">
         <button type="submit" class="btn green" id="lockGo">進入</button>
@@ -194,9 +204,16 @@
           </span>
           <span class="card-url">/roster/</span>
         </div>
+
+        <div class="card card-apply" data-url="/apply/" role="link" tabindex="0" aria-label="零用金申請">
+          <span class="coin" aria-hidden="true">$</span>
+          <span class="card-name">零用金申請</span>
+          <span class="card-desc">職員填單、舍友即場簽名，<br>列印單據或電子存檔上 Notion。</span>
+          <span class="card-url">/apply/</span>
+        </div>
       </div>
 
-      <p class="note">兩個系統各自獨立運作，資料均儲存於雲端。</p>
+      <p class="note">三個系統各自獨立運作，資料均儲存於雲端。</p>
     </section>
 
     <p class="foot">創作者：何文諾社工（香港扶幼會則仁中心）</p>
