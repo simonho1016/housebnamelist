@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>body{margin:0;background:#888}img{width:100%;display:block}</style></head>
+<body><script>
+sessionStorage.setItem('cyc-portal-auth',JSON.stringify({p:'testpass',exp:Date.now()+15*60*1000}));
+sessionStorage.setItem('dorm-duty-dorm','hau');sessionStorage.setItem('dorm-duty-unlocked','1');
+sessionStorage.setItem('dorm-duty-passcode','testpass');sessionStorage.setItem('dorm-duty-auth-exp',String(Date.now()+15*60*1000));
+const f=document.createElement('iframe');f.style.cssText='width:1px;height:1px;position:absolute;left:-99px';f.src='/duties/?cb=v';
+f.onload=()=>setTimeout(()=>{
+ const w=f.contentWindow;
+ w.print=()=>{};
+ w.eval(`(()=>{
+  state.statuses=Object.fromEntries(ALL.map(id=>[id,'normal']));state.active=[...ALL];
+  const snap={...clone(state),config:configuration()};
+  snap.round={entries:state.active.map((id,i)=>({id,job:i%JOBS.length,revealed:true})),rungs:[],cardOrder:[...state.active],ladderOrder:[...state.active],created:new Date().toISOString(),last:null};
+  printRecordSheet({id:'duty-p',dorm:DORM_ID,title:'測試',savedAt:new Date().toISOString(),reason:'manual',snapshot:snap});
+ })()`);
+ document.querySelectorAll('img').forEach(x=>x.remove());
+ const img=w.eval("$('printRecord').querySelector('img')");
+ if(img)document.body.appendChild(img.cloneNode());
+ document.title='READY';
+},600);
+document.body.appendChild(f);
+</script></body></html>
