@@ -112,11 +112,16 @@
       <div class="card bg-white p-4"><div class="text-xs text-slate-500">未結算金額</div><div id="sum_unsettled" class="text-2xl font-black text-amber-600 mt-1">$0.00</div><div id="sum_unsettled_n" class="text-xs text-slate-400 mt-0.5">0 張單</div></div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       <!-- 按舍友統計 -->
       <div class="card bg-white p-5">
         <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide mb-3">按舍友統計</h3>
-        <div id="by_payee" class="text-sm space-y-1.5"></div>
+        <div id="by_payee" class="text-sm space-y-2.5"></div>
+      </div>
+      <!-- 按同事統計（墊支） -->
+      <div class="card bg-white p-5">
+        <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide mb-3">按同事統計（墊支）</h3>
+        <div id="by_staff" class="text-sm space-y-2.5"></div>
       </div>
       <!-- 按類別統計 -->
       <div class="card bg-white p-5">
@@ -294,11 +299,41 @@ function renderAll(){
     if (!r.settled_at) byP[k].unsettled += Number(r.amount || 0);
   });
   const pList = Object.entries(byP).sort((a, b) => b[1].total - a[1].total);
-  $('by_payee').innerHTML = pList.length ? pList.map(([name, v]) => `
-    <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
-      <span class="min-w-0 truncate">${escapeHtml(name)} <span class="text-xs text-slate-400">${escapeHtml(v.house)} · ${v.n} 張</span></span>
-      <span class="shrink-0 font-bold">${money(v.total)}${v.unsettled ? ` <span class="text-xs font-normal text-amber-600">（未結 ${money(v.unsettled)}）</span>` : ''}</span>
-    </div>`).join('') : '<p class="text-slate-400">冇數據。</p>';
+  const pMax = pList.length ? pList[0][1].total : 0;
+  $('by_payee').innerHTML = pList.length ? pList.map(([name, v]) => {
+    const pct = pMax ? Math.max(4, Math.round(v.total / pMax * 100)) : 0;
+    const barCls = v.house === '孝社' ? 'bg-blue-400' : 'bg-rose-400';
+    return `
+    <div class="border-b border-slate-100 pb-1.5">
+      <div class="flex items-center justify-between gap-2">
+        <span class="min-w-0 truncate">${escapeHtml(name)} <span class="text-xs text-slate-400">${escapeHtml(v.house)} · ${v.n} 張</span></span>
+        <span class="shrink-0 font-bold">${money(v.total)}${v.unsettled ? ` <span class="text-xs font-normal text-amber-600">（未結 ${money(v.unsettled)}）</span>` : ''}</span>
+      </div>
+      <div class="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full ${barCls}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('') : '<p class="text-slate-400">冇數據。</p>';
+
+  // 按同事（墊支人）：通常係同事先俾錢，用呢度睇邊個墊咗幾多
+  const byS = {};
+  rows.forEach(r => {
+    const k = r.staff || '（未填）';
+    byS[k] = byS[k] || { total: 0, n: 0, unsettled: 0 };
+    byS[k].total += Number(r.amount || 0); byS[k].n++;
+    if (!r.settled_at) byS[k].unsettled += Number(r.amount || 0);
+  });
+  const sList = Object.entries(byS).sort((a, b) => b[1].total - a[1].total);
+  const sMax = sList.length ? sList[0][1].total : 0;
+  $('by_staff').innerHTML = sList.length ? sList.map(([name, v]) => {
+    const pct = sMax ? Math.max(4, Math.round(v.total / sMax * 100)) : 0;
+    return `
+    <div class="border-b border-slate-100 pb-1.5">
+      <div class="flex items-center justify-between gap-2">
+        <span class="min-w-0 truncate">${escapeHtml(name)} <span class="text-xs text-slate-400">${v.n} 張</span></span>
+        <span class="shrink-0 font-bold">${money(v.total)}${v.unsettled ? ` <span class="text-xs font-normal text-amber-600">（未結 ${money(v.unsettled)}）</span>` : ''}</span>
+      </div>
+      <div class="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-emerald-400" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('') : '<p class="text-slate-400">冇數據。</p>';
 
   // 按類別
   const byC = {};
@@ -348,15 +383,17 @@ $('settle_btn').addEventListener('click', () => {
   if (!settleColsOk) { alert('結算欄位未開通，請先去 Supabase → SQL Editor 跑：\n' + SETTLE_SQL); return; }
   const ids = selectedIds();
   const sel = rows.filter(r => ids.includes(String(r.id)));
-  const byP = {};
+  // 按同事（墊支人）分項：結算即係由夾萬攞錢俾返墊支嘅同事
+  const byS = {};
   sel.forEach(r => {
-    const k = r.payee || '（未填）';
-    byP[k] = byP[k] || { total: 0, n: 0 };
-    byP[k].total += Number(r.amount || 0); byP[k].n++;
+    const k = r.staff || '（未填）';
+    byS[k] = byS[k] || { total: 0, n: 0 };
+    byS[k].total += Number(r.amount || 0); byS[k].n++;
   });
   const grand = sel.reduce((a, r) => a + Number(r.amount || 0), 0);
   $('settle_summary').innerHTML =
-    Object.entries(byP).sort((a, b) => b[1].total - a[1].total).map(([name, v]) => `
+    '<p class="text-xs text-slate-500 pb-1">以下同事墊支嘅款項，結算後要由夾萬俾返：</p>' +
+    Object.entries(byS).sort((a, b) => b[1].total - a[1].total).map(([name, v]) => `
       <div class="flex justify-between border-b border-slate-100 pb-1"><span>${escapeHtml(name)} <span class="text-xs text-slate-400">${v.n} 張</span></span><span class="font-bold">${money(v.total)}</span></div>`).join('') +
     `<div class="flex justify-between pt-2 text-base"><span class="font-bold">合計</span><span class="font-black text-emerald-700">${money(grand)}</span></div>`;
   $('settleModal').classList.remove('hidden');

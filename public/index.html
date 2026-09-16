@@ -131,18 +131,6 @@
     transform:rotate(6deg);
   }
 
-  /* 後台管理卡：靛藍主題 + 圖表標記 */
-  .card-admin{background-color:#e8eaf6}
-  .chartmark{
-    width:64px;height:64px;display:flex;align-items:flex-end;justify-content:center;gap:5px;
-    padding:10px 12px;background:#c5cae9;border-radius:14px;transform:rotate(-4deg);
-    border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);
-  }
-  .chartmark i{width:9px;background:#3f51b5;border-radius:3px 3px 0 0}
-  .chartmark i:nth-child(1){height:14px}
-  .chartmark i:nth-child(2){height:26px}
-  .chartmark i:nth-child(3){height:38px}
-
   /* 卡內忠／孝直達掣 */
   .dorm-btns{display:flex;gap:12px;margin-top:2px}
   .dorm-btn{
@@ -222,13 +210,6 @@
           <span class="card-name">零用金申請</span>
           <span class="card-desc">職員填單、舍友即場簽名，<br>列印單據或電子存檔上 Google Drive。</span>
           <span class="card-url">/apply/</span>
-        </div>
-
-        <div class="card card-admin" data-url="/admin/" role="link" tabindex="0" aria-label="後台管理">
-          <span class="chartmark" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="card-name">後台管理</span>
-          <span class="card-desc">兩社支錢總覽、個人及類別統計，<br>計好數一鍵結算。（需後台密碼）</span>
-          <span class="card-url">/admin/</span>
         </div>
       </div>
 
