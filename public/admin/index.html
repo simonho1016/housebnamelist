@@ -7,14 +7,14 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root { --ink:#141414; --pow:#fdf6ec; }
-  body { font-family: "ZCOOL KuaiLe", "Noto Sans TC", sans-serif; background-color: var(--pow);
+  body { font-family: "Huninn", "Noto Sans TC", sans-serif; background-color: var(--pow);
     background-image: radial-gradient(rgba(20,20,20,.14) 1.6px, transparent 1.7px); background-size: 15px 15px; }
   .card { border: 3px solid var(--ink) !important; box-shadow: 5px 5px 0 var(--ink) !important; border-radius: 16px !important; }
   #toast { background: var(--ink) !important; border: 3px solid #fff !important; box-shadow: 4px 4px 0 rgba(20,20,20,.35) !important;
-    font-family: "ZCOOL KuaiLe", sans-serif !important; font-size: 15px; }
+    font-family: "Huninn", sans-serif !important; font-size: 15px; }
   th { font-weight: 700; }
 </style>
 </head>
@@ -136,6 +136,7 @@
         <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide">支錢記錄</h3>
         <div class="flex items-center gap-2">
           <label class="text-xs text-slate-500 flex items-center gap-1"><input type="checkbox" id="sel_all" class="accent-indigo-600"> 全選</label>
+          <button id="del_sel_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition" disabled>🗑 刪除所選</button>
           <button id="settle_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition" disabled>💰 結算所選</button>
         </div>
       </div>
@@ -350,22 +351,23 @@ function renderAll(){
   // 記錄列表
   const warn = settleColsOk ? '' : `<div class="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs px-3 py-2 mb-2">⚠️ 結算欄位未開通，而家全部記錄當「未結算」顯示，結算功能暫時用唔到。請去 Supabase → SQL Editor 跑：<code class="select-all">${SETTLE_SQL}</code></div>`;
   $('rec_list').innerHTML = warn + (rows.length ? rows.map(r => `
-    <label class="flex items-start gap-3 border border-slate-200 rounded-xl p-3 text-sm ${r.settled_at ? 'bg-slate-50 opacity-70' : 'bg-white'}">
-      <input type="checkbox" class="sel_rec mt-1 accent-indigo-600" data-id="${r.id}" ${r.settled_at ? 'disabled' : ''}>
+    <div class="flex items-start gap-3 border border-slate-200 rounded-xl p-3 text-sm ${r.settled_at ? 'bg-slate-50 opacity-70' : 'bg-white'}">
+      <input type="checkbox" class="sel_rec mt-1 accent-indigo-600" data-id="${r.id}">
       <span class="flex-1 min-w-0">
         <span class="font-bold">${escapeHtml(r.payee)}</span>
         <span class="text-xs text-slate-400">${escapeHtml(r.payee_id || '')} · ${escapeHtml(r.house || '')}</span>
         <span class="font-bold text-blue-700 ml-2">${money(r.amount)}</span>
         <span class="block text-xs text-slate-500 mt-0.5">${escapeHtml((r.cats || []).join('、'))}${r.cat_other ? '（' + escapeHtml(r.cat_other) + '）' : ''}${r.remark ? ' · 備註：' + escapeHtml(r.remark) : ''}</span>
-        <span class="block text-xs text-slate-400 mt-0.5">${fmtTime(r.decided_at || r.created_at)} · ${escapeHtml(r.staff || '')}${r.serial ? ' · 序號 ' + escapeHtml(r.serial) : ''}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}</span>
+        <span class="block text-xs text-slate-400 mt-0.5">${fmtTime(r.decided_at || r.created_at)} · ${escapeHtml(r.staff || '')}${r.serial ? ' · 序號 ' + escapeHtml(r.serial) : ''}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}${r.pdf_path ? ' · 📎 有雲端 PDF' : ''}</span>
         ${r.settled_at ? `<span class="block text-xs text-emerald-600 mt-0.5">✅ 已結算：${fmtTime(r.settled_at)}${r.settled_by ? ' · 經手 ' + escapeHtml(r.settled_by) : ''}</span>` : ''}
       </span>
-    </label>`).join('') : '<p class="text-sm text-slate-400 text-center py-6">冇符合條件嘅記錄。</p>');
+      <button class="del_rec shrink-0 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition" data-id="${r.id}">刪除</button>
+    </div>`).join('') : '<p class="text-sm text-slate-400 text-center py-6">冇符合條件嘅記錄。</p>');
   $('sel_all').checked = false;
   refreshSettleBtn();
 }
 $('sel_all').addEventListener('change', () => {
-  document.querySelectorAll('.sel_rec:not(:disabled)').forEach(cb => cb.checked = $('sel_all').checked);
+  document.querySelectorAll('.sel_rec').forEach(cb => cb.checked = $('sel_all').checked);
   refreshSettleBtn();
 });
 $('rec_list').addEventListener('change', refreshSettleBtn);
@@ -373,16 +375,56 @@ function selectedIds(){
   return [...document.querySelectorAll('.sel_rec:checked')].map(cb => cb.dataset.id);
 }
 function refreshSettleBtn(){
-  const n = selectedIds().length;
-  $('settle_btn').disabled = !n;
-  $('settle_btn').textContent = n ? `💰 結算所選（${n} 張）` : '💰 結算所選';
+  const ids = selectedIds();
+  const n = ids.length;
+  const unsettledN = rows.filter(r => ids.includes(String(r.id)) && !r.settled_at).length;
+  $('settle_btn').disabled = !unsettledN;
+  $('settle_btn').textContent = unsettledN ? `💰 結算所選（${unsettledN} 張）` : '💰 結算所選';
+  $('del_sel_btn').disabled = !n;
+  $('del_sel_btn').textContent = n ? `🗑 刪除所選（${n} 張）` : '🗑 刪除所選';
 }
+
+// ---- 刪除記錄（單筆／批量）；有雲端 PDF 會一併刪除 ----
+async function deleteRecords(list){
+  const paths = list.map(r => r.pdf_path).filter(Boolean);
+  const { error } = await sb.from('applications').delete().in('id', list.map(r => r.id));
+  if (error) throw new Error(error.message);
+  if (paths.length) {
+    try { await sb.storage.from('apply-archive').remove(paths); } catch { /* 唔阻流程 */ }
+  }
+  return paths.length;
+}
+$('rec_list').addEventListener('click', async e => {
+  const btn = e.target.closest('.del_rec');
+  if (!btn) return;
+  const rec = rows.find(r => String(r.id) === btn.dataset.id);
+  if (!rec) return;
+  if (!confirm(`確定刪除 ${rec.payee} 嘅記錄（${money(rec.amount)}${rec.serial ? '，序號 ' + rec.serial : ''}）？${rec.pdf_path ? '\n雲端 PDF 會一併刪除。' : ''}\n序號唔會重用，刪除後唔可以還原。`)) return;
+  try {
+    await deleteRecords([rec]);
+    toast('已刪除記錄。');
+    loadData();
+  } catch (err) { alert('刪除失敗：' + err.message); }
+});
+$('del_sel_btn').addEventListener('click', async () => {
+  const ids = selectedIds();
+  const list = rows.filter(r => ids.includes(String(r.id)));
+  if (!list.length) return;
+  const pdfN = list.filter(r => r.pdf_path).length;
+  if (!confirm(`確定刪除所選 ${list.length} 張記錄？${pdfN ? `\n當中 ${pdfN} 張有雲端 PDF，會一併刪除。` : ''}\n序號唔會重用，刪除後唔可以還原。`)) return;
+  try {
+    await deleteRecords(list);
+    toast(`已刪除 ${list.length} 張記錄。`);
+    loadData();
+  } catch (err) { alert('刪除失敗：' + err.message); }
+});
 
 // ---- 結算 ----
 $('settle_btn').addEventListener('click', () => {
   if (!settleColsOk) { alert('結算欄位未開通，請先去 Supabase → SQL Editor 跑：\n' + SETTLE_SQL); return; }
   const ids = selectedIds();
-  const sel = rows.filter(r => ids.includes(String(r.id)));
+  const sel = rows.filter(r => ids.includes(String(r.id)) && !r.settled_at);   // 已結算嘅自動跳過
+  if (!sel.length) { alert('所選記錄全部已結算。'); return; }
   // 按同事（墊支人）分項：結算即係由夾萬攞錢俾返墊支嘅同事
   const byS = {};
   sel.forEach(r => {
@@ -403,13 +445,14 @@ $('settle_ok').addEventListener('click', async () => {
   const by = $('settle_by').value.trim();
   if (!by) { alert('請填經手人姓名。'); $('settle_by').focus(); return; }
   const ids = selectedIds();
+  const n = rows.filter(r => ids.includes(String(r.id)) && !r.settled_at).length;
   const now = new Date().toISOString();
   try {
-    const { error } = await sb.from('applications').update({ settled_at: now, settled_by: by }).in('id', ids);
+    const { error } = await sb.from('applications').update({ settled_at: now, settled_by: by }).in('id', ids).is('settled_at', null);
     if (error) throw new Error(error.message + (/column|schema cache/i.test(error.message) ? '（請去 Supabase → SQL Editor 跑：alter table applications add column if not exists settled_at timestamptz, add column if not exists settled_by text;）' : ''));
     $('settleModal').classList.add('hidden');
     $('settle_by').value = '';
-    toast(`已結算 ${ids.length} 張單。`);
+    toast(`已結算 ${n} 張單。`);
     loadData();
   } catch (e) { alert('結算失敗：' + e.message); }
 });
