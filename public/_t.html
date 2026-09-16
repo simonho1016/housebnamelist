@@ -1,0 +1,62 @@
+<!doctype html><meta charset="utf-8"><title>t</title>
+<pre id="log"></pre>
+<iframe id="w" style="width:1200px;height:900px"></iframe>
+<script>
+const ID1 = '13b6e951-91ed-41e3-b418-741978b05d15';
+const ID2 = '51fed751-a7fa-486e-abc1-ee372523bbb7';
+const log = m => document.getElementById('log').textContent += m + '\n';
+const w = document.getElementById('w');
+const load = src => new Promise(r => { w.onload = () => setTimeout(r, 500); w.src = src; });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+(async () => {
+  try {
+    await load('/');
+    w.contentWindow.sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'x', exp: Date.now() + 900000 }));
+    await load('/admin/');
+    const d = w.contentDocument;
+    const ev = s => w.contentWindow.eval(s);
+    ev('window.__alerts=[]; window.alert=m=>window.__alerts.push(m)');
+    // 登入後台
+    d.getElementById('gate_pw').value = '8888';
+    d.getElementById('gate_btn').click();
+    await sleep(2500);
+    log('T1 mainShown=' + !d.getElementById('mainScreen').classList.contains('hidden'));
+    log('T1 noWarn=' + !d.getElementById('rec_list').textContent.includes('結算欄位未開通'));
+    // 勾選兩張測試單
+    const cb1 = d.querySelector(`.sel_rec[data-id="${ID1}"]`);
+    const cb2 = d.querySelector(`.sel_rec[data-id="${ID2}"]`);
+    log('T2 found=' + (cb1 !== null) + '/' + (cb2 !== null));
+    cb1.checked = true; cb1.dispatchEvent(new w.contentWindow.Event('change', { bubbles: true }));
+    cb2.checked = true; cb2.dispatchEvent(new w.contentWindow.Event('change', { bubbles: true }));
+    await sleep(200);
+    log('T2 settleBtn=' + d.getElementById('settle_btn').textContent);
+    // 開結算 modal
+    d.getElementById('settle_btn').click();
+    await sleep(300);
+    log('T3 modalShown=' + !d.getElementById('settleModal').classList.contains('hidden'));
+    const summary = d.getElementById('settle_summary').textContent;
+    log('T3 summary甲=' + summary.includes('測試舍友甲') + ' $30=' + summary.includes('$30.00'));
+    log('T3 summary乙=' + summary.includes('測試舍友乙') + ' $45.50=' + summary.includes('$45.50'));
+    log('T3 grand=' + summary.includes('$75.50'));
+    // 未填經手人 → 應彈提示
+    d.getElementById('settle_ok').click();
+    await sleep(200);
+    log('T3 needBy=' + JSON.stringify(ev('window.__alerts')));
+    // 填經手人 → 確認結算
+    d.getElementById('settle_by').value = '結算測試員';
+    d.getElementById('settle_ok').click();
+    await sleep(2500);
+    log('T4 toast=' + d.getElementById('toast').textContent);
+    // 查雲端狀態
+    const rows = await ev(`sb.from('applications').select('id,settled_at,settled_by').in('id', ['${ID1}','${ID2}']).then(r => r.data)`);
+    log('T4 settled=' + JSON.stringify(rows.map(r => ({ id: r.id.slice(0,4), at: !!r.settled_at, by: r.settled_by }))));
+    // 已結算篩選
+    d.getElementById('q_settled').value = 'settled';
+    d.getElementById('q_go').click();
+    await sleep(1500);
+    log('T5 settledView=' + d.getElementById('rec_list').textContent.includes('已結算') + ' ' + d.getElementById('rec_list').textContent.includes('結算測試員'));
+    log('T5 checkboxDisabled=' + (d.querySelector(`.sel_rec[data-id="${ID1}"]`) || { disabled: '?' }).disabled);
+  } catch (e) { log('ERR ' + e.message); }
+  log('DONE');
+})();
+</script>
