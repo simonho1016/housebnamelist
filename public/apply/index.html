@@ -243,16 +243,10 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <label class="block">
-            <span class="text-xs font-medium text-slate-500">單據編號</span>
-            <input id="f_no" type="text" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="例：2026-001">
-          </label>
-          <label class="block">
-            <span class="text-xs font-medium text-slate-500">Notion ID</span>
-            <input id="f_notion" type="text" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="例：A12">
-          </label>
-        </div>
+        <label class="block">
+          <span class="text-xs font-medium text-slate-500">單據編號</span>
+          <input id="f_no" type="text" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="例：2026-001">
+        </label>
 
         <div>
           <span class="text-xs font-medium text-slate-500">社別</span>
@@ -304,7 +298,7 @@
           <button id="f_print" class="flex-[2] py-2.5 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow transition">🖨️ 確認列印</button>
           <button id="f_archive" class="flex-[2] py-2.5 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow transition">🗂️ 電子存檔</button>
         </div>
-        <p class="text-xs text-slate-400">列印／存檔前會彈出簽名板，請舍友即場簽名。職員簽署、入數同事簽署於列印後實體簽名。「電子存檔」會下載規範檔名嘅 PDF，並自動上傳到該舍友嘅 Notion 頁（需已填 Notion ID）。</p>
+        <p class="text-xs text-slate-400">列印／存檔前會彈出簽名板，請舍友即場簽名。職員簽署、入數同事簽署於列印後實體簽名。「電子存檔」會下載 PDF，並自動上傳到 Google Drive（按社別及舍友分類）。</p>
       </div>
 
       <!-- 列印預覽 -->
@@ -320,11 +314,6 @@
 
           <div class="text-right mt-3 pr-1">
             單據編號：<span id="p_no" class="fill" style="min-width:180px; top:7px;"></span>
-          </div>
-
-          <div class="flex justify-end items-center gap-2 mt-2">
-            <span class="text-sm font-semibold">Notion ID</span>
-            <span id="p_notion" class="border-2 border-black inline-flex items-center justify-center px-2" style="min-width:60px; min-height:30px;"></span>
           </div>
 
           <div class="text-center mt-4">
@@ -406,19 +395,6 @@ create policy "anon access" on settings
         </div>
       </div>
       <div id="setMembers" class="space-y-2"></div>
-      <p class="text-xs text-slate-400">「Notion ID」係舍友喺 Notion 嘅頁面 ID；填咗之後，填單揀人會自動帶出，「電子存檔」會將 PDF 自動上傳到該舍友嘅 Notion 頁。</p>
-
-      <!-- Notion 自動建檔 -->
-      <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
-        <p class="text-xs font-bold text-slate-600">① 先同步：喺 Notion 建立／更新舍友資料</p>
-        <p class="text-xs text-slate-400">撳「同步舍友到 Notion」，系統會喺你指定嘅 Notion 頁面下建立「舍友登記」資料庫，逐個舍友寫入社別、舍號、姓名，並<strong>自動填返</strong>各人嘅 Notion ID 到上面名單（兩個社別一齊同步）。同步後記得撳「儲存舍友名單」。</p>
-        <input id="notionParent" type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Notion 父頁面網址或 ID（資料庫會建喺呢頁下面）">
-        <div class="flex items-center gap-2">
-          <button id="notionSyncBtn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition">⇅ 同步舍友到 Notion</button>
-          <span id="notionSyncMsg" class="text-xs text-slate-500"></span>
-        </div>
-      </div>
-
       <div class="flex gap-2">
         <button id="addMemberBtn" class="flex-1 py-2 rounded-lg text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition">＋ 新增舍友</button>
         <button id="saveMembersBtn" class="flex-1 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition">儲存舍友名單</button>
@@ -436,6 +412,17 @@ create policy "anon access" on settings
       </div>
     </div>
 
+    <!-- Google Drive 電子存檔 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+      <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">Google Drive 電子存檔</h3>
+      <p class="text-xs text-slate-500">「電子存檔」會將 PDF 上傳到 Google Drive，自動按 <strong>零用金電子存檔／社別／舍友編號_姓名</strong> 分類資料夾。首次上傳時會彈出 Google 登入授權。使用前請貼上 Google OAuth Client ID（所有裝置共用，只需設定一次）：</p>
+      <div class="flex gap-2">
+        <input id="gdriveClientId" type="text" autocomplete="off" class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="xxxx.apps.googleusercontent.com">
+        <button id="saveGdriveBtn" class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-slate-700 hover:bg-slate-800 transition">儲存</button>
+      </div>
+      <p class="text-xs text-slate-400">攞 Client ID：Google Cloud Console → 建立專案 → 啟用 Google Drive API →「憑證」建立 OAuth 用戶端 ID（網頁應用程式）→ 已授權的 JavaScript 來源填 <strong>https://cycportal.netlify.app</strong>。</p>
+    </div>
+
     <!-- 入場密碼（已取消） -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-3">
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">入場密碼</h3>
@@ -447,9 +434,20 @@ create policy "anon access" on settings
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">版本記錄</h3>
       <div class="text-sm space-y-3">
         <div class="flex gap-3">
-          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.1</span>
+          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.2</span>
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-16</span></div>
+            <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>取消 Notion ID 功能（名單欄、表單欄、同步功能全部移除）</li>
+              <li>電子存檔改為上傳 Google Drive，自動按「零用金電子存檔／社別／舍友編號_姓名」分類</li>
+              <li>電子存檔檔名改為「舍友編號_日期」（例：B14_20260916.pdf）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="shrink-0 text-xs font-bold text-white bg-slate-400 rounded-full px-2.5 py-1 h-fit">v1.2.1</span>
+          <div>
+            <div class="font-bold text-slate-900">Notion 同步版（已取消） <span class="text-xs font-normal text-slate-400">2026-09-16</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>新增「同步舍友到 Notion」：一鍵喺 Notion 建立／更新舍友登記資料（社別、舍號、姓名），並自動填返各人嘅 Notion ID</li>
               <li>流程改為：先同步建檔 → 自動帶出 Notion ID → 電子存檔上傳到各人 Notion 頁</li>
@@ -596,6 +594,7 @@ const CFG = {
   members: JSON.parse(JSON.stringify(DEFAULT_MEMBERS)),
   staff: DEFAULT_STAFF.map(s => ({...s})),
   entryPw: DEFAULT_ENTRY_PW,
+  gdriveClientId: '',  // Google OAuth Client ID（電子存檔用）
   settingsDbOk: true   // settings 表係咪存在
 };
 function staffPwOf(name){ const s = CFG.staff.find(s => s.name === name); return s ? s.pw : null; }
@@ -685,7 +684,9 @@ async function loadSettings(){
     if (s.members && s.members['忠社'] && s.members['孝社']) CFG.members = s.members;
     if (Array.isArray(s.staff) && s.staff.length) CFG.staff = s.staff;
     if (typeof s.entry_pw === 'string' && s.entry_pw) CFG.entryPw = s.entry_pw;
+    if (typeof s.gdrive_client_id === 'string') CFG.gdriveClientId = s.gdrive_client_id;
   } catch { /* 用預設值 */ }
+  if (!CFG.gdriveClientId) CFG.gdriveClientId = localStorage.getItem('gdrive-client-id') || '';
   window.__entryPw = CFG.entryPw;
   // 職員登入下拉
   $('s_name').innerHTML = '<option value="">— 請選擇 —</option>' +
@@ -818,15 +819,9 @@ function payeeIdOf(){
   return m ? m.id : '';
 }
 $('f_payee').addEventListener('change', () => {
-  const v = $('f_payee').value;
-  const other = v === '__other__';
+  const other = $('f_payee').value === '__other__';
   $('f_payee_other').classList.toggle('hidden', !other);
-  if (other) { $('f_payee_other').focus(); }
-  else {
-    // 揀咗舍友 → 自動帶出名單入面嘅 Notion ID（如有）
-    const m = (CFG.members[f_house] || []).find(m => m.name === v);
-    if (m) $('f_notion').value = m.notion || '';
-  }
+  if (other) $('f_payee_other').focus();
   renderForm();
 });
 
@@ -858,13 +853,13 @@ document.querySelectorAll('#f_cats input').forEach(cb => {
   });
 });
 
-['f_no','f_notion','f_date','f_payee_other','f_cat_other','f_remark'].forEach(id => {
+['f_no','f_date','f_payee_other','f_cat_other','f_remark'].forEach(id => {
   $(id).addEventListener('input', renderForm);
 });
 
 function formData(){
   return {
-    no: $('f_no').value.trim(), notion: $('f_notion').value.trim(),
+    no: $('f_no').value.trim(),
     house: f_house, payee: payeeName(), payeeId: payeeIdOf(),
     amount: $('f_amount').value.trim(), date: $('f_date').value || todayStr(),
     staff: staffUser,
@@ -876,7 +871,7 @@ function renderForm(){ fillSheet(formData()); }
 
 // 清空表單（日期返今日）
 function resetForm(){
-  ['f_no','f_notion','f_amount','f_cat_other','f_remark','f_payee_other'].forEach(id => $(id).value = '');
+  ['f_no','f_amount','f_cat_other','f_remark','f_payee_other'].forEach(id => $(id).value = '');
   f_house = '';
   document.querySelectorAll('.f-house-btn').forEach(b => {
     b.classList.remove('bg-emerald-600','text-white','border-emerald-600');
@@ -923,7 +918,7 @@ $('f_print').addEventListener('click', async () => {
       house: d.house, payee_id: d.payeeId, payee: d.payee,
       amount: parseFloat(d.amount).toFixed(2), cats: d.cats,
       cat_other: d.catOther, remark: d.remark,
-      status: 'approved', doc_no: d.no, notion_id: d.notion,
+      status: 'approved', doc_no: d.no,
       staff: staffUser, decided_at: new Date().toISOString()
     });
     toast('已列印並儲存記錄。');
@@ -933,12 +928,94 @@ $('f_print').addEventListener('click', async () => {
   resetForm();
 });
 
-// ---- 電子存檔：規範檔名 PDF 下載 + 自動上傳 Notion ----
+// ---- 電子存檔：規範檔名 PDF 下載 + 自動上傳 Google Drive ----
 function archiveFileName(d){
   const ymd = (d.date || todayStr()).replaceAll('-', '');
-  const idPart = d.payeeId || '其他';
-  return `零用金_${d.house}_${idPart}_${d.payee}_${ymd}${d.no ? '_' + d.no : ''}.pdf`;
+  return `${d.payeeId || '其他'}_${ymd}.pdf`;   // 例：B14_20260916.pdf
 }
+
+// Google Identity Services：按需載入 + 攞 access token（首次要授權）
+let gisPromise = null, driveToken = '', driveTokenExp = 0, driveConsented = false;
+function loadGIS(){
+  if (window.google && google.accounts && google.accounts.oauth2) return Promise.resolve();
+  if (!gisPromise) {
+    gisPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('載入 Google 登入元件失敗，請檢查網絡。'));
+      document.head.appendChild(s);
+    });
+  }
+  return gisPromise;
+}
+function getDriveToken(){
+  return loadGIS().then(() => new Promise((resolve, reject) => {
+    if (driveToken && Date.now() < driveTokenExp - 60000) return resolve(driveToken);
+    const cid = (CFG.gdriveClientId || '').trim();
+    if (!cid) return reject(new Error('未設定 Google Client ID，請到「系統設定 → Google Drive 電子存檔」填寫。'));
+    const tc = google.accounts.oauth2.initTokenClient({
+      client_id: cid,
+      scope: 'https://www.googleapis.com/auth/drive.file',
+      callback: resp => {
+        if (resp.error) return reject(new Error('Google 授權失敗：' + resp.error));
+        driveToken = resp.access_token;
+        driveTokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+        driveConsented = true;
+        resolve(driveToken);
+      },
+      error_callback: () => reject(new Error('Google 登入授權被取消。'))
+    });
+    tc.requestAccessToken({ prompt: driveConsented ? '' : 'consent' });
+  }));
+}
+async function driveApi(token, path, options = {}){
+  const res = await fetch('https://www.googleapis.com/drive/v3' + path, {
+    ...options,
+    headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json', ...(options.headers || {}) }
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(j.error?.message || ('Drive HTTP ' + res.status));
+  return j;
+}
+// 搵／建資料夾（結果缓存喺本機，下次即刻用到）
+function folderCache(){ try { return JSON.parse(localStorage.getItem('gdrive-folders') || '{}'); } catch { return {}; } }
+async function driveFolder(token, name, parentId){
+  const cache = folderCache();
+  const key = (parentId || 'root') + '/' + name;
+  if (cache[key]) return cache[key];
+  const q = `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false` + (parentId ? ` and '${parentId}' in parents` : '');
+  const found = await driveApi(token, '/files?q=' + encodeURIComponent(q) + '&fields=files(id)&pageSize=1');
+  let id = found.files && found.files[0] && found.files[0].id;
+  if (!id) {
+    const created = await driveApi(token, '/files', {
+      method: 'POST',
+      body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', ...(parentId ? { parents: [parentId] } : {}) })
+    });
+    id = created.id;
+  }
+  cache[key] = id;
+  localStorage.setItem('gdrive-folders', JSON.stringify(cache));
+  return id;
+}
+// 上傳 PDF 到 零用金電子存檔／社別／舍友編號_姓名
+async function driveUpload(pdfBlob, fname, d){
+  const token = await getDriveToken();
+  const rootId = await driveFolder(token, '零用金電子存檔');
+  const houseId = await driveFolder(token, d.house, rootId);
+  const memberId = await driveFolder(token, `${d.payeeId || '其他'}_${d.payee}`, houseId);
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify({ name: fname, parents: [memberId] })], { type: 'application/json' }));
+  form.append('file', pdfBlob, fname);
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name', {
+    method: 'POST', headers: { authorization: 'Bearer ' + token }, body: form
+  });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.error?.message || ('上傳失敗 HTTP ' + res.status));
+  }
+}
+
 $('f_archive').addEventListener('click', async () => {
   if (printing) return;
   const d = validateForm();
@@ -952,39 +1029,23 @@ $('f_archive').addEventListener('click', async () => {
   if (!pdf) return;
   const fname = archiveFileName(d);
   pdf.save(fname);                             // 本機下載一份做後備
-  // 有 Notion ID 就自動上傳到該舍友嘅 Notion 頁
-  let notionMsg;
-  if (d.notion) {
-    try {
-      let portalKey = '';
-      try { portalKey = (JSON.parse(sessionStorage.getItem('cyc-portal-auth') || '{}').p) || ''; } catch (e2) {}
-      const res = await fetch('/api/notion-archive', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-roster-key': encodeURIComponent(portalKey) },
-        body: JSON.stringify({
-          notionId: d.notion,
-          filename: fname,
-          pdf: pdf.output('datauristring').split(',')[1],
-          meta: { house: d.house, payee: d.payee, payeeId: d.payeeId, amount: d.amount, date: d.date, no: d.no, staff: staffUser }
-        })
-      });
-      const j = await res.json().catch(() => ({}));
-      notionMsg = (res.ok && j.ok) ? '，並已上傳到 Notion' : ('；Notion 存檔失敗：' + (j.error || ('HTTP ' + res.status)));
-    } catch (e) {
-      notionMsg = '；Notion 存檔失敗：' + e.message;
-    }
-  } else {
-    notionMsg = '；未填 Notion ID，未有網上存檔（可喺設定嘅舍友名單登記）';
+  // 自動上傳到 Google Drive（首次會彈出 Google 登入授權）
+  let driveMsg;
+  try {
+    await driveUpload(pdf.output('blob'), fname, d);
+    driveMsg = '，並已上傳到 Google Drive';
+  } catch (e) {
+    driveMsg = '；Google Drive 上傳失敗：' + e.message;
   }
   try {
     await DB.insert({
       house: d.house, payee_id: d.payeeId, payee: d.payee,
       amount: parseFloat(d.amount).toFixed(2), cats: d.cats,
       cat_other: d.catOther, remark: d.remark,
-      status: 'approved', doc_no: d.no, notion_id: d.notion,
+      status: 'approved', doc_no: d.no,
       staff: staffUser, decided_at: new Date().toISOString()
     });
-    toast('已電子存檔：' + fname + notionMsg + '。');
+    toast('已電子存檔：' + fname + driveMsg + '。');
   } catch (e) {
     alert('PDF 已生成，但儲存記錄失敗：' + e.message);
   }
@@ -1009,7 +1070,7 @@ async function loadHistory(){
             <div class="text-lg font-bold text-blue-700 mt-0.5">港幣$${escapeHtml(r.amount)}</div>
             <div class="text-xs text-slate-500 mt-1">類別：${escapeHtml((r.cats || []).join('、'))}${r.cat_other ? '（' + escapeHtml(r.cat_other) + '）' : ''}</div>
             ${r.remark ? `<div class="text-xs text-slate-500 mt-0.5">備註：${escapeHtml(r.remark)}</div>` : ''}
-            <div class="text-xs text-slate-400 mt-1">列印：${escapeHtml(r.staff || '')} · ${fmtTime(r.decided_at || r.created_at)}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}${r.notion_id ? ' · Notion ' + escapeHtml(r.notion_id) : ''}</div>
+            <div class="text-xs text-slate-400 mt-1">列印：${escapeHtml(r.staff || '')} · ${fmtTime(r.decided_at || r.created_at)}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}</div>
           </div>
           <div class="flex flex-col gap-2 items-stretch shrink-0">
             <button data-act="load" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 transition">載入</button>
@@ -1033,7 +1094,7 @@ $('s_list').addEventListener('click', async e => {
   } else if (btn.dataset.act === 'reprint') {
     currentRec = rec;
     fillSheet({
-      no: rec.doc_no, notion: rec.notion_id, house: rec.house, payee: rec.payee,
+      no: rec.doc_no, house: rec.house, payee: rec.payee,
       amount: rec.amount, date: (rec.decided_at || rec.created_at || '').slice(0, 10) || todayStr(),
       staff: rec.staff, cats: rec.cats || [], catOther: rec.cat_other || '', remark: rec.remark || ''
     });
@@ -1047,7 +1108,6 @@ $('s_list').addEventListener('click', async e => {
 
 function loadRecordToForm(rec){
   $('f_no').value = rec.doc_no || '';
-  $('f_notion').value = rec.notion_id || '';
   f_house = rec.house || '';
   document.querySelectorAll('.f-house-btn').forEach(b => {
     const on = b.dataset.house === f_house;
@@ -1080,7 +1140,6 @@ function loadRecordToForm(rec){
 // ====================== 單據渲染 ======================
 function fillSheet(d){
   $('p_no').textContent     = d.no || '';
-  $('p_notion').textContent = d.notion || '';
   $('p_house').textContent  = d.house || '忠社／孝社';
   $('p_house').style.color  = d.house ? '#000' : '#9ca3af';
   $('p_payee').textContent  = d.payee || '';
@@ -1307,10 +1366,27 @@ let setHouse = '忠社';
 function openSettings(){
   $('set_who').textContent = staffUser;
   $('setDbWarn').classList.toggle('hidden', CFG.settingsDbOk);
+  $('gdriveClientId').value = CFG.gdriveClientId;
   renderSetMembers();
   renderSetStaff();
   show('settingsScreen');
 }
+
+// ---- Google Drive Client ID ----
+$('saveGdriveBtn').addEventListener('click', async () => {
+  const v = $('gdriveClientId').value.trim();
+  if (v && !v.endsWith('.apps.googleusercontent.com')) {
+    if (!confirm('Client ID 一般以 .apps.googleusercontent.com 結尾，你貼嘅似乎唔係。確定儲存？')) return;
+  }
+  CFG.gdriveClientId = v;
+  localStorage.setItem('gdrive-client-id', v);
+  try {
+    await DB.setSetting('gdrive_client_id', v);
+    toast('已儲存 Google Client ID（所有裝置生效）。');
+  } catch (e) {
+    toast('已儲存喺呢部機（資料庫未開通，其他裝置要再填）。');
+  }
+});
 
 // ---- 舍友名單編輯 ----
 document.querySelectorAll('.set-house-tab').forEach(btn => {
@@ -1327,7 +1403,6 @@ function memberRow(m){
   return `<div class="set-member-row flex items-center gap-2">
     <input data-f="id" value="${escapeHtml(m.id)}" placeholder="舍號" class="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
     <input data-f="name" value="${escapeHtml(m.name)}" placeholder="姓名" class="flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
-    <input data-f="notion" value="${escapeHtml(m.notion || '')}" placeholder="Notion ID" title="舍友喺 Notion 嘅登記編號或頁面 ID，電子存檔會自動上傳到該頁" class="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
     <button class="set-del text-red-400 hover:text-red-600 text-lg px-1" title="刪除">&times;</button>
   </div>`;
 }
@@ -1347,8 +1422,7 @@ function collectMembers(){
   const rows = [...$('setMembers').querySelectorAll('.set-member-row')];
   const list = rows.map(r => ({
     id: r.querySelector('[data-f="id"]').value.trim(),
-    name: r.querySelector('[data-f="name"]').value.trim(),
-    notion: r.querySelector('[data-f="notion"]').value.trim()
+    name: r.querySelector('[data-f="name"]').value.trim()
   }));
   if (list.some(m => !m.id || !m.name)) { alert('有舍友未填舍號或姓名。'); return null; }
   const ids = list.map(m => m.id);
@@ -1365,59 +1439,6 @@ $('saveMembersBtn').addEventListener('click', async () => {
     CFG.members = members;
     toast('已儲存舍友名單。');
   } catch (e) { alert(e.message); }
-});
-
-// ---- Notion 自動建檔：同步舍友到 Notion 並填返 Notion ID ----
-$('notionParent').value = localStorage.getItem('notion-parent') || '';
-$('notionSyncBtn').addEventListener('click', async () => {
-  const members = collectMembers();   // 讀埋而家編輯緊嘅一社，連同另一社一齊同步
-  if (!members) return;
-  const parentPageId = $('notionParent').value.trim();
-  if (!parentPageId) { alert('請填 Notion 父頁面網址或 ID。'); $('notionParent').focus(); return; }
-  localStorage.setItem('notion-parent', parentPageId);
-  let portalKey = '';
-  try { portalKey = (JSON.parse(sessionStorage.getItem('cyc-portal-auth') || '{}').p) || ''; } catch (e) {}
-  const btn = $('notionSyncBtn'), msg = $('notionSyncMsg');
-  btn.disabled = true;
-  try {
-    // 分批同步（每批 8 人），避免逾時
-    const CHUNK = 8;
-    const queue = [];
-    for (const house of ['忠社','孝社']) (members[house] || []).forEach(m => queue.push({ house, id: m.id, name: m.name }));
-    if (!queue.length) throw new Error('名單係空嘅。');
-    let databaseId = '';
-    const result = { '忠社': [], '孝社': [] };
-    for (let i = 0; i < queue.length; i += CHUNK) {
-      const batch = queue.slice(i, i + CHUNK);
-      msg.textContent = `同步緊 ${Math.min(i + CHUNK, queue.length)}/${queue.length}…`;
-      const bodyMembers = { '忠社': [], '孝社': [] };
-      batch.forEach(b => bodyMembers[b.house].push({ id: b.id, name: b.name }));
-      const res = await fetch('/api/notion-sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-roster-key': encodeURIComponent(portalKey) },
-        body: JSON.stringify({ parentPageId, databaseId, members: bodyMembers })
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok || !j.ok) throw new Error(j.error || ('HTTP ' + res.status));
-      databaseId = j.databaseId || databaseId;
-      for (const house of ['忠社','孝社']) result[house].push(...(j.members[house] || []));
-    }
-    // 填返 Notion ID：更新 CFG 同畫面
-    for (const house of ['忠社','孝社']) {
-      const byId = {};
-      result[house].forEach(m => byId[m.id] = m.notion);
-      (members[house] || []).forEach(m => { if (byId[m.id]) m.notion = byId[m.id]; });
-      CFG.members[house] = members[house];
-    }
-    renderSetMembers();
-    msg.textContent = `✅ 已同步 ${queue.length} 位舍友，Notion ID 已填返名單。請撳「儲存舍友名單」保存。`;
-    toast('Notion 同步完成，請儲存舍友名單。');
-  } catch (e) {
-    msg.textContent = '❌ ' + e.message;
-    alert('Notion 同步失敗：' + e.message);
-  } finally {
-    btn.disabled = false;
-  }
 });
 
 // ---- 職員名單編輯 ----
