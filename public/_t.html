@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>duties v1.2.0 e2e</title></head>
+<body><pre id="log">RUNNING
+</pre>
+<script>
+const log=m=>{document.getElementById('log').textContent+=m+'\n'};
+const pass=m=>log('PASS: '+m),fail=m=>log('FAIL: '+m);
+function loadFrame(url){return new Promise((res,rej)=>{const f=document.createElement('iframe');f.style.cssText='width:1280px;height:900px';f.onload=()=>setTimeout(()=>res(f),400);f.onerror=rej;f.src=url;document.body.appendChild(f)})}
+(async()=>{
+let f,d,w;
+try{
+ // 準備：入口登入＋解鎖孝社
+ sessionStorage.setItem('cyc-portal-auth',JSON.stringify({p:'testpass',exp:Date.now()+15*60*1000}));
+ sessionStorage.setItem('dorm-duty-dorm','hau');
+ sessionStorage.setItem('dorm-duty-unlocked','1');
+ sessionStorage.setItem('dorm-duty-passcode','testpass');
+ sessionStorage.setItem('dorm-duty-auth-exp',String(Date.now()+15*60*1000));
+
+ f=await loadFrame('/duties/?cb=v12');
+ w=f.contentWindow;d=f.contentDocument;
+
+ // S1 版本同新設定 UI
+ if(w.eval("APP_VERSION")==='1.2.0')pass('S1 版本 1.2.0');else fail('S1 版本='+w.eval("APP_VERSION"));
+ const box=d.getElementById('avoidRepeat');
+ if(box)pass('S1 「避免重複上週舍務」剔選格存在');else{fail('S1 剔選格缺失');throw Error('no box')}
+ if(!box.disabled)pass('S1 未開始抽籤時可剔選');else fail('S1 剔選格被停用');
+
+ // S2 避免重複：假造上週記錄後派籤，無人重複
+ const r2=w.eval(`(()=>{
+  const snap={...clone(state),config:configuration()};
+  snap.round={entries:state.active.map((id,i)=>({id,job:i%JOBS.length,revealed:true})),rungs:[],cardOrder:[...state.active],ladderOrder:[...state.active],created:new Date().toISOString(),last:null};
+  dutyHistory.unshift({id:'duty-test-last',dorm:DORM_ID,title:'上週 舍務',savedAt:new Date(Date.now()-86400000).toISOString(),reason:'manual',snapshot:snap});
+  state.avoidRepeat=true;state.round=null;
+  const r=makeRound(state.active);
+  const lastMap={};snap.round.entries.forEach(e=>lastMap[e.id]=snap.config.jobs[e.job].name);
+  const bad=r.entries.filter(e=>JOBS[e.job].name===lastMap[e.id]);
+  dutyHistory.shift();state.avoidRepeat=false;state.round=null;
+  return {bad:bad.length,fallback:r.repeatFallback===true,n:r.entries.length};
+ })()`);
+ if(r2.bad===0&&!r2.fallback)pass(`S2 避免重複生效（${r2.n} 人全部避開上週舍務）`);else fail(`S2 bad=${r2.bad} fallback=${r2.fallback}`);
+
+ // S3 人數不足（極端：全部人上週都做同一舍務）→ 提醒＋退回一般抽籤
+ const r3=w.eval(`(()=>{
+  const snap={...clone(state),config:configuration()};
+  snap.round={entries:state.active.map(id=>({id,job:0,revealed:true})),rungs:[],cardOrder:[...state.active],ladderOrder:[...state.active],created:new Date().toISOString(),last:null};
+  dutyHistory.unshift({id:'duty-test-all',dorm:DORM_ID,title:'上週 舍務',savedAt:new Date(Date.now()-86400000).toISOString(),reason:'manual',snapshot:snap});
+  state.avoidRepeat=true;state.round=null;
+  const r=makeRound(state.active);
+  dutyHistory.shift();state.avoidRepeat=false;state.round=null;
+  return {fallback:r.repeatFallback===true,n:r.entries.length};
+ })()`);
+ if(r3.fallback&&r3.n>0)pass('S3 無法避開時設提醒標記並照樣派籤');else fail('S3 fallback='+r3.fallback);
+
+ // S4 記錄列印係海報（img）而唔係表格
+ w.print=()=>{w.__printed=true};
+ w.eval(`(()=>{
+  const snap={...clone(state),config:configuration()};
+  snap.round={entries:state.active.map((id,i)=>({id,job:i%JOBS.length,revealed:true})),rungs:[],cardOrder:[...state.active],ladderOrder:[...state.active],created:new Date().toISOString(),last:null};
+  window.__rec={id:'duty-p',dorm:DORM_ID,title:'測試 舍務',savedAt:new Date().toISOString(),reason:'manual',snapshot:snap};
+  printRecordSheet(window.__rec);
+ })()`);
+ const imgs=w.eval("$('printRecord').querySelectorAll('img').length");
+ const src=w.eval("$('printRecord').querySelector('img')?.src||''");
+ if(w.__printed&&imgs>0&&src.startsWith('data:image/png'))pass('S4 記錄列印輸出海報圖像');else fail(`S4 printed=${w.__printed} imgs=${imgs}`);
+ if(d.body.classList.contains('printing-record'))pass('S4 printing-record class 正確');else fail('S4 缺 class');
+ if(d.getElementById('historyPrintBtn').textContent==='列印海報')pass('S4 記錄掣名「列印海報」');else fail('S4 掣名='+d.getElementById('historyPrintBtn').textContent);
+ f.remove();
+
+ // S5 閘頁進入掣文字
+ ['dorm-duty-dorm','dorm-duty-unlocked'].forEach(k=>sessionStorage.removeItem(k));
+ f=await loadFrame('/duties/?cb=v12g');
+ d=f.contentDocument;
+ if(d.getElementById('gateEnterBtn').textContent==='進入抽籤系統')pass('S5 閘頁進入掣文字正確');else fail('S5 掣文='+d.getElementById('gateEnterBtn').textContent);
+ f.remove();
+
+ ['cyc-portal-auth','dorm-duty-passcode','dorm-duty-auth-exp'].forEach(k=>sessionStorage.removeItem(k));
+}catch(e){fail('異常: '+(e&&e.message||e))}
+log('DONE');
+})();
+</script></body></html>

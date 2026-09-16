@@ -21,7 +21,7 @@
 @page{size:A4 portrait;margin:0}
 @media print{dialog::backdrop{display:none!important;background:transparent!important}html,body{margin:0!important;padding:0!important;background:#fff!important}body>.wrap,body>dialog,body>.gate{display:none!important}body>.print-poster{display:block!important;width:210mm;height:auto;overflow:visible}.print-poster img{display:block;width:210mm;height:297mm;object-fit:contain;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 .print-record{display:none}
-@media print{body.printing-record>.print-poster{display:none!important}body.printing-record>.print-record{display:block!important;width:210mm;padding:12mm 14mm;color:#172824;background:#fff}.print-record h1{font-size:20pt;color:#075e4e;margin:0 0 4mm}.print-record .pr-meta{font-size:10pt;color:#61716c;margin-bottom:5mm}.print-record table{width:100%;border-collapse:collapse;font-size:10.5pt;margin-bottom:6mm}.print-record th{background:#e9f4ef;text-align:left}.print-record th,.print-record td{border:1px solid #c8d4cc;padding:2.2mm 3mm}.print-record h2{font-size:13pt;color:#075e4e;margin:5mm 0 2mm}.print-record .pr-foot{margin-top:6mm;font-size:9pt;color:#61716c;border-top:1px solid #c8d4cc;padding-top:3mm}}
+@media print{body.printing-record>.print-poster{display:none!important}body.printing-record>.print-record{display:block!important;width:210mm;height:auto;overflow:visible}.print-record img{display:block;width:210mm;height:297mm;object-fit:contain;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 .resident-status{display:block;width:100%;margin-top:9px;padding:6px 3px;border:1px solid #b7cfc0;border-radius:6px;background:#fff;color:var(--ink);font:inherit;font-size:14px}.person{text-align:center}.status-home,.status-other{background:#fff3c9;border-color:#e0c67a}.status-school,.status-absent{background:#ecefeb;border-color:#d1d8d1;color:#69776f}.auto-reason{font-size:11px;font-weight:500;margin-left:6px}.week-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 20px;font-size:14px}.week-bar label{font-weight:700}.week-bar input{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}.week-bar small{color:var(--muted)}.week-to{font-weight:600;color:var(--muted)}.gate{min-height:100vh;display:grid;place-items:start center;padding:36px 20px}.gate-card{width:min(860px,100%);background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:30px 32px 22px;box-shadow:0 12px 40px rgba(23,40,36,.06)}.gate-dorms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:26px 0 10px}.gate-dorm{padding:22px 16px;border:2px solid var(--line);border-radius:16px;background:var(--paper);font-size:30px;font-weight:800;letter-spacing:1px;color:var(--green);display:flex;flex-direction:column;gap:6px;align-items:center}.gate-dorm small{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}.gate-dorm.active{border-color:var(--green);background:var(--mint)}.gate-dorm:hover{border-color:var(--green)}#gateDorm h2{margin:22px 0 10px;font-size:22px}.gate-form{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.gate-form label{font-weight:700;font-size:14px;flex:1 1 220px;display:flex;flex-direction:column;gap:6px}.gate-form input{padding:11px 12px;border:1px solid #bbccc1;border-radius:10px;font:inherit;background:#fff;color:var(--ink)}.gate-form .primary{padding:12px 20px}.gate-records{margin-top:26px;padding-top:18px;border-top:2px solid var(--green)}.gate-records-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.gate-records-head h3{margin-right:auto}.gate-records-head select{max-width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;font:inherit;font-size:14px}.gate-record-meta{margin:12px 0 4px;font-size:14px}.gate .decision-note{margin-top:22px}@media(max-width:600px){.gate{padding:16px 10px}.gate-card{padding:20px 16px 16px}.gate-dorm{font-size:24px;padding:16px 10px}.gate-form .primary{width:100%}}
 .custom-summary{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 10px;text-align:left}.custom-summary span{font-size:12px;padding:3px 8px;border:1px solid var(--line);border-radius:6px;background:#f5f8f3}.custom-summary .filled{background:var(--mint);color:var(--green)}.custom-scroll{max-height:325px;overflow:auto;border:1px solid var(--line);border-radius:10px}.custom-table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}.custom-table th{position:sticky;top:0;background:#edf4ee;z-index:1}.custom-table th,.custom-table td{padding:9px 12px;border-bottom:1px solid var(--line)}.custom-table select{width:100%;padding:6px;border:1px solid #b7cfc0;border-radius:6px;background:white;font:inherit;color:var(--ink)}.custom-table td:first-child{white-space:nowrap}.custom-table small{color:var(--muted)}#customBackupBtn{font-size:13px;margin-top:8px}#customNotice{font-size:13px;text-align:left;min-height:22px}.tab{padding-left:12px;padding-right:12px}@media(max-width:400px){.tab{font-size:14px;padding-left:6px;padding-right:6px}.custom-table th,.custom-table td{padding:8px}}
 .decision-note{margin:18px 3px 0;padding:12px 16px;border-left:4px solid var(--green);background:var(--mint);font-size:14px;color:var(--ink)}
@@ -55,6 +55,9 @@ button:disabled{box-shadow:none!important;transform:none!important}
 input[type=date],input[type=password],input[type=search],input[type=text],input[type=number],.settings-table input,.history-search input,.gate-form input{border:2.5px solid var(--ink)!important;border-radius:9px;background:#fff;color:var(--ink);font-family:var(--font-comic)}
 input:focus-visible,select:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
 .week-bar{gap:10px}.week-bar label{font-size:15px}
+.week-bar .avoid-repeat{display:flex;align-items:center;gap:7px;cursor:pointer;border:2.5px solid var(--ink);border-radius:9px;background:#fff;padding:7px 12px;box-shadow:3px 3px 0 var(--shadow)}
+.week-bar .avoid-repeat input{width:17px;height:17px;accent-color:var(--green);cursor:pointer}
+.repeat-warning{color:#9a320d;font-weight:700}
 .tabs{background:#fff;border:2.5px solid var(--ink);border-radius:12px;padding:4px;box-shadow:3px 3px 0 var(--shadow)}
 .tab{border-radius:8px;color:var(--muted);font-weight:700}
 .tab.active{background:var(--yellow);color:var(--ink);box-shadow:none;border:2px solid var(--ink)}
@@ -175,7 +178,7 @@ input:focus-visible,select:focus-visible{outline:3px solid #2563eb;outline-offse
    <h2 id="gateDormTitle"></h2>
    <form id="gateForm" class="gate-form"><label for="gatePass">共用密碼<input id="gatePass" type="password" autocomplete="current-password" maxlength="200" placeholder="輸入共用密碼"></label><button class="primary" id="gateEnterBtn" type="submit">進入抽籤系統</button></form>
    <p class="notice" id="gateNotice" role="status"></p>
-   <section class="gate-records" aria-label="上次抽籤記錄"><div class="gate-records-head"><h3>上次抽籤記錄</h3><div class="seg" role="group" aria-label="記錄檢視方式"><button type="button" class="active" data-record-view="jobs" aria-pressed="true">按舍務種類</button><button type="button" data-record-view="residents" aria-pressed="false">按舍友</button></div><select id="gateRecordSelect" aria-label="選擇記錄" hidden></select><button class="quiet" id="gateRefresh" type="button">重新載入</button><button class="secondary" id="gatePrintBtn" type="button" hidden>列印</button><button class="secondary" id="gateCsvBtn" type="button" hidden>下載此記錄 CSV</button></div><p class="muted" id="gateRecordStatus">請先選擇舍別。</p><div id="gateRecordBody"></div></section>
+   <section class="gate-records" aria-label="上次抽籤記錄"><div class="gate-records-head"><h3>上次抽籤記錄</h3><div class="seg" role="group" aria-label="記錄檢視方式"><button type="button" class="active" data-record-view="jobs" aria-pressed="true">按舍務種類</button><button type="button" data-record-view="residents" aria-pressed="false">按舍友</button></div><select id="gateRecordSelect" aria-label="選擇記錄" hidden></select><button class="quiet" id="gateRefresh" type="button">重新載入</button><button class="secondary" id="gatePrintBtn" type="button" hidden>列印海報</button><button class="secondary" id="gateCsvBtn" type="button" hidden>下載此記錄 CSV</button></div><p class="muted" id="gateRecordStatus">請先選擇舍別。</p><div id="gateRecordBody"></div></section>
   </div>
   <p class="decision-note">如有任何疑問或爭議，一概以當值導師的決定為準。</p>
   <p class="gate-links"><button type="button" class="quiet" onclick="location.href='/'">← 返回主頁</button> <button type="button" class="quiet" id="gateVersionBtn">版本紀錄</button></p>
@@ -186,7 +189,7 @@ input:focus-visible,select:focus-visible{outline:3px solid #2563eb;outline-offse
   <div class="brand"><div class="brandmark" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div><h1 id="appTitle">孝社 舍務抽籤</h1><p class="sub">每星期抽一次，大家一齊做。</p></div></div>
   <div class="top-actions"><button class="quiet" type="button" onclick="location.href='/'">← 返回主頁</button><button class="quiet" id="switchDormBtn">⇄ 切換舍別</button><button class="quiet" id="historyBtn">舍務記錄</button><button class="quiet" id="settingsBtn">⚙ 設定</button><button class="quiet" id="resetBtn">重新抽籤</button><button class="quiet" id="versionBtn">版本紀錄</button></div>
  </header>
- <div class="week-bar"><label for="weekStart">舍務週期</label><input id="weekStart" type="date" aria-label="週期開始日期"><span class="week-to">至</span><input id="weekEnd" type="date" aria-label="週期結束日期"><span id="weekRange"></span><small>開始及結束日期可修改</small></div>
+ <div class="week-bar"><label for="weekStart">舍務週期</label><input id="weekStart" type="date" aria-label="週期開始日期"><span class="week-to">至</span><input id="weekEnd" type="date" aria-label="週期結束日期"><span id="weekRange"></span><small>開始及結束日期可修改</small><label class="avoid-repeat" for="avoidRepeat"><input type="checkbox" id="avoidRepeat"> 避免重複上週舍務</label><small>抽籤時自動避開舍友上週做過的舍務</small><span class="repeat-warning" id="repeatNotice" hidden>⚠ 人數較少，未能安排避開上週舍務；本輪已按一般抽籤處理。</span></div>
  <div class="print-title"><h1 id="printTitle">孝社 本週舍務</h1><p id="printMeta"></p></div>
  <div class="layout">
   <section class="panel play" aria-label="舍務抽籤">
@@ -223,7 +226,7 @@ input:focus-visible,select:focus-visible{outline:3px solid #2563eb;outline-offse
 <div class="settings-body"><p class="muted">記錄儲存在雲端，任何裝置開啟本網站都可查看；儲存及刪除使用進入時輸入的共用密碼。此瀏覽器未上傳的記錄會標示「未上傳」，可按「上傳」補回。查看舊記錄不會更改目前的分配。</p><div class="cloud-line"><p id="historyCloudStatus" role="status">正在載入雲端記錄…</p><div class="cloud-line-actions"><button class="quiet" id="historyRefreshBtn">重新載入</button><button class="secondary" id="historyUploadAllBtn" hidden>上傳未同步記錄</button></div></div>
 <div class="history-toolbar"><button class="primary" id="historySaveBtn">儲存本週記錄</button><button class="secondary" id="historyBackupBtn">下載全部記錄備份</button><button class="quiet" id="historyImportBtn">匯入記錄備份</button><input id="historyImportFile" type="file" accept=".json,application/json" hidden></div>
 <p class="notice" id="historyImportStatus" role="status"></p><label class="history-search">搜尋週期／儲存日期<input type="search" id="historySearch" placeholder="例如 2026-09 或 2026/09" autocomplete="off"></label>
-<div id="historyList"></div><section id="historyDetail" class="history-detail" hidden><div class="history-detail-head"><h3 id="historyDetailTitle"></h3><div class="seg" role="group" aria-label="記錄檢視方式"><button type="button" class="active" data-record-view="jobs" aria-pressed="true">按舍務種類</button><button type="button" data-record-view="residents" aria-pressed="false">按舍友</button></div><button class="secondary" id="historyPrintBtn">列印此記錄</button><button class="secondary" id="historyCsvBtn">下載此記錄 CSV</button></div><p class="muted" id="historyDetailMeta"></p><div id="historyDetailBody"></div></section>
+<div id="historyList"></div><section id="historyDetail" class="history-detail" hidden><div class="history-detail-head"><h3 id="historyDetailTitle"></h3><div class="seg" role="group" aria-label="記錄檢視方式"><button type="button" class="active" data-record-view="jobs" aria-pressed="true">按舍務種類</button><button type="button" data-record-view="residents" aria-pressed="false">按舍友</button></div><button class="secondary" id="historyPrintBtn">列印海報</button><button class="secondary" id="historyCsvBtn">下載此記錄 CSV</button></div><p class="muted" id="historyDetailMeta"></p><div id="historyDetailBody"></div></section>
 </div></dialog>
 <dialog id="versionDialog" class="settings-dialog version-dialog" aria-labelledby="versionTitle">
 <div class="settings-head"><h2 id="versionTitle">版本紀錄 <small id="versionCurrent"></small></h2><button class="quiet" id="versionClose">關閉</button></div>
@@ -274,7 +277,7 @@ function dutyAuthValid(){const t=Number(sessionValue(AUTH_EXP_KEY));return Numbe
   if(passLabel)passLabel.hidden=true;
   if(enterBtn){
    enterBtn.type='button';
-   enterBtn.textContent='進入抽籤系統（已登入，免密碼）';
+   enterBtn.textContent='進入抽籤系統';
    enterBtn.addEventListener('click',()=>{
     if(!dutyAuthValid()){location.reload();return}
     const dorm=(document.querySelector('[data-dorm].active')||{}).dataset?.dorm;
@@ -352,16 +355,45 @@ function daysBetween(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+
 function weekEnd(s=state){return validDate(s.weekEnd)&&s.weekEnd>=s.weekStart?s.weekEnd:addDays(s.weekStart,6)}
 function weekLabel(){return `${state.weekStart.replaceAll('-','/')} 至 ${weekEnd().replaceAll('-','/')}`}
 function validDate(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(new Date(v+'T12:00:00').getTime())&&localDate(new Date(v+'T12:00:00'))===v}
-let state={active:[...ALL],statuses:Object.fromEntries(ALL.map(id=>[id,'normal'])),weekStart:defaultWeek(),weekEnd:addDays(defaultWeek(),6),custom:{},mode:'wheel',round:null}, busy=false, wheelAngle=0, toastTimer, selectedCardResident=null, selectedWheelJob=0;
+let state={active:[...ALL],statuses:Object.fromEntries(ALL.map(id=>[id,'normal'])),weekStart:defaultWeek(),weekEnd:addDays(defaultWeek(),6),custom:{},mode:'wheel',round:null,avoidRepeat:false}, busy=false, wheelAngle=0, toastTimer, selectedCardResident=null, selectedWheelJob=0;
 const reduced=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function randomInt(n){if(!Number.isInteger(n)||n<1)throw Error('Invalid range');const a=new Uint32Array(1),limit=4294967296-(4294967296%n);do{crypto.getRandomValues(a)}while(a[0]>=limit);return a[0]%n}
 function shuffle(items){const a=[...items];for(let i=a.length-1;i>0;i--){const j=randomInt(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
-function makeRound(active){
+function makeRound(active,useAvoid=true){
  if(staffingProblem(active.length))throw Error('Insufficient staff');
  const slots=staffingCounts(active.length).flatMap((count,j)=>Array(count).fill(j));
- const entries=shuffle(active).map((id,i)=>({id,job:slots[i],revealed:false}));
+ let entries=null,fallback=false;
+ if(useAvoid&&state.avoidRepeat){
+  const lastJobs=lastRoundJobs();
+  if(Object.keys(lastJobs).length){entries=assignAvoiding(active,slots,lastJobs);if(!entries)fallback=true}
+ }
+ if(!entries)entries=shuffle(active).map((id,i)=>({id,job:slots[i],revealed:false}));
  const rungs=Array.from({length:active.length>1?58:0},(_,i)=>({left:randomInt(active.length-1),y:72+i*3.65}));
- return{entries,rungs,cardOrder:shuffle(active),ladderOrder:[...active].sort((a,b)=>a-b),created:new Date().toISOString(),last:null};
+ return{entries,rungs,cardOrder:shuffle(active),ladderOrder:[...active].sort((a,b)=>a-b),created:new Date().toISOString(),last:null,repeatFallback:fallback};
+}
+// 取最近一筆記錄中各位舍友做過的舍務名稱（以名稱比對，舍務改名後自動略過）
+function lastRoundJobs(){
+ try{
+  const record=allRecords()[0],jobs=record?.snapshot?.config?.jobs,entries=record?.snapshot?.round?.entries;
+  if(!Array.isArray(jobs)||!Array.isArray(entries))return {};
+  const map={};entries.forEach(e=>{if(e&&e.revealed&&jobs[e.job])map[e.id]=jobs[e.job].name});return map;
+ }catch{return {}}
+}
+// 編配時避開上週舍務（隨機次序的增廣路匹配）；人數不足無法全部避開時返回 null
+function assignAvoiding(active,slots,lastJobs){
+ const people=shuffle(active);
+ const prefs=people.map(id=>shuffle(slots.map((_,si)=>si)).filter(si=>JOBS[slots[si]].name!==lastJobs[id]));
+ const match=new Array(slots.length).fill(-1);
+ function augment(pi,seen){
+  for(const si of prefs[pi]){
+   if(seen[si])continue;seen[si]=true;
+   if(match[si]<0||augment(match[si],seen)){match[si]=pi;return true}
+  }
+  return false;
+ }
+ for(let pi=0;pi<people.length;pi++)if(!augment(pi,new Array(slots.length).fill(false)))return null;
+ const jobs=new Array(people.length);match.forEach((pi,si)=>jobs[pi]=slots[si]);
+ return people.map((id,pi)=>({id,job:jobs[pi],revealed:false}));
 }
 function validState(s,partial=false){
  if(!s||!Array.isArray(s.active)||!s.active.every(id=>ALL.includes(id))||new Set(s.active).size!==s.active.length||!['wheel','ladder','cards','custom'].includes(s.mode))return false;
@@ -387,7 +419,7 @@ function entries(){return [...(state.round?.entries||[]),...automatic()]}
 function pending(){return entries().filter(e=>!e.revealed)}
 function revealed(){return entries().filter(e=>e.revealed)}
 function ready(){return !staffingProblem()}
-function ensureRound(){if(!state.round&&ready())state.round=makeRound(state.active);if(state.round&&!state.round.ladderOrder)state.round.ladderOrder=[...state.active].sort((a,b)=>a-b);if(state.round)save();return state.round}
+function ensureRound(){if(!state.round&&ready()){state.round=makeRound(state.active);if(state.round.repeatFallback)toast('人數較少，未能安排避開上週舍務；本輪已按一般抽籤處理。')}if(state.round&&!state.round.ladderOrder)state.round.ladderOrder=[...state.active].sort((a,b)=>a-b);if(state.round)save();return state.round}
 // Exchange only unrevealed residents between slots. Slot duties stay in place on both boards.
 function swapResidents(first,second){
  if(busy||first===second)return first===second;const r=ensureRound();if(!r)return false;
@@ -509,7 +541,13 @@ function renderStage(){
  if(!ready())$('stageIntro').textContent=staffingProblem();
 }
 function announce(entry){$('announcement').innerHTML=entry?`<span class="label">剛剛抽中</span><span class="big">${esc(residentLabel(entry.id))}</span><span aria-hidden="true">→</span><span class="big">${esc(dutyLabel(entry.job))}</span>`:'<span class="label">準備就緒</span><span class="big">好，開始抽籤！</span>'}
-function render(){renderRoster();renderStage();renderResults();renderControls()}
+function renderRepeatNotice(){
+ const notice=$('repeatNotice'),box=$('avoidRepeat');if(!notice||!box)return;
+ notice.hidden=!(state.round&&state.round.repeatFallback);
+ box.disabled=Boolean(state.round);
+ box.checked=Boolean(state.avoidRepeat);
+}
+function render(){renderRoster();renderStage();renderResults();renderControls();renderRepeatNotice()}
 function revealEntry(entry){entry.revealed=true;state.round.last=entry.id;save();announce(entry);renderResults()}
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function animateWheel(entry){
@@ -578,7 +616,7 @@ function setCustom(id,value){
  }
  save();renderCustom();renderControls();
 }
-function applyCustom(){if(busy||rosterLocked())return;const problem=customProblem();if(problem){toast(problem);return}const round=makeRound(state.active);round.entries=state.active.map(id=>({id,job:state.custom[id],revealed:true}));state.round=round;save();render();storeRecord('complete',true);$('announcement').innerHTML='<span class="label">自訂分配已套用</span><span class="big">本週舍務，安排好！</span>';toast('已按你的指定分配，可下載漫畫海報 PDF。')}
+function applyCustom(){if(busy||rosterLocked())return;const problem=customProblem();if(problem){toast(problem);return}const round=makeRound(state.active,false);round.entries=state.active.map(id=>({id,job:state.custom[id],revealed:true}));state.round=round;save();render();storeRecord('complete',true);$('announcement').innerHTML='<span class="label">自訂分配已套用</span><span class="big">本週舍務，安排好！</span>';toast('已按你的指定分配，可下載漫畫海報 PDF。')}
 $('customRows').addEventListener('change',e=>{const b=e.target.closest('.custom-job');if(b)setCustom(Number(b.dataset.id),b.value)});
 $('customBackupBtn').addEventListener('click',()=>{const backup=reserveIndex();if(busy||rosterLocked()||!ready()||backup<0)return;if(JOBS.some((job,j)=>j!==backup&&customCounts()[j]!==staffingCounts()[j])){toast('請先填滿本週一般舍務名額，再將其餘舍友設為後備。');return}for(const id of state.active)if(!Object.hasOwn(state.custom,id))state.custom[id]=backup;save();renderCustom();renderControls()});
 // Draw once at print resolution; the same image powers preview, printing and the offline PDF.
@@ -587,13 +625,13 @@ function posterPanels(){
  return JOBS.map((job,j)=>{const list=revealed().filter(e=>e.job===j).sort((a,b)=>a.id-b.id),target=dutyTargets()[j];return {job,j,list,target,size:Math.max(target,list.length),assigned:list.length}});
 }
 // One A4 page: panels and member cells shrink to fit however many duties and people there are.
-function posterCanvases(){
+function posterCanvases(dormName=DORM_NAME){
  const panels=posterPanels(),ink='#162423',yellow='#ffe16b',font='-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif';
  const canvas=document.createElement('canvas');canvas.width=2520;canvas.height=3564;const c=canvas.getContext('2d');c.scale(3,3);
  function text(value,x,y,size=24,color=ink,weight=700,width=740){value=String(value);c.fillStyle=color;c.textAlign='left';c.textBaseline='alphabetic';c.font=`${weight} ${size}px ${font}`;while(c.measureText(value).width>width&&size>7){size--;c.font=`${weight} ${size}px ${font}`}c.fillText(value,x,y,width)}
  function rect(x,y,w,h,fill,stroke=ink,line=4){c.fillStyle=fill;c.fillRect(x,y,w,h);if(stroke){c.strokeStyle=stroke;c.lineWidth=line;c.strokeRect(x,y,w,h)}}
  c.fillStyle='#fffdf3';c.fillRect(0,0,840,1188);c.fillStyle='#e3decc';for(let x=12;x<840;x+=16)for(let y=12;y<1188;y+=16){c.beginPath();c.arc(x,y,1.3,0,Math.PI*2);c.fill()}
- rect(25,25,790,1138,'#fffdf3');rect(43,45,754,155,yellow);text('舍務分配',62,77,17);text(DORM_NAME+' 本週舍務',61,143,64,ink,900,714);text(weekLabel(),62,181,19);
+ rect(25,25,790,1138,'#fffdf3');rect(43,45,754,155,yellow);text('舍務分配',62,77,17);text(dormName+' 本週舍務',61,143,64,ink,900,714);text(weekLabel(),62,181,19);
  text(`${isComplete()?'完整名單':'部分結果'} · 已分配 ${revealed().length} / ${countedTotal()} 人`,43,233,18);
  const cols=panels.length>1?2:1,rows=Math.max(1,Math.ceil(panels.length/cols)),gapX=23,gapY=22,areaTop=253,areaH=737,areaW=751;
  const w=(areaW-(cols-1)*gapX)/cols,h=(areaH-(rows-1)*gapY)/rows,line=h>=150?4:3;
@@ -665,6 +703,7 @@ function changeWeek(field,value){
  save();renderResults();if(isComplete())storeRecord('complete',true);
 }
 $('weekStart').addEventListener('change',e=>changeWeek('weekStart',e.target.value));$('weekEnd').addEventListener('change',e=>changeWeek('weekEnd',e.target.value));
+$('avoidRepeat').addEventListener('change',e=>{if(busy||state.round){e.target.checked=Boolean(state.avoidRepeat);toast('本輪抽籤已開始，請按「重新抽籤」後再更改此設定。');return}state.avoidRepeat=e.target.checked;save();toast(state.avoidRepeat?'已開啟「避免重複上週舍務」，抽籤時會自動避開舍友上週做過的舍務。':'已關閉「避免重複上週舍務」。')});
 $('wheelJob').addEventListener('change',e=>selectWheelJob(Number(e.target.value)));$('jobList').addEventListener('click',e=>{const b=e.target.closest('.member-cancel');if(b)cancelAssignment(Number(b.dataset.id))});$('ladderAdd').addEventListener('click',addLadderRung);
 $('cardResident').addEventListener('change',e=>selectCardResident(Number(e.target.value)));$('ladderShuffle').addEventListener('click',shuffleLadderDuties);$('ladderPicks').addEventListener('change',e=>{const b=e.target.closest('.ladder-resident');if(b)setLadderResident(Number(b.dataset.lane),Number(b.value))});
 $('cards').addEventListener('click',e=>{const b=e.target.closest('.card');if(b){const id=Number(b.dataset.id);if(entries().find(e=>e.id===id)?.revealed)cancelAssignment(id);else draw(id)}});$('ladderPicks').addEventListener('click',e=>{const b=e.target.closest('.ladder-pick');if(b)draw(Number(b.dataset.id))});
@@ -755,7 +794,9 @@ $('historyList').addEventListener('click',e=>{const view=e.target.closest('[data
 $('historyCsvBtn').addEventListener('click',()=>{const record=allRecords().find(r=>r.id===historySelected);if(record&&!busy)withSnapshot(record.snapshot,exportCsv)});
 function printRecordSheet(record){
  if(!record)return;
- $('printRecord').innerHTML=`<h1>${esc(record.title)}</h1><p class="pr-meta">${esc(historySummary(record))} · ${esc(HISTORY_REASONS[record.reason])} · 儲存於 ${esc(new Date(record.savedAt).toLocaleString('zh-HK'))}</p>`+recordViewHtml(record)+'<p class="pr-foot">如有任何疑問或爭議，一概以當值導師的決定為準。</p>';
+ const dormName=record.dorm&&DORMS[record.dorm]?DORMS[record.dorm].name:DORM_NAME;
+ const images=withSnapshot(record.snapshot,()=>posterCanvases(dormName).map(c=>c.toDataURL('image/png')));
+ $('printRecord').innerHTML=images.map(src=>`<div class="print-page"><img src="${src}" alt="舍務海報"></div>`).join('');
  document.body.classList.add('printing-record');window.print();
 }
 $('historyPrintBtn').addEventListener('click',()=>{const record=allRecords().find(r=>r.id===historySelected);if(record&&!busy)printRecordSheet(record)});
@@ -961,8 +1002,12 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('online',()=>{if(GATE_UNLOCKED&&configSync.pending)cloudConfigPush(false)});
 
 // ---- Version history ----
-const APP_VERSION='1.1.0';
+const APP_VERSION='1.2.0';
 const VERSION_HISTORY=[
+ {version:'1.2.0',date:'2026-09-16',author:'何文諾社工',title:'避免重複舍務及海報列印',sections:[
+  ['新設定：避免重複舍務',['抽籤前可剔選「避免重複上週舍務」，系統會自動識別舍友上週做過的舍務，抽籤時改派其他舍務','若參與人數太少、未能全部避開，會即時提醒「人數較少，未能安排避開上週舍務」，並按一般抽籤處理','自訂分配不受此設定影響，仍由你親自安排']],
+  ['列印',['閘頁「上次抽籤記錄」及「舍務記錄」內的列印一律改為漫畫海報風格，與系統內的海報一致','閘頁進入按鈕簡化為「進入抽籤系統」']]
+ ]},
  {version:'1.1.0',date:'2026-09-13',author:'何文諾社工',title:'設定雲端同步',sections:[
   ['舍友及舍務設定',['新增、修改、刪除舍友或舍務並儲存後，會自動同步至雲端（按忠社／孝社分開）','其他裝置進入同一社後會自動套用最新設定；若該裝置本輪已揭曉，會先保存記錄再重新開始','沒有網絡時設定先存於此瀏覽器，恢復後自動重試；設定視窗內可按「重新同步」','兩部裝置同時修改時會提示以雲端或此瀏覽器為準，不會靜默覆蓋','取消「下載網站 HTML」功能：設定已由雲端保存，不再需要自行上傳網站']],
   ['啟用',['需在 Supabase 重新執行一次 04_舍務記錄雲端.sql（新增設定資料表及接口）']]
