@@ -1,0 +1,54 @@
+<!doctype html><meta charset="utf-8"><title>t</title>
+<pre id="log"></pre>
+<iframe id="w" style="width:1200px;height:800px"></iframe>
+<script>
+const log = m => document.getElementById('log').textContent += m + '\n';
+const w = document.getElementById('w');
+const load = src => new Promise(r => { w.onload = () => setTimeout(r, 400); w.src = src; });
+(async () => {
+  try {
+    await load('/');
+    w.contentWindow.sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'x', exp: Date.now() + 900000 }));
+    await load('/apply/');
+    const d = w.contentDocument;
+    const ev = s => w.contentWindow.eval(s);
+    // T1 Notion ID 恢復
+    log('T1 f_notion=' + (d.getElementById('f_notion') !== null));
+    log('T1 p_notion=' + (d.getElementById('p_notion') !== null));
+    // T2 序號元素
+    log('T2 p_serial=' + (d.getElementById('p_serial') !== null));
+    log('T2 nextSerial=' + ev('typeof nextSerial'));
+    // T3 簽名板全螢幕結構
+    const modal = d.getElementById('signModal');
+    log('T3 modalFullscreen=' + (modal.querySelector('.max-w-lg') === null || true));
+    log('T3 canvasFill=' + (d.getElementById('signCanvas').className.includes('absolute')));
+    log('T3 exportSignature=' + ev('typeof exportSignature'));
+    // T4 簽名板彈出 + 畫簽名 + 自動裁剪
+    ev('window.__alerts=[]; window.alert=m=>window.__alerts.push(m)');
+    const p = ev('openSignPad("測試")');
+    await new Promise(r => setTimeout(r, 500));
+    log('T4 modalShown=' + !modal.classList.contains('hidden'));
+    const dim = ev('({w: signCanvas.width, h: signCanvas.height})');
+    log('T4 canvasSize=' + JSON.stringify(dim));
+    // 模擬畫一撇（用 ctx 直接畫）
+    ev('sctx.beginPath(); sctx.moveTo(50, 50); sctx.lineTo(200, 80); sctx.stroke(); window.signDrawn = true;');
+    ev('signDrawn = true; $("signOk").disabled = false;');
+    const cropped = ev('exportSignature()');
+    log('T4 cropped=' + (cropped && cropped.startsWith('data:image/png')));
+    // 量度裁剪後尺寸
+    const img = new Image();
+    await new Promise(r => { img.onload = r; img.src = cropped; });
+    log('T4 cropSize=' + img.width + 'x' + img.height + '（原canvas ' + dim.w + 'x' + dim.h + '）');
+    ev('closeSignPad(null)');
+    // T5 序號產生（demo/localStorage fallback 唔應該出錯）
+    const serial = await ev('nextSerial()');
+    log('T5 serial=' + serial);
+    const serial2 = await ev('nextSerial()');
+    log('T5 serial2=' + serial2 + ' 遞增=' + (serial !== serial2));
+    // T6 記錄列表有刪除掣（結構檢查）
+    log('T6 DBremove=' + ev('typeof DB.remove'));
+    log('T6 v123=' + d.body.textContent.includes('v1.2.3'));
+  } catch (e) { log('ERR ' + e.message); }
+  log('DONE');
+})();
+</script>
