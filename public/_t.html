@@ -37,8 +37,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     log('T2 payee=' + sel.value);
 
     // 3) 攔截 pdf.save，然後撳確認列印
-    ev('window.__saved=[]; const P=w.contentWindow?null:null;');
-    ev('(function(){ const J = window.jspdf.jsPDF; const orig = J.prototype.save; J.prototype.save = function(n){ window.__saved.push(n); return this; }; })()');
+    ev('window.__saved=[]; (function(){ const J = window.jspdf.jsPDF; J.prototype.save = function(n){ window.__saved.push(n); return this; }; })()');
     d.getElementById('f_print').click();
     await sleep(800);
     // 簽名板應彈出
