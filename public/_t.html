@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>t</title></head><body>
+<pre id="log">TEST-START</pre>
+<script>
+const log = m => document.getElementById('log').textContent += '\n' + m;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'test', exp: Date.now() + 900000 }));
+const f1 = document.createElement('iframe');
+f1.src = '/admin/';
+f1.style.cssText = 'width:1200px;height:900px';
+document.body.appendChild(f1);
+f1.addEventListener('load', async () => {
+  await sleep(2500);
+  const w = f1.contentWindow;
+  try {
+    await w.document.fonts.ready;
+    log('BODY-FONT: ' + w.getComputedStyle(w.document.body).fontFamily.slice(0, 50));
+    log('HUNINN-LOADED: ' + w.document.fonts.check('16px Huninn'));
+    log('HAS-DEL-SEL-BTN: ' + !!w.document.getElementById('del_sel_btn'));
+    log('HAS-DELETE-FN: ' + (typeof w.eval('deleteRecords')));
+    // 登入後台
+    const pw = await w.eval('getAdminPw()');
+    log('GOT-PW: ' + (pw ? 'yes' : 'no'));
+    w.document.getElementById('gate_pw').value = pw;
+    w.document.getElementById('gate_btn').click();
+    await sleep(3500);
+    const delBtns = w.document.querySelectorAll('.del_rec').length;
+    log('REC-ROWS-DEL-BTNS: ' + delBtns);
+    log('BY-STAFF-VISIBLE: ' + !!w.document.getElementById('by_staff'));
+    const bars = w.document.querySelectorAll('#by_payee .rounded-full.bg-slate-100').length;
+    log('PAYEE-BARS: ' + bars);
+    // 勾一張睇按鈕狀態
+    const cb = w.document.querySelector('.sel_rec');
+    if (cb) {
+      cb.checked = true;
+      cb.dispatchEvent(new w.Event('change'));
+      await sleep(200);
+      log('DEL-SEL-ENABLED: ' + !w.document.getElementById('del_sel_btn').disabled);
+      log('DEL-SEL-TEXT: ' + w.document.getElementById('del_sel_btn').textContent);
+    }
+  } catch (e) { log('ERR ' + e.message); }
+  log('TEST-END');
+});
+setTimeout(() => log('TIMEOUT'), 15000);
+</script>
+</body></html>
