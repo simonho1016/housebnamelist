@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><title>t</title>
+<pre id="log"></pre>
+<iframe id="w" style="width:1200px;height:800px"></iframe>
+<script>
+const log = m => document.getElementById('log').textContent += m + '\n';
+const w = document.getElementById('w');
+const load = src => new Promise(r => { w.onload = () => setTimeout(r, 400); w.src = src; });
+(async () => {
+  try {
+    await load('/');
+    w.contentWindow.sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'x', exp: Date.now() + 900000 }));
+    await load('/apply/');
+    const d = w.contentDocument;
+    const ev = s => w.contentWindow.eval(s);
+    // 入設定頁（職員登入 → goSettings 流程）
+    d.getElementById('goSettings').click();
+    d.getElementById('s_name').value = d.getElementById('s_name').options[1].value;
+    d.getElementById('s_pw').value = '0001';
+    d.getElementById('s_login_btn').click();
+    await new Promise(r => setTimeout(r, 800));
+    log('T1 settingsVisible=' + !d.getElementById('settingsScreen').classList.contains('hidden'));
+    log('T1 syncBtn=' + ((d.getElementById('notionSyncBtn') || {}).textContent || 'MISSING'));
+    log('T1 parentInput=' + (d.getElementById('notionParent') !== null));
+    log('T1 notionCols=' + d.querySelectorAll('#setMembers [data-f="notion"]').length);
+    log('T1 v121=' + d.body.textContent.includes('v1.2.1'));
+    // 同步掣空父頁 → 應彈提示（攔截 alert）
+    ev('window.__alerts=[]; window.alert=m=>window.__alerts.push(m)');
+    d.getElementById('notionSyncBtn').click();
+    await new Promise(r => setTimeout(r, 300));
+    log('T2 alert=' + JSON.stringify(ev('window.__alerts')));
+  } catch (e) { log('ERR ' + e.message); }
+  log('DONE');
+})();
+</script>
