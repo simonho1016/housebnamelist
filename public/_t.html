@@ -33,7 +33,7 @@ f1.addEventListener('load', async () => {
     const cb = w.document.querySelector('.sel_rec');
     if (cb) {
       cb.checked = true;
-      cb.dispatchEvent(new w.Event('change'));
+      cb.dispatchEvent(new w.Event('change', {bubbles:true}));
       await sleep(200);
       log('DEL-SEL-ENABLED: ' + !w.document.getElementById('del_sel_btn').disabled);
       log('DEL-SEL-TEXT: ' + w.document.getElementById('del_sel_btn').textContent);
