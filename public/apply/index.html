@@ -406,7 +406,19 @@ create policy "anon access" on settings
         </div>
       </div>
       <div id="setMembers" class="space-y-2"></div>
-      <p class="text-xs text-slate-400">「Notion ID」欄填舍友喺 Notion 嘅登記編號或頁面 ID；填咗之後，填單揀人會自動帶出，「電子存檔」會將 PDF 自動上傳到該舍友嘅 Notion 頁。</p>
+      <p class="text-xs text-slate-400">「Notion ID」係舍友喺 Notion 嘅頁面 ID；填咗之後，填單揀人會自動帶出，「電子存檔」會將 PDF 自動上傳到該舍友嘅 Notion 頁。</p>
+
+      <!-- Notion 自動建檔 -->
+      <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
+        <p class="text-xs font-bold text-slate-600">① 先同步：喺 Notion 建立／更新舍友資料</p>
+        <p class="text-xs text-slate-400">撳「同步舍友到 Notion」，系統會喺你指定嘅 Notion 頁面下建立「舍友登記」資料庫，逐個舍友寫入社別、舍號、姓名，並<strong>自動填返</strong>各人嘅 Notion ID 到上面名單（兩個社別一齊同步）。同步後記得撳「儲存舍友名單」。</p>
+        <input id="notionParent" type="text" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500" placeholder="Notion 父頁面網址或 ID（資料庫會建喺呢頁下面）">
+        <div class="flex items-center gap-2">
+          <button id="notionSyncBtn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition">⇅ 同步舍友到 Notion</button>
+          <span id="notionSyncMsg" class="text-xs text-slate-500"></span>
+        </div>
+      </div>
+
       <div class="flex gap-2">
         <button id="addMemberBtn" class="flex-1 py-2 rounded-lg text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition">＋ 新增舍友</button>
         <button id="saveMembersBtn" class="flex-1 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition">儲存舍友名單</button>
@@ -435,9 +447,19 @@ create policy "anon access" on settings
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">版本記錄</h3>
       <div class="text-sm space-y-3">
         <div class="flex gap-3">
-          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.0</span>
+          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.1</span>
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-16</span></div>
+            <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>新增「同步舍友到 Notion」：一鍵喺 Notion 建立／更新舍友登記資料（社別、舍號、姓名），並自動填返各人嘅 Notion ID</li>
+              <li>流程改為：先同步建檔 → 自動帶出 Notion ID → 電子存檔上傳到各人 Notion 頁</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="shrink-0 text-xs font-bold text-white bg-blue-600 rounded-full px-2.5 py-1 h-fit">v1.2.0</span>
+          <div>
+            <div class="font-bold text-slate-900">統一入口版 <span class="text-xs font-normal text-slate-400">2026-09-16</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>整合入「忠孝宿舍服務」統一入口頁，取消入場密碼（職員個人密碼保留）</li>
               <li>新增「電子存檔」：規範檔名 PDF 下載，並自動上傳到舍友嘅 Notion 頁</li>
@@ -1343,6 +1365,59 @@ $('saveMembersBtn').addEventListener('click', async () => {
     CFG.members = members;
     toast('已儲存舍友名單。');
   } catch (e) { alert(e.message); }
+});
+
+// ---- Notion 自動建檔：同步舍友到 Notion 並填返 Notion ID ----
+$('notionParent').value = localStorage.getItem('notion-parent') || '';
+$('notionSyncBtn').addEventListener('click', async () => {
+  const members = collectMembers();   // 讀埋而家編輯緊嘅一社，連同另一社一齊同步
+  if (!members) return;
+  const parentPageId = $('notionParent').value.trim();
+  if (!parentPageId) { alert('請填 Notion 父頁面網址或 ID。'); $('notionParent').focus(); return; }
+  localStorage.setItem('notion-parent', parentPageId);
+  let portalKey = '';
+  try { portalKey = (JSON.parse(sessionStorage.getItem('cyc-portal-auth') || '{}').p) || ''; } catch (e) {}
+  const btn = $('notionSyncBtn'), msg = $('notionSyncMsg');
+  btn.disabled = true;
+  try {
+    // 分批同步（每批 8 人），避免逾時
+    const CHUNK = 8;
+    const queue = [];
+    for (const house of ['忠社','孝社']) (members[house] || []).forEach(m => queue.push({ house, id: m.id, name: m.name }));
+    if (!queue.length) throw new Error('名單係空嘅。');
+    let databaseId = '';
+    const result = { '忠社': [], '孝社': [] };
+    for (let i = 0; i < queue.length; i += CHUNK) {
+      const batch = queue.slice(i, i + CHUNK);
+      msg.textContent = `同步緊 ${Math.min(i + CHUNK, queue.length)}/${queue.length}…`;
+      const bodyMembers = { '忠社': [], '孝社': [] };
+      batch.forEach(b => bodyMembers[b.house].push({ id: b.id, name: b.name }));
+      const res = await fetch('/api/notion-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-roster-key': encodeURIComponent(portalKey) },
+        body: JSON.stringify({ parentPageId, databaseId, members: bodyMembers })
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) throw new Error(j.error || ('HTTP ' + res.status));
+      databaseId = j.databaseId || databaseId;
+      for (const house of ['忠社','孝社']) result[house].push(...(j.members[house] || []));
+    }
+    // 填返 Notion ID：更新 CFG 同畫面
+    for (const house of ['忠社','孝社']) {
+      const byId = {};
+      result[house].forEach(m => byId[m.id] = m.notion);
+      (members[house] || []).forEach(m => { if (byId[m.id]) m.notion = byId[m.id]; });
+      CFG.members[house] = members[house];
+    }
+    renderSetMembers();
+    msg.textContent = `✅ 已同步 ${queue.length} 位舍友，Notion ID 已填返名單。請撳「儲存舍友名單」保存。`;
+    toast('Notion 同步完成，請儲存舍友名單。');
+  } catch (e) {
+    msg.textContent = '❌ ' + e.message;
+    alert('Notion 同步失敗：' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 // ---- 職員名單編輯 ----
