@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>e2e</title></head>
+<body>
+<pre id="log">running…</pre>
+<script>
+const log = [];
+const P = m => { log.push(m); document.getElementById('log').textContent = log.join('\n'); };
+sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'test', exp: Date.now() + 900000 }));
+function loadFrame(src){
+  return new Promise(res => {
+    const f = document.createElement('iframe');
+    f.style.cssText = 'width:1200px;height:800px;';
+    f.src = src;
+    f.onload = () => setTimeout(() => res(f), 2500);
+    document.body.appendChild(f);
+  });
+}
+(async () => {
+  try {
+    // ===== /apply/ =====
+    const fa = await loadFrame('/apply/');
+    const wa = fa.contentWindow;
+    P('== APPLY ==');
+    P('helpers: ' + ['getSafeVault','checkSafePay','deductSafe','getMemberBal','checkMemberBal','deductMemberBal','staffOk','memberBalOf'].map(n => n + '=' + (typeof wa.eval(n))).join(', '));
+    const v = await wa.eval('getSafeVault()');
+    P('getSafeVault 4-slot -> ' + JSON.stringify(v));
+    P('toolbar vault link: ' + !!wa.document.querySelector('button[onclick*="/vault/"]'));
+    // 支款人驗證 15 分鐘：舊格式 '1' 已失效；新 JSON 格式有效
+    wa.eval("sessionStorage.setItem('staff-ok-何文諾','1')");
+    P('staffOk old format invalid: ' + (wa.eval("staffOk('何文諾')") === false));
+    wa.eval("sessionStorage.setItem('staff-ok-何文諾', JSON.stringify({exp: Date.now()+900000}))");
+    P('staffOk new format valid: ' + (wa.eval("staffOk('何文諾')") === true));
+    // 舍友結存流程：寫入假資料 T00=100 → 檢查 → 扣 30 → 應得 70
+    await wa.eval("DB.setSetting('member_bal', {T00: 100})");
+    P('checkMemberBal 50 of 100 -> ' + await wa.eval("checkMemberBal('T00','測試',50)"));
+    P('deductMemberBal 30 -> ' + await wa.eval("deductMemberBal('T00','測試',30)"));
+    const mb = await wa.eval('getMemberBal()');
+    P('member_bal after deduct -> ' + JSON.stringify(mb.map) + ' init=' + mb.init + ' (expect T00=70)');
+    P('unknown payee check -> ' + await wa.eval("checkMemberBal('ZZZ','路人',50)"));
+    // 系統設定排序掣
+    wa.eval("openSettings()");
+    await new Promise(r => setTimeout(r, 800));
+    P('member reorder btns: up=' + !!wa.document.querySelector('.set-up') + ' down=' + !!wa.document.querySelector('.set-down'));
+    const rowsN = wa.document.querySelectorAll('.set-member-row').length;
+    if (rowsN >= 2) {
+      const firstId = wa.document.querySelectorAll('.set-member-row')[0].querySelector('[data-f="id"]').value;
+      wa.document.querySelectorAll('.set-member-row')[1].querySelector('.set-up').click();
+      const newFirst = wa.document.querySelectorAll('.set-member-row')[0].querySelector('[data-f="id"]').value;
+      P('reorder works: ' + (firstId !== newFirst) + ' (' + firstId + ' -> ' + newFirst + ')');
+      // 還原：撳落返
+      wa.document.querySelectorAll('.set-member-row')[0].querySelector('.set-down').click();
+      P('reorder revert: ' + (wa.document.querySelectorAll('.set-member-row')[0].querySelector('[data-f="id"]').value === firstId));
+    }
+
+    // ===== /admin/ =====
+    const fb = await loadFrame('/admin/');
+    const wb = fb.contentWindow;
+    P('== ADMIN ==');
+    const pw = await wb.eval('getAdminPw()');
+    wb.document.getElementById('gate_pw').value = pw;
+    wb.document.getElementById('gate_btn').click();
+    await new Promise(r => setTimeout(r, 3500));
+    P('mainScreen visible: ' + !wb.document.getElementById('mainScreen').classList.contains('hidden'));
+    P('vault cards removed: ' + (!wb.document.getElementById('vault_big') && !wb.document.getElementById('member_bal_list')));
+    P('vault entry link: ' + !!wb.document.querySelector('a[href="/vault/"]'));
+    P('header vault btn: ' + !!wb.document.querySelector('button[onclick*="/vault/"]'));
+    P('getSafeVault 4-slot: ' + JSON.stringify(await wb.eval('getSafeVault()')));
+    P('hasAdminAuth: ' + wb.eval('hasAdminAuth()'));
+
+    // ===== /vault/ =====
+    const fv = await loadFrame('/vault/');
+    const wv = fv.contentWindow;
+    P('== VAULT ==');
+    await new Promise(r => setTimeout(r, 2500));
+    P('auto-login via shared auth: ' + !wv.document.getElementById('mainScreen').classList.contains('hidden'));
+    ['vault_zhong_big','vault_zhong_small','vault_xiao_big','vault_xiao_small','vault_save','vault_xfer_house','vault_xfer_amt','vault_xfer','vault_check','member_bal_list','member_bal_save','member_bal_total','member_house_totals']
+      .forEach(id => P(id + ': ' + !!wv.document.getElementById(id)));
+    P('member inputs: ' + wv.document.querySelectorAll('.mbal_in').length);
+    P('vault_check: ' + wv.document.getElementById('vault_check').textContent);
+    P('member_bal_total: ' + wv.document.getElementById('member_bal_total').textContent);
+    P('member_house_totals: ' + wv.document.getElementById('member_house_totals').textContent);
+  } catch (e) {
+    P('FATAL: ' + e.message);
+  }
+  P('DONE');
+})();
+</script>
+</body>
+</html>

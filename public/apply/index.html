@@ -179,6 +179,7 @@
       <button id="f_history" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">📁 已列印記錄</button>
       <button id="f_settings" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">⚙️ 系統設定</button>
       <button onclick="location.href='/admin/'" class="px-3 py-2 rounded-lg text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition">📊 後台管理</button>
+      <button onclick="location.href='/vault/'" class="px-3 py-2 rounded-lg text-sm font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 transition">🏦 夾萬・現存</button>
       <button onclick="location.href='/'" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">⌂ 宿舍服務主頁</button>
       <button id="homeBtn" class="hidden px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">← 返回</button>
       <button id="calcBtn" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1">
@@ -431,9 +432,22 @@ create policy "anon access" on settings
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">版本記錄</h3>
       <div class="text-sm space-y-3">
         <div class="flex gap-3">
-          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.8</span>
+          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.9</span>
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
+            <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>夾萬分拆：忠社、孝社各自有「大夾萬（宿舍夾萬）」同「細夾萬（家社夾萬）」，各自過錢、各自結算扣數</li>
+              <li>新增「🏦 夾萬・現存」獨立頁面：夾萬現存、大→細過錢、舍友現存同自動對數，同後台結算分開管理</li>
+              <li>舍友現存自動化：支錢成功後自動扣減該舍友結存（結存唔夠會彈提示確認）；後台刪除記錄會自動回補結存同細夾萬</li>
+              <li>系統設定舍友名單：新增 ▲▼ 上下移動排序；現存未歸 0 嘅舍友唔可以刪除或改舍號</li>
+              <li>後台密碼同何文諾／何樂軒支錢密碼改為 15 分鐘有效（之前驗證一次就長期記住，等於冇密碼）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="shrink-0 text-xs font-bold text-white bg-blue-600 rounded-full px-2.5 py-1 h-fit">v1.2.8</span>
+          <div>
+            <div class="font-bold text-slate-900">夾萬支付版 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>簽名板改為橫向大格（自動延伸螢幕尺寸，按鈕固定喺頂部唔會被遮住）；移除簽名大小滑桿</li>
               <li>新增「🏦 夾萬支付」：由細夾萬直接俾錢，即時自動結算扣數，唔使再入後台結算；細夾萬唔夠錢會被擋住</li>
@@ -829,11 +843,18 @@ let staffUser = '';
 let currentRec = null;   // 重印用
 let f_house = '';
 
-// ---- 支款人選擇：有簽名檔案嘅職員（何文諾、何樂軒）要先輸入個人密碼 ----
+// ---- 支款人選擇：有簽名檔案嘅職員（何文諾、何樂軒）要先輸入個人密碼；驗證 15 分鐘有效 ----
+const STAFF_OK_MS = 900000;
+function staffOk(name){
+  try {
+    const v = JSON.parse(sessionStorage.getItem('staff-ok-' + name) || 'null');
+    return !!(v && Number.isFinite(v.exp) && Date.now() < v.exp);
+  } catch { return false; }
+}
 function onStaffChange(){
   const name = $('f_staff').value;
   $('f_staff_pw').value = '';
-  if (name && SIGNATURES[name] && sessionStorage.getItem('staff-ok-' + name) !== '1') {
+  if (name && SIGNATURES[name] && !staffOk(name)) {
     staffUser = '';                                  // 未驗證前唔當用佢個名
     $('f_staff_pw').classList.remove('hidden');
     $('f_staff_pw').focus();
@@ -848,11 +869,11 @@ $('f_staff_pw').addEventListener('input', () => {
   const name = $('f_staff').value;
   if (!name) return;
   if ($('f_staff_pw').value === staffPwOf(name)) {
-    sessionStorage.setItem('staff-ok-' + name, '1');
+    sessionStorage.setItem('staff-ok-' + name, JSON.stringify({ exp: Date.now() + STAFF_OK_MS }));
     staffUser = name;
     $('f_staff_pw').value = '';
     $('f_staff_pw').classList.add('hidden');
-    toast('已驗證支款人「' + name + '」，簽名檔案已解鎖。');
+    toast('已驗證支款人「' + name + '」，簽名檔案已解鎖（15 分鐘有效）。');
     renderForm();
   }
 });
@@ -983,28 +1004,62 @@ async function nextSerial(){
   }
 }
 
-// ---- 夾萬現存（safe_vault：big 大夾萬／zhong 忠社細夾萬／xiao 孝社細夾萬）----
+// ---- 夾萬現存（safe_vault：每社有大細兩個夾萬 zhong_big/zhong_small、xiao_big/xiao_small）----
 async function getSafeVault(){
   const s = await DB.getSettings();
   const v = s.safe_vault || {};
-  return { big: Number(v.big) || 0, zhong: Number(v.zhong) || 0, xiao: Number(v.xiao) || 0, init: !!s.safe_vault };
+  return {
+    zhong_big: Number(v.zhong_big) || 0, zhong_small: Number(v.zhong_small) || 0,
+    xiao_big: Number(v.xiao_big) || 0,   xiao_small: Number(v.xiao_small) || 0,
+    init: !!s.safe_vault && ('zhong_small' in v || 'xiao_small' in v)   // 舊三格格式（big/zhong/xiao）當未設定，要去夾萬頁重設
+  };
 }
 function houseKey(h){ return h === '孝社' ? 'xiao' : 'zhong'; }
-// 夾萬支付：檢查細夾萬夠唔夠錢，夠先俾印／存；成功後即扣數
+// 夾萬支付：檢查該社細夾萬夠唔夠錢，夠先俾印／存；成功後即扣數
 async function checkSafePay(house, amount){
   const v = await getSafeVault();
-  const k = houseKey(house);
+  const k = houseKey(house) + '_small';
   if (v.init && v[k] < amount) {
-    alert(`${house}細夾萬現存 $${v[k].toFixed(2)} 唔夠支付 $${amount.toFixed(2)}。\n請通知負責同事由大夾萬過錢，或取消「夾萬支付」改用墊支。`);
+    alert(`${house}細夾萬現存 $${v[k].toFixed(2)} 唔夠支付 $${amount.toFixed(2)}。\n請通知負責同事由${house}大夾萬過錢，或取消「夾萬支付」改用墊支。`);
     return null;
   }
   return v;
 }
 async function deductSafe(house, amount){
   const v = await getSafeVault();
-  v[houseKey(house)] = Math.round((v[houseKey(house)] - amount) * 100) / 100;
+  const k = houseKey(house) + '_small';
+  v[k] = Math.round((v[k] - amount) * 100) / 100;
   delete v.init;
-  await DB.setSetting('safe_vault', { big: v.big, zhong: v.zhong, xiao: v.xiao });
+  await DB.setSetting('safe_vault', { zhong_big: v.zhong_big, zhong_small: v.zhong_small, xiao_big: v.xiao_big, xiao_small: v.xiao_small });
+}
+
+// ---- 舍友現存自動扣數（settings key: member_bal = { 舍友id: 結存 }；後台／夾萬頁未儲存過就唔扣，保持兼容）----
+async function getMemberBal(){
+  const s = await DB.getSettings();
+  const b = s.member_bal;
+  return (b && typeof b === 'object') ? { map: b, init: true } : { map: {}, init: false };
+}
+// 支錢前檢查：舍友結存唔夠 → 彈出確認，取消就停
+async function checkMemberBal(payeeId, payee, amount){
+  const { map, init } = await getMemberBal();
+  if (!init) return true;
+  const k = payeeId || payee;
+  if (!(k in map)) return true;                  // 名單外嘅收款人唔扣數
+  const bal = Number(map[k]) || 0;
+  if (bal < amount) {
+    return confirm(`${payee} 現存 $${bal.toFixed(2)} 唔夠支 $${amount.toFixed(2)}。\n確定仍要支錢？（結存會變負數，請之後去「夾萬・舍友現存」頁核實）`);
+  }
+  return true;
+}
+// 成功支錢後扣數；回傳係咪真係扣咗
+async function deductMemberBal(payeeId, payee, amount){
+  const { map, init } = await getMemberBal();
+  if (!init) return false;
+  const k = payeeId || payee;
+  if (!(k in map)) return false;
+  map[k] = Math.round(((Number(map[k]) || 0) - amount) * 100) / 100;
+  await DB.setSetting('member_bal', map);
+  return true;
 }
 
 // ---- 表單驗證（列印同電子存檔共用） ----
@@ -1029,6 +1084,7 @@ $('f_print').addEventListener('click', async () => {
   const d = validateForm();
   if (!d) return;
   if (d.safePay && !await checkSafePay(d.house, parseFloat(d.amount))) return;   // 細夾萬唔夠錢 → 停
+  if (!await checkMemberBal(d.payeeId, d.payee, parseFloat(d.amount))) return;   // 舍友結存唔夠，取消就停
   fillSheet(d);
   // 生成 PDF 前，必須舍友即場簽名
   const sig = await openSignPad(d.payee);
@@ -1051,7 +1107,9 @@ $('f_print').addEventListener('click', async () => {
       staff: staffUser, decided_at: new Date().toISOString()
     });
     if (d.safePay) await deductSafe(d.house, parseFloat(d.amount));
-    toast('已列印並儲存記錄（序號 ' + d.serial + '）。' + (d.safePay ? '夾萬支付，已自動結算扣數。' : ''));
+    let balMsg = '';
+    try { if (await deductMemberBal(d.payeeId, d.payee, parseFloat(d.amount))) balMsg = '舍友結存已自動扣減。'; } catch {}
+    toast('已列印並儲存記錄（序號 ' + d.serial + '）。' + (d.safePay ? '夾萬支付，已自動結算扣數。' : '') + balMsg);
   } catch (e) {
     alert('PDF 已生成，但儲存記錄失敗：' + e.message);
   }
@@ -1101,6 +1159,7 @@ $('f_archive').addEventListener('click', async () => {
   const d = validateForm();
   if (!d) return;
   if (d.safePay && !await checkSafePay(d.house, parseFloat(d.amount))) return;   // 細夾萬唔夠錢 → 停
+  if (!await checkMemberBal(d.payeeId, d.payee, parseFloat(d.amount))) return;   // 舍友結存唔夠，取消就停
   fillSheet(d);
   const sig = await openSignPad(d.payee);      // 同列印一樣，要舍友即場簽名
   if (!sig) return;
@@ -1132,7 +1191,9 @@ $('f_archive').addEventListener('click', async () => {
       staff: staffUser, decided_at: new Date().toISOString()
     });
     if (d.safePay) await deductSafe(d.house, parseFloat(d.amount));
-    toast('已電子存檔：' + fname + '（序號 ' + d.serial + '）' + cloudMsg + '。');
+    let balMsg = '';
+    try { if (await deductMemberBal(d.payeeId, d.payee, parseFloat(d.amount))) balMsg = '舍友結存已自動扣減。'; } catch {}
+    toast('已電子存檔：' + fname + '（序號 ' + d.serial + '）' + cloudMsg + '。' + balMsg);
   } catch (e) {
     alert('PDF 已生成，但儲存記錄失敗：' + e.message);
   }
@@ -1518,12 +1579,21 @@ let setHouse = '忠社';
 function openSettings(){
   $('set_who').textContent = staffUser || '（未揀支款人）';
   $('setDbWarn').classList.toggle('hidden', CFG.settingsDbOk);
+  setMemberBal = null;
+  DB.getSettings().then(s => {
+    setMemberBal = (s.member_bal && typeof s.member_bal === 'object') ? s.member_bal : null;
+  }).catch(() => { setMemberBal = null; });
   renderSetMembers();
   renderSetStaff();
   show('settingsScreen');
 }
 
 // ---- 舍友名單編輯 ----
+let setMemberBal = null;   // 開設定頁時載入嘅舍友現存（未設定過 = null，冇刪除限制）
+function memberBalOf(id){
+  if (!setMemberBal || !id) return 0;
+  return Number(setMemberBal[id]) || 0;
+}
 document.querySelectorAll('.set-house-tab').forEach(btn => {
   btn.addEventListener('click', () => {
     setHouse = btn.dataset.sethouse;
@@ -1535,7 +1605,11 @@ document.querySelectorAll('.set-house-tab').forEach(btn => {
   });
 });
 function memberRow(m){
-  return `<div class="set-member-row flex items-center gap-2">
+  return `<div class="set-member-row flex items-center gap-1.5">
+    <span class="flex flex-col shrink-0">
+      <button class="set-up text-slate-400 hover:text-blue-600 text-xs leading-none px-0.5" title="上移">▲</button>
+      <button class="set-down text-slate-400 hover:text-blue-600 text-xs leading-none px-0.5" title="下移">▼</button>
+    </span>
     <input data-f="id" value="${escapeHtml(m.id)}" placeholder="舍號" class="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
     <input data-f="name" value="${escapeHtml(m.name)}" placeholder="姓名" class="flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
     <button class="set-del text-red-400 hover:text-red-600 text-lg px-1" title="刪除">&times;</button>
@@ -1545,7 +1619,28 @@ function renderSetMembers(){
   $('setMembers').innerHTML = (CFG.members[setHouse] || []).map(memberRow).join('');
 }
 $('setMembers').addEventListener('click', e => {
-  if (e.target.closest('.set-del')) e.target.closest('.set-member-row').remove();
+  const row = e.target.closest('.set-member-row');
+  if (!row) return;
+  if (e.target.closest('.set-up')) {
+    const prev = row.previousElementSibling;
+    if (prev) row.parentNode.insertBefore(row, prev);
+    return;
+  }
+  if (e.target.closest('.set-down')) {
+    const next = row.nextElementSibling;
+    if (next) row.parentNode.insertBefore(next, row);
+    return;
+  }
+  if (e.target.closest('.set-del')) {
+    const id = row.querySelector('[data-f="id"]').value.trim();
+    const name = row.querySelector('[data-f="name"]').value.trim();
+    const bal = memberBalOf(id);
+    if (bal !== 0) {
+      alert(`「${name || id}」現存 $${bal.toFixed(2)} 未歸 0，唔可以刪除。\n請先去「🏦 夾萬・現存」頁將佢嘅結存調整為 0。`);
+      return;
+    }
+    row.remove();
+  }
 });
 $('addMemberBtn').addEventListener('click', () => {
   $('setMembers').insertAdjacentHTML('beforeend', memberRow({id:'',name:''}));
@@ -1569,9 +1664,27 @@ function collectMembers(){
 $('saveMembersBtn').addEventListener('click', async () => {
   const members = collectMembers();
   if (!members) return;
+  // 雙重保障：直接改舍號都當刪除舊舍號，現存未歸 0 一樣擋
+  const oldIds = (CFG.members[setHouse] || []).map(m => m.id);
+  const newIds = members[setHouse].map(m => m.id);
+  const removed = oldIds.filter(id => !newIds.includes(id));
+  if (setMemberBal) {
+    const blocked = removed.filter(id => (Number(setMemberBal[id]) || 0) !== 0);
+    if (blocked.length) {
+      const old = (CFG.members[setHouse] || []).find(m => m.id === blocked[0]);
+      alert(`「${old ? old.name : blocked[0]}」（${blocked[0]}）現存 $${(Number(setMemberBal[blocked[0]]) || 0).toFixed(2)} 未歸 0，唔可以刪除或改舍號。\n請先去「🏦 夾萬・現存」頁將結存調整為 0。`);
+      return;
+    }
+  }
   try {
     await DB.setSetting('members', members);
     CFG.members = members;
+    // 已刪除而且結存為 0 嘅舍友，順便清走佢嘅結存紀錄
+    if (setMemberBal && removed.length) {
+      let touched = false;
+      removed.forEach(id => { if (id in setMemberBal) { delete setMemberBal[id]; touched = true; } });
+      if (touched) await DB.setSetting('member_bal', setMemberBal);
+    }
     toast('已儲存舍友名單。');
   } catch (e) { alert(e.message); }
 });
