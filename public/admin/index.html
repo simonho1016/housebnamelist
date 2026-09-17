@@ -115,7 +115,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       <!-- 按舍友統計 -->
       <div class="card bg-white p-5">
-        <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide mb-3">按舍友統計</h3>
+        <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide mb-3">按舍友統計（按社別分類）</h3>
         <div id="by_payee" class="text-sm space-y-2.5"></div>
       </div>
       <!-- 按同事統計（墊支） -->
@@ -301,18 +301,30 @@ function renderAll(){
   });
   const pList = Object.entries(byP).sort((a, b) => b[1].total - a[1].total);
   const pMax = pList.length ? pList[0][1].total : 0;
-  $('by_payee').innerHTML = pList.length ? pList.map(([name, v]) => {
+  const payeeRow = ([name, v]) => {
     const pct = pMax ? Math.max(4, Math.round(v.total / pMax * 100)) : 0;
     const barCls = v.house === '孝社' ? 'bg-blue-400' : 'bg-rose-400';
     return `
     <div class="border-b border-slate-100 pb-1.5">
       <div class="flex items-center justify-between gap-2">
-        <span class="min-w-0 truncate">${escapeHtml(name)} <span class="text-xs text-slate-400">${escapeHtml(v.house)} · ${v.n} 張</span></span>
+        <span class="min-w-0 truncate">${escapeHtml(name)} <span class="text-xs text-slate-400">${v.n} 張</span></span>
         <span class="shrink-0 font-bold">${money(v.total)}${v.unsettled ? ` <span class="text-xs font-normal text-amber-600">（未結 ${money(v.unsettled)}）</span>` : ''}</span>
       </div>
       <div class="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full ${barCls}" style="width:${pct}%"></div></div>
     </div>`;
-  }).join('') : '<p class="text-slate-400">冇數據。</p>';
+  };
+  // 按社別分組：忠社 → 孝社 → 其他
+  const houseGroups = [['忠社', 'text-rose-600'], ['孝社', 'text-blue-600']];
+  let payeeHtml = '';
+  houseGroups.forEach(([h, cls]) => {
+    const items = pList.filter(([, v]) => v.house === h);
+    if (!items.length) return;
+    const hTotal = items.reduce((a, [, v]) => a + v.total, 0);
+    payeeHtml += `<div class="flex justify-between items-baseline mt-1 mb-1"><span class="text-xs font-bold ${cls}">■ ${h}</span><span class="text-xs font-bold ${cls}">${money(hTotal)}</span></div>` + items.map(payeeRow).join('');
+  });
+  const otherItems = pList.filter(([, v]) => v.house !== '忠社' && v.house !== '孝社');
+  if (otherItems.length) payeeHtml += '<div class="text-xs font-bold text-slate-500 mt-1 mb-1">■ 其他</div>' + otherItems.map(payeeRow).join('');
+  $('by_payee').innerHTML = payeeHtml || '<p class="text-slate-400">冇數據。</p>';
 
   // 按同事（墊支人）：通常係同事先俾錢，用呢度睇邊個墊咗幾多
   const byS = {};
