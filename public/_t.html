@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>t</title></head><body>
+<pre id="log">TEST-START</pre>
+<script>
+const log = m => document.getElementById('log').textContent += '\n' + m;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'test', exp: Date.now() + 900000 }));
+const f1 = document.createElement('iframe');
+f1.src = '/apply/';
+f1.style.cssText = 'width:1200px;height:900px';
+document.body.appendChild(f1);
+f1.addEventListener('load', async () => {
+  await sleep(2500);
+  const w = f1.contentWindow;
+  try {
+    const vis = id => { const el = w.document.getElementById(id); return el ? !el.classList.contains('hidden') : 'NULL'; };
+    log('FORM-VISIBLE: ' + vis('sFormScreen'));
+    log('LOGIN-SCREEN-GONE: ' + (w.document.getElementById('sLoginScreen') === null));
+    // 頂部工具列有三個掣
+    const header = w.document.querySelector('header');
+    log('TOP-HISTORY: ' + !!header.querySelector('#f_history'));
+    log('TOP-SETTINGS: ' + !!header.querySelector('#f_settings'));
+    log('TOP-ADMIN: ' + [...header.querySelectorAll('button')].some(b => b.textContent.includes('後台管理')));
+    // 系統設定免登入直入
+    w.document.getElementById('f_settings').click();
+    await sleep(400);
+    log('SETTINGS-DIRECT: ' + vis('settingsScreen'));
+    log('SET-WHO: ' + w.document.getElementById('set_who').textContent);
+    // 返回 → 記錄頁
+    w.document.getElementById('homeBtn').click();
+    await sleep(300);
+    w.document.getElementById('f_history').click();
+    await sleep(1500);
+    log('LIST-VISIBLE: ' + vis('sListScreen'));
+    const delBtns = [...w.document.querySelectorAll('#s_list button')].filter(b => b.textContent.trim() === '刪除').length;
+    log('LIST-NO-DEL-BTN: ' + (delBtns === 0));
+    log('VER-127: ' + w.document.body.innerHTML.includes('v1.2.7'));
+  } catch (e) { log('ERR ' + e.message); }
+  log('TEST-END');
+});
+setTimeout(() => log('TIMEOUT'), 15000);
+</script>
+</body></html>
