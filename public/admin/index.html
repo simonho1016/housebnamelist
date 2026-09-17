@@ -115,6 +115,55 @@
       <div class="card bg-white p-4"><div class="text-xs text-slate-500">未結算金額</div><div id="sum_unsettled" class="text-2xl font-black text-amber-600 mt-1">$0.00</div><div id="sum_unsettled_n" class="text-xs text-slate-400 mt-0.5">0 張單</div></div>
     </div>
 
+    <!-- 夾萬現存 -->
+    <div class="card bg-white p-5 space-y-3">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h3 class="text-sm font-bold text-amber-600 uppercase tracking-wide">🏦 夾萬現存</h3>
+        <span id="vault_check" class="text-xs text-slate-500"></span>
+      </div>
+      <p class="text-xs text-slate-500">大夾萬（宿舍夾萬）過錢俾細夾萬（家社夾萬）；所有舍友支出必須由細夾萬找數，細夾萬唔夠錢就唔可以結算或用「夾萬支付」。大＋細總和 = 全體舍友總結存。</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <label class="block">
+          <span class="text-xs font-medium text-slate-500">大夾萬（宿舍夾萬）</span>
+          <input id="vault_big" type="number" step="0.01" min="0" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none" placeholder="0.00">
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-rose-500">忠社細夾萬（家社夾萬）</span>
+          <input id="vault_zhong" type="number" step="0.01" min="0" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none" placeholder="0.00">
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium text-blue-500">孝社細夾萬（家社夾萬）</span>
+          <input id="vault_xiao" type="number" step="0.01" min="0" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none" placeholder="0.00">
+        </label>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <button id="vault_save" class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 transition">儲存夾萬現存</button>
+        <span class="text-xs text-slate-400">直接改數會覆蓋現存；大夾萬過錢俾細夾萬請用下面。</span>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap border-t border-slate-100 pt-3">
+        <span class="text-xs font-medium text-slate-500">大夾萬過錢俾細夾萬：</span>
+        <input id="vault_xfer_amt" type="number" step="0.01" min="0" class="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none" placeholder="金額">
+        <select id="vault_xfer_house" class="rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white outline-none">
+          <option value="zhong">忠社細夾萬</option>
+          <option value="xiao">孝社細夾萬</option>
+        </select>
+        <button id="vault_xfer" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-slate-700 hover:bg-slate-800 transition">大 → 細 過錢</button>
+      </div>
+    </div>
+
+    <!-- 舍友現存 -->
+    <div class="card bg-white p-5 space-y-3">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide">👥 舍友現存</h3>
+        <span id="member_bal_total" class="text-xs text-slate-500"></span>
+      </div>
+      <p class="text-xs text-slate-500">每位舍友嘅結存，由後台人手修改。全體舍友總和應等於大夾萬＋忠社細夾萬＋孝社細夾萬。</p>
+      <div id="member_bal_list" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm"></div>
+      <div>
+        <button id="member_bal_save" class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition">儲存舍友現存</button>
+      </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       <!-- 按舍友統計 -->
       <div class="card bg-white p-5">
@@ -233,6 +282,7 @@ function showMain(){
   $('mainScreen').classList.remove('hidden');
   $('adminLogout').classList.remove('hidden');
   loadData();
+  renderVault();
 }
 
 // ---- 數據 ----
@@ -375,7 +425,7 @@ function renderAll(){
         <span class="text-xs text-slate-400">${escapeHtml(r.payee_id || '')} · ${escapeHtml(r.house || '')}</span>
         <span class="font-bold text-blue-700 ml-2">${money(r.amount)}</span>
         <span class="block text-xs text-slate-500 mt-0.5">${escapeHtml((r.cats || []).join('、'))}${r.cat_other ? '（' + escapeHtml(r.cat_other) + '）' : ''}${r.remark ? ' · 備註：' + escapeHtml(r.remark) : ''}</span>
-        <span class="block text-xs text-slate-400 mt-0.5">${fmtTime(r.decided_at || r.created_at)} · ${escapeHtml(r.staff || '')}${r.serial ? ' · 序號 ' + escapeHtml(r.serial) : ''}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}${r.pdf_path ? ' · 📎 有雲端 PDF' : ''}</span>
+        <span class="block text-xs text-slate-400 mt-0.5">${fmtTime(r.decided_at || r.created_at)} · ${escapeHtml(r.staff || '')}${r.serial ? ' · 序號 ' + escapeHtml(r.serial) : ''}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}${r.pdf_path ? ' · 📎 有雲端 PDF' : ''}${r.safe_pay ? ' · 🏦 夾萬支付' : ''}</span>
         ${r.settled_at ? `<span class="block text-xs text-emerald-600 mt-0.5">✅ 已結算：${fmtTime(r.settled_at)}${r.settled_by ? ' · 經手 ' + escapeHtml(r.settled_by) : ''}</span>` : ''}
       </span>
       <button class="del_rec shrink-0 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-bold hover:bg-red-100 transition" data-id="${r.id}">刪除</button>
@@ -449,11 +499,11 @@ function csvCell(v){
 }
 $('csv_btn').addEventListener('click', () => {
   if (!rows.length) { alert('冇記錄可以匯出。'); return; }
-  const head = ['序號','單據編號','Notion ID','社別','舍友編號','收款人','金額','類別','其他原因','備註','支款人（同事）','日期時間','結算時間','結算經手人','雲端PDF'];
+  const head = ['序號','單據編號','Notion ID','社別','舍友編號','收款人','金額','類別','其他原因','備註','支款人（同事）','日期時間','夾萬支付','結算時間','結算經手人','雲端PDF'];
   const lines = rows.map(r => [
     r.serial || '', r.doc_no || '', r.notion_id || '', r.house || '', r.payee_id || '', r.payee || '',
     Number(r.amount || 0).toFixed(2), (r.cats || []).join('、'), r.cat_other || '', r.remark || '',
-    r.staff || '', fmtTime(r.decided_at || r.created_at),
+    r.staff || '', fmtTime(r.decided_at || r.created_at), r.safe_pay ? '夾萬' : '',
     r.settled_at ? fmtTime(r.settled_at) : '', r.settled_by || '', r.pdf_path ? '有' : ''
   ].map(csvCell).join(','));
   const csv = '﻿' + head.join(',') + '\n' + lines.join('\n');
@@ -552,12 +602,122 @@ $('print_btn').addEventListener('click', async () => {
   refreshSettleBtn();
 });
 
+// ---- 夾萬現存（同支錢系統共用 settings key: safe_vault = { big 大夾萬, zhong 忠社細, xiao 孝社細 }）----
+const r2 = n => Math.round(n * 100) / 100;
+function houseKey(h){ return h === '孝社' ? 'xiao' : 'zhong'; }
+async function getSafeVault(){
+  try {
+    const { data, error } = await sb.from('settings').select('value').eq('key', 'safe_vault').maybeSingle();
+    if (!error && data && data.value) {
+      const v = data.value;
+      return { big: Number(v.big) || 0, zhong: Number(v.zhong) || 0, xiao: Number(v.xiao) || 0, init: true };
+    }
+  } catch {}
+  return { big: 0, zhong: 0, xiao: 0, init: false };
+}
+async function saveSafeVault(v){
+  const { error } = await sb.from('settings').upsert({ key: 'safe_vault', value: { big: r2(v.big), zhong: r2(v.zhong), xiao: r2(v.xiao) } });
+  if (error) throw new Error(error.message);
+}
+
+// ---- 舍友現存（settings key: member_bal = { 舍友id: 金額 }；名單取自 settings key: members）----
+async function getSettingValue(key){
+  try {
+    const { data, error } = await sb.from('settings').select('value').eq('key', key).maybeSingle();
+    if (!error && data) return data.value;
+  } catch {}
+  return null;
+}
+function memberKey(m){ return m.id || m.name; }
+
+async function renderVault(){
+  const [v, bal, members] = await Promise.all([getSafeVault(), getSettingValue('member_bal'), getSettingValue('members')]);
+  const balMap = (bal && typeof bal === 'object') ? bal : {};
+  // 夾萬 input
+  $('vault_big').value = v.init ? v.big.toFixed(2) : '';
+  $('vault_zhong').value = v.init ? v.zhong.toFixed(2) : '';
+  $('vault_xiao').value = v.init ? v.xiao.toFixed(2) : '';
+  // 舍友現存清單
+  let balTotal = 0;
+  if (members && members['忠社'] && members['孝社']) {
+    const houseCls = { '忠社': 'text-rose-600', '孝社': 'text-blue-600' };
+    $('member_bal_list').innerHTML = ['忠社', '孝社'].map(h => `
+      <div>
+        <div class="text-xs font-bold ${houseCls[h]} mb-1">■ ${h}</div>
+        ${members[h].map(m => {
+          const k = memberKey(m);
+          const amt = Number(balMap[k]) || 0;
+          balTotal = r2(balTotal + amt);
+          return `<label class="flex items-center gap-2 py-0.5">
+            <span class="flex-1 min-w-0 truncate">${escapeHtml(m.name)} <span class="text-xs text-slate-400">${escapeHtml(m.id || '')}</span></span>
+            <input type="number" step="0.01" class="mbal_in w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm outline-none" data-key="${escapeHtml(k)}" value="${amt ? amt.toFixed(2) : ''}" placeholder="0.00">
+          </label>`;
+        }).join('')}
+      </div>`).join('');
+  } else {
+    $('member_bal_list').innerHTML = '<p class="text-slate-400">未能載入舍友名單（settings 表未設定 members，請先去支錢系統「系統設定」儲存一次名單）。</p>';
+  }
+  $('member_bal_total').textContent = `舍友總結存：${money(balTotal)}`;
+  // 對照行：大＋細總和 vs 舍友總結存
+  const vaultTotal = r2(v.big + v.zhong + v.xiao);
+  $('vault_check').textContent = v.init
+    ? `大＋細總和 ${money(vaultTotal)} ｜ 舍友總結存 ${money(balTotal)}${Math.abs(vaultTotal - balTotal) >= 0.005 ? ' ⚠️ 唔對數' : ' ✅ 對數'}`
+    : '⚠️ 夾萬未設定，請先輸入三個現存數再儲存。';
+}
+$('vault_save').addEventListener('click', async () => {
+  const v = {
+    big: Number($('vault_big').value) || 0,
+    zhong: Number($('vault_zhong').value) || 0,
+    xiao: Number($('vault_xiao').value) || 0
+  };
+  try {
+    await saveSafeVault(v);
+    toast('已儲存夾萬現存。');
+    renderVault();
+  } catch (e) { alert('儲存失敗：' + e.message); }
+});
+$('vault_xfer').addEventListener('click', async () => {
+  const amt = Number($('vault_xfer_amt').value) || 0;
+  if (amt <= 0) { alert('請輸入過錢金額。'); $('vault_xfer_amt').focus(); return; }
+  const k = $('vault_xfer_house').value;
+  const hName = k === 'xiao' ? '孝社' : '忠社';
+  const v = await getSafeVault();
+  if (!v.init) { alert('請先設定三個夾萬現存數。'); return; }
+  if (v.big < amt) { alert(`大夾萬現存 ${money(v.big)} 唔夠過 ${money(amt)}。`); return; }
+  try {
+    await saveSafeVault({ big: r2(v.big - amt), zhong: v.zhong, xiao: v.xiao, [k]: r2(v[k] + amt) });
+    $('vault_xfer_amt').value = '';
+    toast(`已由大夾萬過 ${money(amt)} 俾${hName}細夾萬。`);
+    renderVault();
+  } catch (e) { alert('過錢失敗：' + e.message); }
+});
+$('member_bal_save').addEventListener('click', async () => {
+  const out = {};
+  document.querySelectorAll('.mbal_in').forEach(inp => { out[inp.dataset.key] = Number(inp.value) || 0; });
+  try {
+    const { error } = await sb.from('settings').upsert({ key: 'member_bal', value: out });
+    if (error) throw new Error(error.message);
+    toast('已儲存舍友現存。');
+    renderVault();
+  } catch (e) { alert('儲存失敗：' + e.message); }
+});
+
 // ---- 結算 ----
-$('settle_btn').addEventListener('click', () => {
+$('settle_btn').addEventListener('click', async () => {
   if (!settleColsOk) { alert('結算欄位未開通，請先去 Supabase → SQL Editor 跑：\n' + SETTLE_SQL); return; }
   const ids = selectedIds();
   const sel = rows.filter(r => ids.includes(String(r.id)) && !r.settled_at);   // 已結算嘅自動跳過
   if (!sel.length) { alert('所選記錄全部已結算。'); return; }
+  // 檢查細夾萬夠唔夠錢結算（夾萬未設定就跳過檢查，照舊結算）
+  const vault = await getSafeVault();
+  if (vault.init) {
+    const need = { zhong: 0, xiao: 0 };
+    sel.forEach(r => { need[houseKey(r.house)] = r2(need[houseKey(r.house)] + Number(r.amount || 0)); });
+    const lacks = [];
+    if (need.zhong > vault.zhong) lacks.push(`忠社細夾萬：需要 ${money(need.zhong)}，現存 ${money(vault.zhong)}（差 ${money(r2(need.zhong - vault.zhong))}）`);
+    if (need.xiao > vault.xiao) lacks.push(`孝社細夾萬：需要 ${money(need.xiao)}，現存 ${money(vault.xiao)}（差 ${money(r2(need.xiao - vault.xiao))}）`);
+    if (lacks.length) { alert('細夾萬唔夠錢，未能結算：\n' + lacks.join('\n') + '\n\n請先喺上面「夾萬現存」由大夾萬過錢俾細夾萬。'); return; }
+  }
   // 按同事（墊支人）分項：結算即係由夾萬攞錢俾返墊支嘅同事
   const byS = {};
   sel.forEach(r => {
@@ -578,15 +738,28 @@ $('settle_ok').addEventListener('click', async () => {
   const by = $('settle_by').value.trim();
   if (!by) { alert('請填經手人姓名。'); $('settle_by').focus(); return; }
   const ids = selectedIds();
-  const n = rows.filter(r => ids.includes(String(r.id)) && !r.settled_at).length;
+  const targets = rows.filter(r => ids.includes(String(r.id)) && !r.settled_at);
+  const n = targets.length;
   const now = new Date().toISOString();
   try {
-    const { error } = await sb.from('applications').update({ settled_at: now, settled_by: by }).in('id', ids).is('settled_at', null);
+    const { error } = await sb.from('applications').update({ settled_at: now, settled_by: by }).in('id', targets.map(r => r.id)).is('settled_at', null);
     if (error) throw new Error(error.message + (/column|schema cache/i.test(error.message) ? '（請去 Supabase → SQL Editor 跑：alter table applications add column if not exists settled_at timestamptz, add column if not exists settled_by text;）' : ''));
+    // 結算成功 → 由細夾萬扣數（夾萬未設定就唔扣）
+    let deducted = false;
+    try {
+      const vault = await getSafeVault();
+      if (vault.init) {
+        const need = { zhong: 0, xiao: 0 };
+        targets.forEach(r => { need[houseKey(r.house)] = r2(need[houseKey(r.house)] + Number(r.amount || 0)); });
+        await saveSafeVault({ big: vault.big, zhong: r2(vault.zhong - need.zhong), xiao: r2(vault.xiao - need.xiao) });
+        deducted = true;
+      }
+    } catch { /* 扣數失敗唔阻結算，可喺夾萬現存手動改返 */ }
     $('settleModal').classList.add('hidden');
     $('settle_by').value = '';
-    toast(`已結算 ${n} 張單。`);
+    toast(`已結算 ${n} 張單${deducted ? '，細夾萬已扣數' : ''}。`);
     loadData();
+    renderVault();
   } catch (e) { alert('結算失敗：' + e.message); }
 });
 

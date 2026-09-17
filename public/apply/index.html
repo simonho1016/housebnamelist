@@ -279,6 +279,12 @@
           <textarea id="f_remark" rows="3" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="特別事項 / 單據說明（如有）"></textarea>
         </label>
 
+        <label class="flex items-center gap-2 rounded-lg border-2 border-amber-300 bg-amber-50 px-3 py-2.5 text-sm cursor-pointer">
+          <input type="checkbox" id="f_safepay" class="accent-amber-600 w-4 h-4">
+          <span class="font-bold text-amber-800 shrink-0">🏦 夾萬支付</span>
+          <span class="text-xs text-amber-700">由細夾萬直接俾錢，自動結算，唔使再入後台結算</span>
+        </label>
+
         <div class="flex gap-2">
           <button id="f_clear" class="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">清空</button>
           <button id="f_print" class="flex-[2] py-2.5 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 shadow transition">🖨️ 確認列印</button>
@@ -349,7 +355,7 @@
 
           <div class="mt-14">
             <div class="flex justify-between items-baseline">
-              <div>職員簽署：<span class="fill" style="min-width:170px;"></span></div>
+              <div>職員簽署：<span class="fill" style="min-width:170px;"></span><span id="p_safepay" class="text-sm font-bold" style="margin-left:10px;"></span></div>
               <div>日期：<span class="fill" style="min-width:150px;"></span></div>
             </div>
             <div class="text-xs text-center mt-1" style="width:240px;">（入數同事簽署）</div>
@@ -425,9 +431,20 @@ create policy "anon access" on settings
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">版本記錄</h3>
       <div class="text-sm space-y-3">
         <div class="flex gap-3">
-          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.7</span>
+          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.8</span>
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
+            <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>簽名板改為橫向大格（自動延伸螢幕尺寸，按鈕固定喺頂部唔會被遮住）；移除簽名大小滑桿</li>
+              <li>新增「🏦 夾萬支付」：由細夾萬直接俾錢，即時自動結算扣數，唔使再入後台結算；細夾萬唔夠錢會被擋住</li>
+              <li>單據職員簽署橫線末端顯示「■ 夾萬支付」（實心方格＝夾萬支付；空心＝同事墊支）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="shrink-0 text-xs font-bold text-white bg-blue-600 rounded-full px-2.5 py-1 h-fit">v1.2.7</span>
+          <div>
+            <div class="font-bold text-slate-900">工具列整合版 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>「已列印記錄」「系統設定」「後台管理」三個掣搬去頁面頂部工具列，任何畫面都撳到</li>
               <li>系統設定唔使再登入，直接進入</li>
@@ -543,29 +560,25 @@ create policy "anon access" on settings
 
 </main>
 
-<!-- ====================== 舍友簽名板 ====================== -->
+<!-- ====================== 舍友簽名板（橫向大格，按鈕固定喺頂部） ====================== -->
 <div id="signModal" class="no-print fixed inset-0 z-50 hidden">
   <div class="absolute inset-0 bg-black/50"></div>
-  <div class="absolute inset-0 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl border border-slate-200 p-5 w-full max-w-lg space-y-3">
-      <div class="text-center">
-        <h3 class="font-bold text-slate-900 text-lg">✍️ 舍友簽名</h3>
-        <p class="text-xs text-slate-500 mt-1">請舍友 <strong id="signWho" class="text-slate-900"></strong> 喺下面格仔用手指／觸控筆簽名</p>
+  <div class="absolute inset-0 flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col gap-3" style="width:min(96vw,880px); max-height:94dvh;">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div class="min-w-0">
+          <h3 class="font-bold text-slate-900 text-base">✍️ 舍友簽名：<strong id="signWho" class="text-slate-900"></strong></h3>
+          <p class="text-xs text-slate-500">用手指／觸控筆喺下面格仔簽名；簽名會自動裁剪後放入單據</p>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button id="signClear" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">🧽 清除</button>
+          <button id="signCancel" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">取消</button>
+          <button id="signOk" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition" disabled>✔️ 確認簽名</button>
+        </div>
       </div>
-      <div class="rounded-xl overflow-hidden" style="border:3px solid #141414; box-shadow:4px 4px 0 #141414;">
-        <canvas id="signCanvas" class="w-full block" style="height:220px;"></canvas>
+      <div class="rounded-xl overflow-hidden w-full flex-1 min-h-0" style="border:3px solid #141414; box-shadow:4px 4px 0 #141414; aspect-ratio:16/7; max-height:66dvh;">
+        <canvas id="signCanvas" class="w-full h-full block touch-none"></canvas>
       </div>
-      <div class="flex items-center gap-3">
-        <span class="text-xs font-medium text-slate-500 shrink-0">簽名大小</span>
-        <input id="signScale" type="range" min="60" max="160" step="5" value="100" class="flex-1 accent-blue-600">
-        <span id="signScaleVal" class="text-xs font-bold text-slate-700 w-10 text-right">100%</span>
-      </div>
-      <div class="flex gap-2">
-        <button id="signClear" class="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">🧽 清除重簽</button>
-        <button id="signCancel" class="flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">取消</button>
-        <button id="signOk" class="flex-1 py-2.5 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition" disabled>✔️ 確認簽名</button>
-      </div>
-      <p class="text-xs text-slate-400 text-center">簽名會自動裁剪調整後先放入單據，並隨記錄存上雲端方便重印。</p>
     </div>
   </div>
 </div>
@@ -678,7 +691,7 @@ const DB = {
       const { error } = await sb.from('applications').insert(app);
       if (error) {
         const colHint = /column|schema cache/i.test(error.message)
-          ? '（請去 Supabase → SQL Editor 跑：alter table applications add column if not exists serial text, add column if not exists payee_sign text, add column if not exists pdf_path text;）' : '';
+          ? '（請去 Supabase → SQL Editor 跑：alter table applications add column if not exists serial text, add column if not exists payee_sign text, add column if not exists pdf_path text, add column if not exists safe_pay boolean default false;）' : '';
         throw new Error('送出失敗：' + error.message + colHint);
       }
       return;
@@ -929,9 +942,11 @@ function formData(){
     amount: $('f_amount').value.trim(), date: $('f_date').value || todayStr(),
     staff: staffUser,
     cats: [...document.querySelectorAll('#f_cats input:checked')].map(c => c.value),
-    catOther: $('f_cat_other').value.trim(), remark: $('f_remark').value.trim()
+    catOther: $('f_cat_other').value.trim(), remark: $('f_remark').value.trim(),
+    safePay: $('f_safepay').checked
   };
 }
+$('f_safepay').addEventListener('change', renderForm);
 function renderForm(){ fillSheet(formData()); }
 
 // 清空表單（日期返今日）
@@ -949,6 +964,7 @@ function resetForm(){
     chip.classList.remove('border-blue-600','bg-blue-50'); chip.classList.add('border-slate-300');
   });
   $('f_cat_other').classList.add('hidden');
+  $('f_safepay').checked = false;
   $('f_date').value = todayStr();
   renderForm();
 }
@@ -965,6 +981,30 @@ async function nextSerial(){
     // 計數失敗唔阻列印，用時間戳做臨時序號
     return new Date().getFullYear() + '-TMP' + String(Date.now() % 100000);
   }
+}
+
+// ---- 夾萬現存（safe_vault：big 大夾萬／zhong 忠社細夾萬／xiao 孝社細夾萬）----
+async function getSafeVault(){
+  const s = await DB.getSettings();
+  const v = s.safe_vault || {};
+  return { big: Number(v.big) || 0, zhong: Number(v.zhong) || 0, xiao: Number(v.xiao) || 0, init: !!s.safe_vault };
+}
+function houseKey(h){ return h === '孝社' ? 'xiao' : 'zhong'; }
+// 夾萬支付：檢查細夾萬夠唔夠錢，夠先俾印／存；成功後即扣數
+async function checkSafePay(house, amount){
+  const v = await getSafeVault();
+  const k = houseKey(house);
+  if (v.init && v[k] < amount) {
+    alert(`${house}細夾萬現存 $${v[k].toFixed(2)} 唔夠支付 $${amount.toFixed(2)}。\n請通知負責同事由大夾萬過錢，或取消「夾萬支付」改用墊支。`);
+    return null;
+  }
+  return v;
+}
+async function deductSafe(house, amount){
+  const v = await getSafeVault();
+  v[houseKey(house)] = Math.round((v[houseKey(house)] - amount) * 100) / 100;
+  delete v.init;
+  await DB.setSetting('safe_vault', { big: v.big, zhong: v.zhong, xiao: v.xiao });
 }
 
 // ---- 表單驗證（列印同電子存檔共用） ----
@@ -988,6 +1028,7 @@ $('f_print').addEventListener('click', async () => {
   if (printing) return;
   const d = validateForm();
   if (!d) return;
+  if (d.safePay && !await checkSafePay(d.house, parseFloat(d.amount))) return;   // 細夾萬唔夠錢 → 停
   fillSheet(d);
   // 生成 PDF 前，必須舍友即場簽名
   const sig = await openSignPad(d.payee);
@@ -998,23 +1039,26 @@ $('f_print').addEventListener('click', async () => {
   fillSheet(d);                                // 補上序號顯示
   const ok = await makePDF();
   if (!ok) return;
+  // 夾萬支付＝即時結算，唔使再入後台結算
+  const settlePatch = d.safePay ? { safe_pay: true, settled_at: new Date().toISOString(), settled_by: '夾萬' } : {};
   try {
     await DB.insert({
       house: d.house, payee_id: d.payeeId, payee: d.payee,
       amount: parseFloat(d.amount).toFixed(2), cats: d.cats,
       cat_other: d.catOther, remark: d.remark,
       status: 'approved', doc_no: d.no, notion_id: d.notion,
-      serial: d.serial, payee_sign: sig,
+      serial: d.serial, payee_sign: sig, ...settlePatch,
       staff: staffUser, decided_at: new Date().toISOString()
     });
-    toast('已列印並儲存記錄（序號 ' + d.serial + '）。');
+    if (d.safePay) await deductSafe(d.house, parseFloat(d.amount));
+    toast('已列印並儲存記錄（序號 ' + d.serial + '）。' + (d.safePay ? '夾萬支付，已自動結算扣數。' : ''));
   } catch (e) {
     alert('PDF 已生成，但儲存記錄失敗：' + e.message);
   }
   resetForm();
 });
 
-// ---- 電子存檔：規範檔名 PDF 下載 + 自動上傳 Google Drive ----
+// ---- 電子存檔：規範檔名 PDF 下載 + 自動上傳 Supabase Storage ----
 function archiveFileName(d){
   const ymd = (d.date || todayStr()).replaceAll('-', '');
   return `${d.payeeId || '其他'}_${ymd}.pdf`;   // 例：B14_20260916.pdf
@@ -1056,6 +1100,7 @@ $('f_archive').addEventListener('click', async () => {
   if (printing) return;
   const d = validateForm();
   if (!d) return;
+  if (d.safePay && !await checkSafePay(d.house, parseFloat(d.amount))) return;   // 細夾萬唔夠錢 → 停
   fillSheet(d);
   const sig = await openSignPad(d.payee);      // 同列印一樣，要舍友即場簽名
   if (!sig) return;
@@ -1075,15 +1120,18 @@ $('f_archive').addEventListener('click', async () => {
   } catch (e) {
     cloudMsg = '；雲端上傳失敗：' + e.message;
   }
+  // 夾萬支付＝即時結算，唔使再入後台結算
+  const settlePatch = d.safePay ? { safe_pay: true, settled_at: new Date().toISOString(), settled_by: '夾萬' } : {};
   try {
     await DB.insert({
       house: d.house, payee_id: d.payeeId, payee: d.payee,
       amount: parseFloat(d.amount).toFixed(2), cats: d.cats,
       cat_other: d.catOther, remark: d.remark,
       status: 'approved', doc_no: d.no, notion_id: d.notion,
-      serial: d.serial, payee_sign: sig, pdf_path: pdfPath,
+      serial: d.serial, payee_sign: sig, pdf_path: pdfPath, ...settlePatch,
       staff: staffUser, decided_at: new Date().toISOString()
     });
+    if (d.safePay) await deductSafe(d.house, parseFloat(d.amount));
     toast('已電子存檔：' + fname + '（序號 ' + d.serial + '）' + cloudMsg + '。');
   } catch (e) {
     alert('PDF 已生成，但儲存記錄失敗：' + e.message);
@@ -1109,7 +1157,7 @@ async function loadHistory(){
             <div class="text-lg font-bold text-blue-700 mt-0.5">港幣$${escapeHtml(r.amount)}</div>
             <div class="text-xs text-slate-500 mt-1">類別：${escapeHtml((r.cats || []).join('、'))}${r.cat_other ? '（' + escapeHtml(r.cat_other) + '）' : ''}</div>
             ${r.remark ? `<div class="text-xs text-slate-500 mt-0.5">備註：${escapeHtml(r.remark)}</div>` : ''}
-            <div class="text-xs text-slate-400 mt-1">列印：${escapeHtml(r.staff || '')} · ${fmtTime(r.decided_at || r.created_at)}${r.serial ? ' · 序號 ' + escapeHtml(r.serial) : ''}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}${r.notion_id ? ' · Notion ' + escapeHtml(r.notion_id) : ''}</div>
+            <div class="text-xs text-slate-400 mt-1">列印：${escapeHtml(r.staff || '')} · ${fmtTime(r.decided_at || r.created_at)}${r.serial ? ' · 序號 ' + escapeHtml(r.serial) : ''}${r.doc_no ? ' · 編號 ' + escapeHtml(r.doc_no) : ''}${r.notion_id ? ' · Notion ' + escapeHtml(r.notion_id) : ''}${r.safe_pay ? ' · 🏦 夾萬支付（已自動結算）' : ''}</div>
           </div>
           <div class="flex flex-col gap-2 items-stretch shrink-0">
             <button data-act="load" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 transition">載入</button>
@@ -1136,7 +1184,8 @@ $('s_list').addEventListener('click', async e => {
     fillSheet({
       no: rec.doc_no, notion: rec.notion_id, serial: rec.serial, house: rec.house, payee: rec.payee,
       amount: rec.amount, date: (rec.decided_at || rec.created_at || '').slice(0, 10) || todayStr(),
-      staff: rec.staff, cats: rec.cats || [], catOther: rec.cat_other || '', remark: rec.remark || ''
+      staff: rec.staff, cats: rec.cats || [], catOther: rec.cat_other || '', remark: rec.remark || '',
+      safePay: !!rec.safe_pay
     });
     if (rec.payee_sign) {
       payeeSigData = rec.payee_sign;   // 雲端已存簽名，直接重印唔使再簽
@@ -1185,6 +1234,7 @@ function loadRecordToForm(rec){
   $('f_cat_other').value = rec.cat_other || '';
   $('f_cat_other').classList.toggle('hidden', !cats.has('其他'));
   $('f_remark').value = rec.remark || '';
+  $('f_safepay').checked = !!rec.safe_pay;
   renderForm();
 }
 
@@ -1209,6 +1259,8 @@ function fillSheet(d){
   $('p_catother_wrap').classList.toggle('hidden', !otherOn);
   $('p_catother').textContent = d.catOther || '';
   $('p_remark').textContent = d.remark || '';
+  // 職員簽署橫線末端：夾萬支付標記（實心方格 = 已用夾萬俾）
+  $('p_safepay').textContent = d.safePay ? '■ 夾萬支付' : '□ 夾萬支付';
   fitSheet();
 }
 
@@ -1306,15 +1358,6 @@ function closeSignPad(result){
   if (r) r(result);
 }
 
-// ---- 簽名大小（放入單據嘅比例，60%–160%）----
-let signScalePct = Number(localStorage.getItem('sign-scale')) || 100;
-$('signScale').value = signScalePct;
-$('signScaleVal').textContent = signScalePct + '%';
-$('signScale').addEventListener('input', () => {
-  signScalePct = Number($('signScale').value) || 100;
-  $('signScaleVal').textContent = signScalePct + '%';
-  localStorage.setItem('sign-scale', signScalePct);
-});
 // 自動裁剪：截取簽名實際範圍（去走多餘空白），放入單據時大細一致
 function exportSignature(){
   const w = signCanvas.width, h = signCanvas.height;
@@ -1351,8 +1394,8 @@ function applyPayeeSignature(show){
   const img = $('p_payee_sign');
   if (show && payeeSigData){
     img.src = payeeSigData;
-    img.style.height = Math.round(46 * signScalePct / 100) + 'px';
-    img.style.maxWidth = Math.round(170 * signScalePct / 100) + 'px';
+    img.style.height = '46px';
+    img.style.maxWidth = '170px';
     img.style.display = 'block';
   }
   else { img.style.display = 'none'; }
