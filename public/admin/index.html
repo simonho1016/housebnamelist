@@ -620,7 +620,22 @@ async function saveSafeVault(v){
   if (error) throw new Error(error.message);
 }
 
-// ---- 舍友現存（settings key: member_bal = { 舍友id: 金額 }；名單取自 settings key: members）----
+// ---- 舍友現存（settings key: member_bal = { 舍友id: 金額 }；名單取自 settings key: members，未設定就用預設名單）----
+const DEFAULT_MEMBERS = {
+  '忠社': [
+    {id:'A01',name:'王嘉星'},{id:'A02',name:'莫志樂'},{id:'A03',name:'劉柏曦'},{id:'A10',name:'王駿騰'},
+    {id:'A11',name:'梁柏狄'},{id:'A12',name:'賴元朮'},{id:'A13',name:'魏浩男'},{id:'A15',name:'姚瑄政'},
+    {id:'A16',name:'林子誠'},{id:'A17',name:'蕭冠稀'},{id:'A18',name:'蕭栢稀'},{id:'A19',name:'趙君介'},
+    {id:'A22',name:'高政'},{id:'B08',name:'冼子朗'}
+  ],
+  '孝社': [
+    {id:'B01',name:'陳允浠'},{id:'B02',name:'潘韋霖'},{id:'B03',name:'莊咏賢'},{id:'B04',name:'黃仲明'},
+    {id:'B05',name:'李祐承'},{id:'B06',name:'劉俊希'},{id:'B07',name:'曹振袁'},{id:'B09',name:'程浩銘'},
+    {id:'B10',name:'蔡浩鈞'},{id:'B11',name:'陳冠喬'},{id:'B12',name:'鄭子倫'},{id:'B14',name:'吳培燊'},
+    {id:'B17',name:'翁梓峻'},{id:'B18',name:'鄧國賢'},{id:'B22',name:'徐櫻俊'},{id:'B24',name:'蘇鎮'},
+    {id:'B26',name:'林戩翹'}
+  ]
+};
 async function getSettingValue(key){
   try {
     const { data, error } = await sb.from('settings').select('value').eq('key', key).maybeSingle();
@@ -631,7 +646,8 @@ async function getSettingValue(key){
 function memberKey(m){ return m.id || m.name; }
 
 async function renderVault(){
-  const [v, bal, members] = await Promise.all([getSafeVault(), getSettingValue('member_bal'), getSettingValue('members')]);
+  const [v, bal, membersDb] = await Promise.all([getSafeVault(), getSettingValue('member_bal'), getSettingValue('members')]);
+  const members = (membersDb && membersDb['忠社'] && membersDb['孝社']) ? membersDb : DEFAULT_MEMBERS;
   const balMap = (bal && typeof bal === 'object') ? bal : {};
   // 夾萬 input
   $('vault_big').value = v.init ? v.big.toFixed(2) : '';
