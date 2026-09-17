@@ -437,6 +437,7 @@ create policy "anon access" on settings
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>簽名板改為全螢幕：開簽名板時自動嘗試進入全螢幕＋鎖定橫向（iPhone 唔支援鎖定就提示轉機），簽名格佔滿成個螢幕，按鈕固定喺頂部</li>
+              <li>簽名自動轉正：橫機簽名後系統會將簽名旋轉返正先放入 PDF；簽名板新增「🔄 旋轉」掣可以手動校正方向</li>
               <li>夾萬分拆：忠社、孝社各自有「大夾萬（宿舍夾萬）」同「細夾萬（家社夾萬）」，各自過錢、各自結算扣數</li>
               <li>新增「🏦 夾萬・現存」獨立頁面：夾萬現存、大→細過錢、舍友現存同自動對數，同後台結算分開管理</li>
               <li>舍友現存自動化：支錢成功後自動扣減該舍友結存（結存唔夠會彈提示確認）；後台刪除記錄會自動回補結存同細夾萬</li>
@@ -581,9 +582,10 @@ create policy "anon access" on settings
     <div class="flex items-center justify-between gap-2 flex-wrap px-3 py-2 border-b border-slate-200 shrink-0">
       <div class="min-w-0">
         <h3 class="font-bold text-slate-900 text-sm sm:text-base">✍️ 舍友簽名：<strong id="signWho" class="text-slate-900"></strong></h3>
-        <p class="text-xs text-slate-500">簽名會自動裁剪後放入單據；📱 將手機轉橫，簽名格會用到成個螢幕</p>
+        <p class="text-xs text-slate-500">簽名會自動裁剪＋轉正後放入單據；📱 將手機轉橫簽名格更大；方向唔啱可以撳「🔄 旋轉」</p>
       </div>
       <div class="flex gap-2 shrink-0">
+        <button id="signRotate" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">🔄 旋轉</button>
         <button id="signClear" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">🧽 清除</button>
         <button id="signCancel" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">取消</button>
         <button id="signOk" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition" disabled>✔️ 確認簽名</button>
@@ -1401,6 +1403,28 @@ function clearSignPad(){
 }
 $('signClear').addEventListener('click', clearSignPad);
 
+// 手動旋轉：已簽內容逆時針轉 90°（縮放至完全放入，撳多次可以轉返轉頭）
+function rotateSignPad(){
+  const w = signCanvas.width, h = signCanvas.height;
+  if (!w || !h || !signDrawn) return;
+  const tmp = document.createElement('canvas');
+  tmp.width = w; tmp.height = h;
+  tmp.getContext('2d').drawImage(signCanvas, 0, 0);
+  sctx.save();
+  sctx.setTransform(1, 0, 0, 1, 0, 0);
+  sctx.clearRect(0, 0, w, h);
+  sctx.translate(w / 2, h / 2);
+  sctx.rotate(-Math.PI / 2);
+  const scale = Math.min(w / h, h / w);
+  sctx.scale(scale, scale);
+  sctx.drawImage(tmp, -w / 2, -h / 2);
+  sctx.restore();
+  const dpr = window.devicePixelRatio || 1;
+  sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  sctx.lineWidth = 3; sctx.lineCap = 'round'; sctx.lineJoin = 'round'; sctx.strokeStyle = '#111';
+}
+$('signRotate').addEventListener('click', rotateSignPad);
+
 let signResolve = null;
 // 最好 effort：支援嘅瀏覽器會入全螢幕兼鎖定橫向；iOS 唔支援就齋靠 CSS 全螢幕＋用戶自行轉機
 async function lockLandscape(){
@@ -1454,9 +1478,20 @@ function exportSignature(){
   minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
   maxX = Math.min(w - 1, maxX + pad); maxY = Math.min(h - 1, maxY + pad);
   const cw = maxX - minX + 1, ch = maxY - minY + 1;
+  // 自動轉正：簽名內容高過闊（直向）即代表橫機簽名時方向打咗轉，
+  // 逆時針轉 90° 先放入單據（單據簽名位係橫向）；已經係橫向就原樣放入
+  const needRotate = ch > cw;
   const out = document.createElement('canvas');
-  out.width = cw; out.height = ch;
-  out.getContext('2d').drawImage(signCanvas, minX, minY, cw, ch, 0, 0, cw, ch);
+  out.width = needRotate ? ch : cw;
+  out.height = needRotate ? cw : ch;
+  const octx = out.getContext('2d');
+  if (needRotate) {
+    octx.translate(out.width / 2, out.height / 2);
+    octx.rotate(-Math.PI / 2);
+    octx.drawImage(signCanvas, minX, minY, cw, ch, -cw / 2, -ch / 2);
+  } else {
+    octx.drawImage(signCanvas, minX, minY, cw, ch, 0, 0, cw, ch);
+  }
   return out.toDataURL('image/png');
 }
 $('signOk').addEventListener('click', () => {
@@ -1471,7 +1506,9 @@ function applyPayeeSignature(show){
     img.src = payeeSigData;
     img.style.height = '46px';
     img.style.maxWidth = '170px';
-    img.style.display = 'block';
+    img.style.objectFit = 'contain';
+    img.style.verticalAlign = 'bottom';   // 貼返落簽名橫線，唔會浮上嚟
+    img.style.display = 'inline-block';
   }
   else { img.style.display = 'none'; }
 }

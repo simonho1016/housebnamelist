@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>e2e</title></head>
+<body>
+<pre id="log">running…</pre>
+<script>
+const log = [];
+const P = m => { log.push(m); document.getElementById('log').textContent = log.join('\n'); };
+sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'test', exp: Date.now() + 900000 }));
+function loadFrame(src){
+  return new Promise(res => {
+    const f = document.createElement('iframe');
+    f.style.cssText = 'width:700px;height:390px;';   // 模擬橫向螢幕
+    f.src = src;
+    f.onload = () => setTimeout(() => res(f), 2500);
+    document.body.appendChild(f);
+  });
+}
+function imgDims(w, dataUrl){
+  return new Promise(res => {
+    const img = new w.Image();
+    img.onload = () => res({ w: img.width, h: img.height });
+    img.onerror = () => res(null);
+    img.src = dataUrl;
+  });
+}
+(async () => {
+  try {
+    const fa = await loadFrame('/apply/');
+    const wa = fa.contentWindow;
+    P('== SIGN ROTATE ==');
+    P('signRotate btn: ' + !!wa.document.getElementById('signRotate'));
+    P('rotateSignPad: ' + typeof wa.eval('rotateSignPad'));
+    const p = wa.eval("openSignPad('測試')");
+    await new Promise(r => setTimeout(r, 900));
+    P('modal visible: ' + !wa.document.getElementById('signModal').classList.contains('hidden'));
+
+    // 1) 畫一個「高過闊」嘅簽名（模擬橫機直寫）→ 匯出應自動轉正做橫向
+    wa.eval(`(function(){
+      const c = document.getElementById('signCanvas');
+      const x = c.width / 2;
+      sctx.beginPath(); sctx.moveTo(x, c.height * 0.12); sctx.lineTo(x, c.height * 0.88); sctx.stroke();
+      signDrawn = true;
+    })()`);
+    const d1 = await imgDims(wa, wa.eval('exportSignature()'));
+    P('tall sig -> export ' + d1.w + 'x' + d1.h + ' (expect w>h, auto rotated): ' + (d1.w > d1.h ? 'PASS' : 'FAIL'));
+
+    // 2) 手動旋轉掣：再撳一次應該轉多 90°
+    wa.eval('rotateSignPad()');
+    P('rotateSignPad ran ok');
+
+    // 3) 清除後畫一個「闊過高」嘅正常簽名 → 匯出保持橫向
+    wa.eval('clearSignPad()');
+    wa.eval(`(function(){
+      const c = document.getElementById('signCanvas');
+      const y = c.height / 2;
+      sctx.beginPath(); sctx.moveTo(c.width * 0.15, y); sctx.lineTo(c.width * 0.85, y); sctx.stroke();
+      signDrawn = true;
+    })()`);
+    const d2 = await imgDims(wa, wa.eval('exportSignature()'));
+    P('wide sig -> export ' + d2.w + 'x' + d2.h + ' (expect w>h, unchanged): ' + (d2.w > d2.h ? 'PASS' : 'FAIL'));
+
+    wa.eval('closeSignPad(null)');
+    await p;
+    P('closed ok');
+  } catch (e) { P('FATAL: ' + e.message); }
+  P('DONE');
+})();
+</script>
+</body>
+</html>
