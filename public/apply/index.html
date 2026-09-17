@@ -436,6 +436,7 @@ create policy "anon access" on settings
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>簽名板改為全螢幕：開簽名板時自動嘗試進入全螢幕＋鎖定橫向（iPhone 唔支援鎖定就提示轉機），簽名格佔滿成個螢幕，按鈕固定喺頂部</li>
               <li>夾萬分拆：忠社、孝社各自有「大夾萬（宿舍夾萬）」同「細夾萬（家社夾萬）」，各自過錢、各自結算扣數</li>
               <li>新增「🏦 夾萬・現存」獨立頁面：夾萬現存、大→細過錢、舍友現存同自動對數，同後台結算分開管理</li>
               <li>舍友現存自動化：支錢成功後自動扣減該舍友結存（結存唔夠會彈提示確認）；後台刪除記錄會自動回補結存同細夾萬</li>
@@ -574,25 +575,22 @@ create policy "anon access" on settings
 
 </main>
 
-<!-- ====================== 舍友簽名板（橫向大格，按鈕固定喺頂部） ====================== -->
+<!-- ====================== 舍友簽名板（全螢幕橫向，按鈕固定喺頂部） ====================== -->
 <div id="signModal" class="no-print fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-black/50"></div>
-  <div class="absolute inset-0 flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl border border-slate-200 p-4 flex flex-col gap-3" style="width:min(96vw,880px); max-height:94dvh;">
-      <div class="flex items-center justify-between gap-2 flex-wrap">
-        <div class="min-w-0">
-          <h3 class="font-bold text-slate-900 text-base">✍️ 舍友簽名：<strong id="signWho" class="text-slate-900"></strong></h3>
-          <p class="text-xs text-slate-500">用手指／觸控筆喺下面格仔簽名；簽名會自動裁剪後放入單據</p>
-        </div>
-        <div class="flex gap-2 shrink-0">
-          <button id="signClear" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">🧽 清除</button>
-          <button id="signCancel" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">取消</button>
-          <button id="signOk" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition" disabled>✔️ 確認簽名</button>
-        </div>
+  <div class="absolute inset-0 bg-white flex flex-col">
+    <div class="flex items-center justify-between gap-2 flex-wrap px-3 py-2 border-b border-slate-200 shrink-0">
+      <div class="min-w-0">
+        <h3 class="font-bold text-slate-900 text-sm sm:text-base">✍️ 舍友簽名：<strong id="signWho" class="text-slate-900"></strong></h3>
+        <p class="text-xs text-slate-500">簽名會自動裁剪後放入單據；📱 將手機轉橫，簽名格會用到成個螢幕</p>
       </div>
-      <div class="rounded-xl overflow-hidden w-full flex-1 min-h-0" style="border:3px solid #141414; box-shadow:4px 4px 0 #141414; aspect-ratio:16/7; max-height:66dvh;">
-        <canvas id="signCanvas" class="w-full h-full block touch-none"></canvas>
+      <div class="flex gap-2 shrink-0">
+        <button id="signClear" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">🧽 清除</button>
+        <button id="signCancel" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">取消</button>
+        <button id="signOk" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition" disabled>✔️ 確認簽名</button>
       </div>
+    </div>
+    <div class="flex-1 min-h-0 m-2 rounded-xl overflow-hidden" style="border:3px solid #141414; box-shadow:4px 4px 0 #141414;">
+      <canvas id="signCanvas" class="w-full h-full block touch-none"></canvas>
     </div>
   </div>
 </div>
@@ -1404,17 +1402,33 @@ function clearSignPad(){
 $('signClear').addEventListener('click', clearSignPad);
 
 let signResolve = null;
+// 最好 effort：支援嘅瀏覽器會入全螢幕兼鎖定橫向；iOS 唔支援就齋靠 CSS 全螢幕＋用戶自行轉機
+async function lockLandscape(){
+  try {
+    if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch {}
+  try { if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape'); } catch {}
+}
+function unlockLandscape(){
+  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch {}
+  try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch {}
+}
 function openSignPad(payee){
   return new Promise(resolve => {
     signResolve = resolve;
     $('signWho').textContent = payee || '';
     $('signModal').classList.remove('hidden');
-    // 等 modal 顯示先度到 canvas 尺寸
+    lockLandscape();
+    // 等 modal 顯示先度到 canvas 尺寸；全螢幕／轉機過渡後再度多次
     requestAnimationFrame(() => { sizeSignCanvas(); clearSignPad(); });
+    setTimeout(() => { if (!$('signModal').classList.contains('hidden')) sizeSignCanvas(true); }, 350);
   });
 }
 function closeSignPad(result){
   $('signModal').classList.add('hidden');
+  unlockLandscape();
   const r = signResolve; signResolve = null;
   if (r) r(result);
 }
