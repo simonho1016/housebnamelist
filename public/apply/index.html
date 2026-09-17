@@ -1488,7 +1488,7 @@ function exportSignature(){
   if (needRotate) {
     octx.translate(out.width / 2, out.height / 2);
     octx.rotate(-Math.PI / 2);
-    octx.drawImage(signCanvas, minX, minY, cw, ch, -cw / 2, -ch / 2);
+    octx.drawImage(signCanvas, minX, minY, cw, ch, -cw / 2, -ch / 2, cw, ch);
   } else {
     octx.drawImage(signCanvas, minX, minY, cw, ch, 0, 0, cw, ch);
   }
