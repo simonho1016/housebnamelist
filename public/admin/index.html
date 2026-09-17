@@ -6,6 +6,7 @@
 <title>則仁中心 — 零用金後台管理</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -102,6 +103,7 @@
       </label>
       <button id="q_go" class="px-5 py-2 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition">查詢</button>
       <button id="q_reset" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">重設</button>
+      <button id="csv_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-slate-700 hover:bg-slate-800 transition">⬇ 匯出 CSV</button>
     </div>
 
     <!-- 總覽卡 -->
@@ -134,8 +136,9 @@
     <div class="card bg-white p-5 space-y-3">
       <div class="flex items-center justify-between flex-wrap gap-2">
         <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide">支錢記錄</h3>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
           <label class="text-xs text-slate-500 flex items-center gap-1"><input type="checkbox" id="sel_all" class="accent-indigo-600"> 全選</label>
+          <button id="zip_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition" disabled>📦 下載 PDF（ZIP）</button>
           <button id="del_sel_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition" disabled>🗑 刪除所選</button>
           <button id="settle_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition" disabled>💰 結算所選</button>
         </div>
@@ -389,11 +392,15 @@ function selectedIds(){
 function refreshSettleBtn(){
   const ids = selectedIds();
   const n = ids.length;
-  const unsettledN = rows.filter(r => ids.includes(String(r.id)) && !r.settled_at).length;
+  const sel = rows.filter(r => ids.includes(String(r.id)));
+  const unsettledN = sel.filter(r => !r.settled_at).length;
+  const pdfN = sel.filter(r => r.pdf_path).length;
   $('settle_btn').disabled = !unsettledN;
   $('settle_btn').textContent = unsettledN ? `💰 結算所選（${unsettledN} 張）` : '💰 結算所選';
   $('del_sel_btn').disabled = !n;
   $('del_sel_btn').textContent = n ? `🗑 刪除所選（${n} 張）` : '🗑 刪除所選';
+  $('zip_btn').disabled = !pdfN;
+  $('zip_btn').textContent = pdfN ? `📦 下載 PDF（ZIP，${pdfN} 份）` : '📦 下載 PDF（ZIP）';
 }
 
 // ---- 刪除記錄（單筆／批量）；有雲端 PDF 會一併刪除 ----
@@ -429,6 +436,70 @@ $('del_sel_btn').addEventListener('click', async () => {
     toast(`已刪除 ${list.length} 張記錄。`);
     loadData();
   } catch (err) { alert('刪除失敗：' + err.message); }
+});
+
+// ---- 匯出 CSV（按而家篩選結果，Excel 可直接開） ----
+function csvCell(v){
+  const s = String(v ?? '');
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+$('csv_btn').addEventListener('click', () => {
+  if (!rows.length) { alert('冇記錄可以匯出。'); return; }
+  const head = ['序號','單據編號','Notion ID','社別','舍友編號','收款人','金額','類別','其他原因','備註','支款人（同事）','日期時間','結算時間','結算經手人','雲端PDF'];
+  const lines = rows.map(r => [
+    r.serial || '', r.doc_no || '', r.notion_id || '', r.house || '', r.payee_id || '', r.payee || '',
+    Number(r.amount || 0).toFixed(2), (r.cats || []).join('、'), r.cat_other || '', r.remark || '',
+    r.staff || '', fmtTime(r.decided_at || r.created_at),
+    r.settled_at ? fmtTime(r.settled_at) : '', r.settled_by || '', r.pdf_path ? '有' : ''
+  ].map(csvCell).join(','));
+  const csv = '﻿' + head.join(',') + '\n' + lines.join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const p = n => String(n).padStart(2, '0');
+  const d = new Date();
+  a.download = `零用金記錄_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`已匯出 ${rows.length} 張記錄。`);
+});
+
+// ---- 勾選記錄 → 雲端 PDF 打包 ZIP 下載 ----
+let zipping = false;
+$('zip_btn').addEventListener('click', async () => {
+  if (zipping) return;
+  const ids = selectedIds();
+  const list = rows.filter(r => ids.includes(String(r.id)) && r.pdf_path);
+  if (!list.length) { alert('所選記錄冇雲端 PDF。'); return; }
+  if (!window.JSZip) { alert('ZIP 元件未載入，請檢查網絡後重新整理。'); return; }
+  zipping = true;
+  const zip = new JSZip();
+  let done = 0, fail = 0;
+  try {
+    for (const r of list) {
+      $('zip_btn').textContent = `📦 下載中 ${done + 1}/${list.length}…`;
+      try {
+        const { data, error } = await sb.storage.from('apply-archive').download(r.pdf_path);
+        if (error) throw new Error(error.message);
+        zip.file(r.pdf_path, data);          // 保持 zhong／xiao → 舍友編號 → 檔案 結構
+      } catch { fail++; }
+      done++;
+    }
+    if (!Object.keys(zip.files).length) throw new Error('全部 PDF 下載失敗。');
+    $('zip_btn').textContent = '📦 壓縮中…';
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    const p = n => String(n).padStart(2, '0');
+    const d = new Date();
+    a.download = `零用金PDF_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast(`已下載 ${done - fail} 份 PDF（ZIP）${fail ? `，${fail} 份失敗` : ''}。`);
+  } catch (e) {
+    alert('ZIP 下載失敗：' + e.message);
+  }
+  zipping = false;
+  refreshSettleBtn();
 });
 
 // ---- 結算 ----
