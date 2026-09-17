@@ -175,7 +175,10 @@
       <h1 class="text-base sm:text-lg font-bold text-slate-900 leading-tight">香港扶幼會 則仁中心 · 零用金申請系統</h1>
       <p id="roleHint" class="text-xs text-slate-500">填單 → 簽名 → 列印／電子存檔</p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 flex-wrap justify-end">
+      <button id="f_history" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">📁 已列印記錄</button>
+      <button id="f_settings" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">⚙️ 系統設定</button>
+      <button onclick="location.href='/admin/'" class="px-3 py-2 rounded-lg text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition">📊 後台管理</button>
       <button onclick="location.href='/'" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">⌂ 宿舍服務主頁</button>
       <button id="homeBtn" class="hidden px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">← 返回</button>
       <button id="calcBtn" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition flex items-center gap-1">
@@ -195,35 +198,12 @@
 
 <main class="max-w-5xl mx-auto px-4 py-6">
 
-  <!-- ====================== 職員：登入 ====================== -->
-  <section id="sLoginScreen" class="hidden max-w-sm mx-auto">
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
-      <h2 id="sLoginTitle" class="text-sm font-bold text-emerald-600 uppercase tracking-wide">職員登入（進入系統設定）</h2>
-      <label class="block">
-        <span class="text-xs font-medium text-slate-500">姓名</span>
-        <select id="s_name" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
-          <option value="">— 請選擇 —</option>
-        </select>
-      </label>
-      <label class="block">
-        <span class="text-xs font-medium text-slate-500">密碼</span>
-        <input id="s_pw" type="password" inputmode="numeric" autocomplete="off" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="個人密碼">
-      </label>
-      <p id="s_login_err" class="text-xs text-red-500 h-4"></p>
-      <button id="s_login_btn" class="w-full py-2.5 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition">登入</button>
-      <div class="text-center pt-1">
-        <button id="goSettings" class="text-sm text-slate-400 hover:text-slate-600 transition">← 返回填單</button>
-      </div>
-    </div>
-  </section>
-
   <!-- ====================== 職員：已列印記錄 ====================== -->
   <section id="sListScreen" class="hidden space-y-4">
     <div class="flex items-center justify-between flex-wrap gap-2">
       <h2 class="text-sm font-bold text-emerald-600 uppercase tracking-wide">已列印記錄</h2>
       <div class="flex items-center gap-3">
         <button id="s_refresh" class="text-xs text-blue-600 hover:underline">↻ 重新整理</button>
-        <button onclick="location.href='/admin/'" class="text-xs font-bold text-indigo-600 hover:underline">📊 後台管理</button>
       </div>
     </div>
     <div id="s_list" class="space-y-3"></div>
@@ -240,8 +220,6 @@
               <option value="">— 支款人 —</option>
             </select>
             <input id="f_staff_pw" type="password" inputmode="numeric" autocomplete="off" class="hidden w-28 text-xs rounded-lg border border-amber-400 bg-amber-50 px-2 py-1.5 outline-none focus:ring-2 focus:ring-amber-500" placeholder="支款人密碼">
-            <button id="f_history" class="text-xs text-blue-600 hover:underline">📁 已列印記錄</button>
-            <button id="f_settings" class="text-xs text-slate-400 hover:text-slate-600">⚙️ 系統設定</button>
           </div>
         </div>
 
@@ -447,9 +425,20 @@ create policy "anon access" on settings
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">版本記錄</h3>
       <div class="text-sm space-y-3">
         <div class="flex gap-3">
-          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.6</span>
+          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.7</span>
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
+            <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>「已列印記錄」「系統設定」「後台管理」三個掣搬去頁面頂部工具列，任何畫面都撳到</li>
+              <li>系統設定唔使再登入，直接進入</li>
+              <li>刪除記錄只可以喺後台管理頁面做（記錄頁嘅刪除掣已移除）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="shrink-0 text-xs font-bold text-white bg-blue-600 rounded-full px-2.5 py-1 h-fit">v1.2.6</span>
+          <div>
+            <div class="font-bold text-slate-900">Supabase 存檔版 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>電子存檔改為上傳 Supabase Storage（apply-archive bucket），唔再經 Google Drive；按「zhong／xiao → 舍友編號 → 檔案」分類（Storage 唔支援中文路徑）；同日同舍友再存自動加時間後綴</li>
               <li>記錄頁新增「下載 PDF」掣（有雲端檔案嘅記錄先顯示，用限時簽名連結）；刪除記錄時雲端 PDF 一併刪除</li>
@@ -660,10 +649,9 @@ const CFG = {
 };
 function staffPwOf(name){ const s = CFG.staff.find(s => s.name === name); return s ? s.pw : null; }
 
-// 填充兩個職員下拉：s_name（系統設定登入）、f_staff（填單支款人）
+// 填充支款人下拉（填單用）
 function fillStaffSelects(){
   const opts = CFG.staff.map(s => `<option>${escapeHtml(s.name)}</option>`).join('');
-  $('s_name').innerHTML = '<option value="">— 請選擇 —</option>' + opts;
   const cur = $('f_staff').value;
   $('f_staff').innerHTML = '<option value="">— 支款人 —</option>' + opts;
   if (cur && CFG.staff.some(s => s.name === cur)) $('f_staff').value = cur;
@@ -806,7 +794,7 @@ function statusBadge(s){
 }
 
 // ====================== 畫面切換 ======================
-const SCREENS = ['sLoginScreen','sFormScreen','sListScreen','settingsScreen'];
+const SCREENS = ['sFormScreen','sListScreen','settingsScreen'];
 function show(id){
   SCREENS.forEach(s => $(s).classList.toggle('hidden', s !== id));
   $('homeBtn').classList.toggle('hidden', id === 'sFormScreen');
@@ -816,39 +804,17 @@ $('homeBtn').addEventListener('click', backToLogin);
 
 // ====================== 返回填單（主畫面） ======================
 function backToLogin(){
-  $('s_login_err').textContent = '';
   onStaffChange();          // 重新同步支款人下拉（已驗證嘅唔會再問密碼）
   show('sFormScreen');
 }
 
-// 登入頁嘅「← 返回填單」
-$('goSettings').addEventListener('click', backToLogin);
-
-// 填單頁嘅「⚙️ 系統設定」→ 先要職員密碼
-$('f_settings').addEventListener('click', () => {
-  $('s_login_err').textContent = '';
-  $('s_pw').value = '';
-  show('sLoginScreen');
-  setTimeout(() => $('s_name').focus(), 50);
-});
+// 頂部「⚙️ 系統設定」→ 直接進入，唔使登入
+$('f_settings').addEventListener('click', openSettings);
 
 // ====================== 職員流程 ======================
 let staffUser = '';
 let currentRec = null;   // 重印用
 let f_house = '';
-
-// 系統設定登入（只有設定頁需要密碼）
-function tryStaffLogin(){
-  const name = $('s_name').value;
-  const pw = $('s_pw').value;
-  if (!name) { $('s_login_err').textContent = '請揀姓名'; return; }
-  if (pw !== staffPwOf(name)) { $('s_login_err').textContent = '密碼錯誤，請再試'; $('s_pw').value = ''; $('s_pw').focus(); return; }
-  staffUser = name;
-  $('s_pw').value = '';
-  openSettings();
-}
-$('s_login_btn').addEventListener('click', tryStaffLogin);
-$('s_pw').addEventListener('keydown', e => { if (e.key === 'Enter') tryStaffLogin(); });
 
 // ---- 支款人選擇：有簽名檔案嘅職員（何文諾、何樂軒）要先輸入個人密碼 ----
 function onStaffChange(){
@@ -1084,10 +1050,7 @@ async function storageSignedUrl(path){
   if (error) throw new Error(error.message);
   return data.signedUrl;
 }
-async function storageRemove(path){
-  if (!sb || !path) return;
-  try { await sb.storage.from(ARCHIVE_BUCKET).remove([path]); } catch { /* 刪唔到都唔阻刪記錄 */ }
-}
+
 
 $('f_archive').addEventListener('click', async () => {
   if (printing) return;
@@ -1152,7 +1115,6 @@ async function loadHistory(){
             <button data-act="load" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-blue-50 text-blue-600 text-sm font-medium hover:bg-blue-100 transition">載入</button>
             <button data-act="reprint" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200 transition">重印 PDF</button>
             ${r.pdf_path ? `<button data-act="download" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-sm font-medium hover:bg-emerald-100 transition">下載 PDF</button>` : ''}
-            <button data-act="del" data-id="${r.id}" class="px-4 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 transition">刪除</button>
           </div>
         </div>
       </div>`).join('');
@@ -1190,15 +1152,8 @@ $('s_list').addEventListener('click', async e => {
       const url = await storageSignedUrl(rec.pdf_path);
       window.open(url, '_blank');
     } catch (e) { alert('下載失敗：' + e.message); }
-  } else if (btn.dataset.act === 'del') {
-    if (!confirm(`確定刪除 ${rec.payee} 嘅記錄（序號 ${rec.serial || '—'}）？\n刪除後呢個序號唔會重用，下一張會用下一個新序號。${rec.pdf_path ? '\n雲端檔案庫嘅 PDF 會一併刪除。' : ''}`)) return;
-    try {
-      await DB.remove(rec.id);
-      if (rec.pdf_path) storageRemove(rec.pdf_path);   // 雲端 PDF 一併刪（唔阻流程）
-      toast('已刪除記錄。');
-      loadHistory();
-    } catch (e) { alert(e.message); }
   }
+  // 注意：刪除記錄只可以喺後台管理頁面做
 });
 
 function loadRecordToForm(rec){
@@ -1518,7 +1473,7 @@ document.addEventListener('keydown', e => {
 let setHouse = '忠社';
 
 function openSettings(){
-  $('set_who').textContent = staffUser;
+  $('set_who').textContent = staffUser || '（未揀支款人）';
   $('setDbWarn').classList.toggle('hidden', CFG.settingsDbOk);
   renderSetMembers();
   renderSetStaff();
@@ -1607,16 +1562,16 @@ $('saveStaffBtn').addEventListener('click', async () => {
   if (list.some(s => !s.name || !s.pw)) { alert('有職員未填姓名或密碼。'); return; }
   const names = list.map(s => s.name);
   if (new Set(names).size !== names.length) { alert('職員姓名有重複，請檢查。'); return; }
-  if (!list.some(s => s.name === staffUser)) {
-    if (!confirm(`你而家登入緊「${staffUser}」，但新名單冇呢個名。儲存後你會被登出，確定？`)) return;
+  if (staffUser && !list.some(s => s.name === staffUser)) {
+    if (!confirm(`而家揀咗嘅支款人「${staffUser}」唔喺新名單入面。儲存後支款人會被清空，確定？`)) return;
   }
   try {
     await DB.setSetting('staff', list);
     CFG.staff = list;
-    // 更新兩個職員下拉
+    // 更新支款人下拉
     fillStaffSelects();
     toast('已儲存職員名單。');
-    if (!CFG.staff.some(s => s.name === staffUser)) { staffUser = ''; backToLogin(); }
+    if (staffUser && !CFG.staff.some(s => s.name === staffUser)) { staffUser = ''; backToLogin(); }
   } catch (e) { alert(e.message); }
 });
 
