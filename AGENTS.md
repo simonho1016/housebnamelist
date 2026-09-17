@@ -55,8 +55,10 @@ netlify/functions/         roster.mjs（舍友名單雲端 API，Netlify Blobs�
 
 ## 簽名板（apply）
 
-- 全螢幕 overlay，開啟時 best-effort `requestFullscreen()`＋`screen.orientation.lock('landscape')`（iOS 唔支援就齋 CSS 全螢幕＋提示轉機）。
-- `exportSignature()` 自動裁剪簽名範圍；**內容高過闊會自動逆時針轉 90° 轉正**先放入 PDF（簽名位係橫向）。
+- 全螢幕 overlay，開啟時 best-effort `requestFullscreen()`＋`screen.orientation.lock('landscape')`。
+- **直機自動轉橫**：viewport 係直向就喺 `#signModal` 加 `sign-rot` class，CSS 將成個 modal 順時針轉 90°（內容頂部指向機身右邊，用戶將手機向左轉就睇正）；resize 時 `updateSignRotation()` 自動切換，確認／取消後移除 class 轉返直。
+- 觸控座標：`signPos()` 偵測 `sign-rot` 狀態，將螢幕座標逆轉換返入 canvas 本地座標；`sizeSignCanvas()` 用 `clientWidth/clientHeight`（`getBoundingClientRect` 會被 CSS 旋轉影響）。
+- `exportSignature()` 自動裁剪簽名範圍後**直接**放入 PDF：方向由 CSS 旋轉固定，唔使再靠「高過闊」估方向（舊自動轉正 heuristic 已移除）。
 - 「🔄 旋轉」掣手動轉 90°（`rotateSignPad()`，轉完縮放 fit）。
 - 簽名只係 base64 放 `payee_sign` 欄，重印舊記錄直接用雲端簽名。
 

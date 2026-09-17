@@ -432,9 +432,19 @@ create policy "anon access" on settings
       <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wide">版本記錄</h3>
       <div class="text-sm space-y-3">
         <div class="flex gap-3">
-          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.2.9</span>
+          <span class="shrink-0 text-xs font-bold text-white bg-emerald-600 rounded-full px-2.5 py-1 h-fit">v1.3.0</span>
           <div>
             <div class="font-bold text-slate-900">現時版本 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
+            <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
+              <li>簽名板自動轉橫：直機開簽名板時成個畫面自動轉橫（將手機向左轉就係正確方向），轉咗橫機會自動跟返正；確認／取消簽名後自動轉返直</li>
+              <li>簽名方向固定：簽名板方向由系統控制，放入 PDF 時唔使再靠「高過闊」估方向（舊自動轉正邏輯已移除）；「🔄 旋轉」掣保留做手動校正</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="shrink-0 text-xs font-bold text-white bg-blue-600 rounded-full px-2.5 py-1 h-fit">v1.2.9</span>
+          <div>
+            <div class="font-bold text-slate-900">全螢幕簽名版 <span class="text-xs font-normal text-slate-400">2026-09-17</span></div>
             <ul class="text-xs text-slate-500 mt-1 list-disc pl-4 space-y-0.5">
               <li>簽名板改為全螢幕：開簽名板時自動嘗試進入全螢幕＋鎖定橫向（iPhone 唔支援鎖定就提示轉機），簽名格佔滿成個螢幕，按鈕固定喺頂部</li>
               <li>簽名自動轉正：橫機簽名後系統會將簽名旋轉返正先放入 PDF；簽名板新增「🔄 旋轉」掣可以手動校正方向</li>
@@ -582,7 +592,7 @@ create policy "anon access" on settings
     <div class="flex items-center justify-between gap-2 flex-wrap px-3 py-2 border-b border-slate-200 shrink-0">
       <div class="min-w-0">
         <h3 class="font-bold text-slate-900 text-sm sm:text-base">✍️ 舍友簽名：<strong id="signWho" class="text-slate-900"></strong></h3>
-        <p class="text-xs text-slate-500">簽名會自動裁剪＋轉正後放入單據；📱 將手機轉橫簽名格更大；方向唔啱可以撳「🔄 旋轉」</p>
+        <p class="text-xs text-slate-500">📱 直機會自動轉橫（將手機向左轉就係正確方向），簽完確認自動轉返直；方向唔啱可以撳「🔄 旋轉」</p>
       </div>
       <div class="flex gap-2 shrink-0">
         <button id="signRotate" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">🔄 旋轉</button>
@@ -596,6 +606,18 @@ create policy "anon access" on settings
     </div>
   </div>
 </div>
+<style>
+  /* 直機時將成個簽名板轉橫：內容頂部指向機身右邊，用戶將手機向左轉就係正確方向 */
+  #signModal > div { transition: transform .25s ease; }
+  #signModal.sign-rot > div {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    width: 100vh;
+    height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+</style>
 
 <!-- ====================== 迷你計算機 ====================== -->
 <div id="calcPanel" class="no-print fixed bottom-5 right-5 z-30 hidden w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden select-none">
@@ -1359,10 +1381,10 @@ function sizeSignCanvas(preserve){
     prev.width = signCanvas.width; prev.height = signCanvas.height;
     prev.getContext('2d').drawImage(signCanvas, 0, 0);
   }
-  const r = signCanvas.getBoundingClientRect();
+  // 用 clientWidth/clientHeight：CSS 旋轉（sign-rot）時 getBoundingClientRect 會攞到旋轉後嘅外接框
   const dpr = window.devicePixelRatio || 1;
-  signCanvas.width = Math.max(1, Math.round(r.width * dpr));
-  signCanvas.height = Math.max(1, Math.round(r.height * dpr));
+  signCanvas.width = Math.max(1, Math.round(signCanvas.clientWidth * dpr));
+  signCanvas.height = Math.max(1, Math.round(signCanvas.clientHeight * dpr));
   sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   sctx.lineWidth = 3; sctx.lineCap = 'round'; sctx.lineJoin = 'round'; sctx.strokeStyle = '#111';
   if (preserve && prev.width) {
@@ -1373,10 +1395,16 @@ function sizeSignCanvas(preserve){
   }
 }
 window.addEventListener('resize', () => {
-  if (!$('signModal').classList.contains('hidden')) sizeSignCanvas(true);
+  if (!$('signModal').classList.contains('hidden')) updateSignRotation();
 });
 function signPos(e){
   const r = signCanvas.getBoundingClientRect();
+  if ($('signModal').classList.contains('sign-rot')) {
+    // 簽名板順時針轉咗 90°：將螢幕座標逆轉換返入 canvas 本地座標
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const dx = e.clientX - cx, dy = e.clientY - cy;
+    return { x: signCanvas.clientWidth / 2 + dy, y: signCanvas.clientHeight / 2 - dx };
+  }
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 signCanvas.addEventListener('pointerdown', e => {
@@ -1439,12 +1467,21 @@ function unlockLandscape(){
   try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch {}
   try { if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen(); } catch {}
 }
+// 直機時自動將成個簽名板轉橫（sign-rot class）；viewport 轉返橫時自動除返
+function updateSignRotation(){
+  const modal = $('signModal');
+  if (modal.classList.contains('hidden')) return;
+  const portrait = window.innerHeight > window.innerWidth;
+  modal.classList.toggle('sign-rot', portrait);
+  requestAnimationFrame(() => sizeSignCanvas(true));
+}
 function openSignPad(payee){
   return new Promise(resolve => {
     signResolve = resolve;
     $('signWho').textContent = payee || '';
     $('signModal').classList.remove('hidden');
     lockLandscape();
+    updateSignRotation();
     // 等 modal 顯示先度到 canvas 尺寸；全螢幕／轉機過渡後再度多次
     requestAnimationFrame(() => { sizeSignCanvas(); clearSignPad(); });
     setTimeout(() => { if (!$('signModal').classList.contains('hidden')) sizeSignCanvas(true); }, 350);
@@ -1452,6 +1489,7 @@ function openSignPad(payee){
 }
 function closeSignPad(result){
   $('signModal').classList.add('hidden');
+  $('signModal').classList.remove('sign-rot');   // 除返轉向 class：畫面自動轉返直
   unlockLandscape();
   const r = signResolve; signResolve = null;
   if (r) r(result);
@@ -1478,20 +1516,10 @@ function exportSignature(){
   minX = Math.max(0, minX - pad); minY = Math.max(0, minY - pad);
   maxX = Math.min(w - 1, maxX + pad); maxY = Math.min(h - 1, maxY + pad);
   const cw = maxX - minX + 1, ch = maxY - minY + 1;
-  // 自動轉正：簽名內容高過闊（直向）即代表橫機簽名時方向打咗轉，
-  // 逆時針轉 90° 先放入單據（單據簽名位係橫向）；已經係橫向就原樣放入
-  const needRotate = ch > cw;
+  // 簽名方向由簽名板嘅 CSS 旋轉固定（直機自動轉橫），canvas 本地座標即係正確方向，裁剪後直接匯出
   const out = document.createElement('canvas');
-  out.width = needRotate ? ch : cw;
-  out.height = needRotate ? cw : ch;
-  const octx = out.getContext('2d');
-  if (needRotate) {
-    octx.translate(out.width / 2, out.height / 2);
-    octx.rotate(-Math.PI / 2);
-    octx.drawImage(signCanvas, minX, minY, cw, ch, -cw / 2, -ch / 2, cw, ch);
-  } else {
-    octx.drawImage(signCanvas, minX, minY, cw, ch, 0, 0, cw, ch);
-  }
+  out.width = cw; out.height = ch;
+  out.getContext('2d').drawImage(signCanvas, minX, minY, cw, ch, 0, 0, cw, ch);
   return out.toDataURL('image/png');
 }
 $('signOk').addEventListener('click', () => {
