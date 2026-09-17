@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>t</title></head><body>
+<pre id="log">TEST-START</pre>
+<script>
+const log = m => document.getElementById('log').textContent += '\n' + m;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'test', exp: Date.now() + 900000 }));
+const f1 = document.createElement('iframe');
+f1.src = '/admin/';
+f1.style.cssText = 'width:1200px;height:900px';
+document.body.appendChild(f1);
+f1.addEventListener('load', async () => {
+  await sleep(2500);
+  const w = f1.contentWindow;
+  try {
+    log('JSZIP-LOADED: ' + !!w.JSZip);
+    log('HAS-CSV-BTN: ' + !!w.document.getElementById('csv_btn'));
+    log('HAS-ZIP-BTN: ' + !!w.document.getElementById('zip_btn'));
+    const pw = await w.eval('getAdminPw()');
+    w.document.getElementById('gate_pw').value = pw;
+    w.document.getElementById('gate_btn').click();
+    await sleep(3500);
+    // 勾一張有 PDF 嘅記錄（如有）
+    const rows = w.eval('rows');
+    log('ROWS: ' + rows.length + ', 有PDF: ' + rows.filter(r => r.pdf_path).length);
+    const withPdf = rows.find(r => r.pdf_path);
+    if (withPdf) {
+      const cb = w.document.querySelector(`.sel_rec[data-id="${withPdf.id}"]`);
+      cb.checked = true;
+      cb.dispatchEvent(new w.Event('change', { bubbles: true }));
+      await sleep(200);
+      log('ZIP-ENABLED: ' + !w.document.getElementById('zip_btn').disabled);
+      log('ZIP-TEXT: ' + w.document.getElementById('zip_btn').textContent);
+      // 試下載一份 PDF（驗證 storage download 權限）
+      const dl = await w.eval(`sb.storage.from('apply-archive').download('${withPdf.pdf_path}').then(r => r.error ? 'ERR:' + r.error.message : 'OK:' + r.data.size)`);
+      log('PDF-DOWNLOAD-TEST: ' + dl);
+    } else {
+      log('NO-PDF-RECORDS（跳過 ZIP 實測）');
+    }
+    // CSV 邏輯測試（唔真係下載，只驗證函數存在同行數）
+    log('CSV-CELL-FN: ' + (typeof w.eval('csvCell')));
+  } catch (e) { log('ERR ' + e.message); }
+  log('TEST-END');
+});
+setTimeout(() => log('TIMEOUT'), 20000);
+</script>
+</body></html>
