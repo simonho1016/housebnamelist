@@ -7,6 +7,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Huninn&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -138,6 +139,7 @@
         <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide">支錢記錄</h3>
         <div class="flex items-center gap-2 flex-wrap">
           <label class="text-xs text-slate-500 flex items-center gap-1"><input type="checkbox" id="sel_all" class="accent-indigo-600"> 全選</label>
+          <button id="print_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 transition" disabled>🖨 列印所選</button>
           <button id="zip_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition" disabled>📦 下載 PDF（ZIP）</button>
           <button id="del_sel_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition" disabled>🗑 刪除所選</button>
           <button id="settle_btn" class="px-4 py-2 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition" disabled>💰 結算所選</button>
@@ -401,6 +403,8 @@ function refreshSettleBtn(){
   $('del_sel_btn').textContent = n ? `🗑 刪除所選（${n} 張）` : '🗑 刪除所選';
   $('zip_btn').disabled = !pdfN;
   $('zip_btn').textContent = pdfN ? `📦 下載 PDF（ZIP，${pdfN} 份）` : '📦 下載 PDF（ZIP）';
+  $('print_btn').disabled = !pdfN;
+  $('print_btn').textContent = pdfN ? `🖨 列印所選（${pdfN} 份）` : '🖨 列印所選';
 }
 
 // ---- 刪除記錄（單筆／批量）；有雲端 PDF 會一併刪除 ----
@@ -499,6 +503,52 @@ $('zip_btn').addEventListener('click', async () => {
     alert('ZIP 下載失敗：' + e.message);
   }
   zipping = false;
+  refreshSettleBtn();
+});
+
+// ---- 勾選記錄 → 合併 PDF 直接列印（全選列印都得） ----
+let printingSel = false;
+$('print_btn').addEventListener('click', async () => {
+  if (printingSel) return;
+  const ids = selectedIds();
+  const list = rows.filter(r => ids.includes(String(r.id)) && r.pdf_path);
+  if (!list.length) { alert('所選記錄冇雲端 PDF。'); return; }
+  if (!window.PDFLib) { alert('PDF 合併元件未載入，請檢查網絡後重新整理。'); return; }
+  printingSel = true;
+  try {
+    const merged = await PDFLib.PDFDocument.create();
+    let done = 0, fail = 0;
+    for (const r of list) {
+      $('print_btn').textContent = `🖨 準備中 ${done + 1}/${list.length}…`;
+      try {
+        const { data, error } = await sb.storage.from('apply-archive').download(r.pdf_path);
+        if (error) throw new Error(error.message);
+        const src = await PDFLib.PDFDocument.load(await data.arrayBuffer(), { ignoreEncryption: true });
+        const pages = await merged.copyPages(src, src.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      } catch { fail++; }
+      done++;
+    }
+    if (!merged.getPageCount()) throw new Error('全部 PDF 讀取失敗。');
+    $('print_btn').textContent = '🖨 開啟列印…';
+    const bytes = await merged.save();
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    // 用隱藏 iframe 直接彈列印；失敗就開新分頁俾用戶自己印
+    const ifr = document.createElement('iframe');
+    ifr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    ifr.src = url;
+    document.body.appendChild(ifr);
+    let printed = false;
+    ifr.onload = () => {
+      try { ifr.contentWindow.focus(); ifr.contentWindow.print(); printed = true; } catch { /* 落入 fallback */ }
+      if (!printed) window.open(url, '_blank');
+    };
+    setTimeout(() => { URL.revokeObjectURL(url); ifr.remove(); }, 60000);
+    toast(`已合併 ${done - fail} 份 PDF 準備列印${fail ? `，${fail} 份失敗` : ''}。`);
+  } catch (e) {
+    alert('列印準備失敗：' + e.message);
+  }
+  printingSel = false;
   refreshSettleBtn();
 });
 
