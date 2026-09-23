@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>香港扶幼會則仁中心 忠孝宿舍服務</title>
-<meta name="description" content="則仁中心忠孝宿舍服務入口：舍務抽籤及舍友名單。登入後 15 分鐘自動登出。">
+<meta name="description" content="則仁中心忠孝宿舍服務入口：舍務抽籤及舍友名單。登入後 15 分鐘自動登出。零用金支錢系統已獨立成專屬網站。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
@@ -162,7 +162,7 @@
     <!-- 登入閘：密碼統一在此輸入 -->
     <section class="lock" id="lockView" hidden>
       <div class="lock-icon" aria-hidden="true">🔒</div>
-      <p>舍務抽籤、舍友名單及零用金申請載有舍友個人資料，只供獲授權的職員使用。<br>請輸入共用密碼；登入後 <strong>15 分鐘</strong>會自動登出。</p>
+      <p>舍務抽籤及舍友名單載有舍友個人資料，只供獲授權的職員使用。<br>請輸入共用密碼；登入後 <strong>15 分鐘</strong>會自動登出。</p>
       <form class="lock-row" id="lockForm">
         <input type="password" id="lockInput" autocomplete="current-password" placeholder="共用密碼" maxlength="200" aria-label="共用密碼">
         <button type="submit" class="btn green" id="lockGo">進入</button>
@@ -205,12 +205,12 @@
           <span class="card-url">/roster/</span>
         </div>
 
-        <div class="card card-apply" data-url="/apply/" role="link" tabindex="0" aria-label="零用金申請">
+        <a class="card card-apply" href="https://cycapply.netlify.app/" target="_blank" rel="noopener" aria-label="零用金支錢系統（獨立網站，新分頁開啟）">
           <span class="coin" aria-hidden="true">$</span>
-          <span class="card-name">零用金申請</span>
-          <span class="card-desc">職員填單、舍友即場簽名，<br>列印單據或電子存檔上雲端檔案庫。</span>
-          <span class="card-url">/apply/</span>
-        </div>
+          <span class="card-name">零用金支錢</span>
+          <span class="card-desc">支錢系統已獨立成專屬網站，<br>需另行登入（新分頁開啟）。</span>
+          <span class="card-url">cycapply.netlify.app ↗</span>
+        </a>
       </div>
 
       <p class="note">各系統獨立運作，資料均儲存於雲端。</p>

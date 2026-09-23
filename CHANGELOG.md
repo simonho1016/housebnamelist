@@ -5,6 +5,11 @@
 網站內的「版本紀錄」對話框由 `public/index.html` 的 `CHANGELOG` 陣列產生；
 更新版本時請同時修改 `APP_VERSION`、該陣列及本檔案。
 
+## 2026-09-23
+
+### 架構
+- 零用金支錢系統（apply／admin／vault）抽離成獨立網站 cycapply.netlify.app（repo `simonho1016/cyc-apply`）；主站只留連結卡（新分頁開啟），舊網址 301 自動轉址
+
 ## 1.0.1 — 2026-09-13
 
 ### 調整

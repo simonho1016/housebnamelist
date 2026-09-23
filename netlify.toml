@@ -13,6 +13,32 @@
   status = 301
   force = true
 
+# 支錢系統已抽離成獨立網站（cyc-apply）：舊書籤自動轉址
+[[redirects]]
+  from = "/apply/*"
+  to = "https://cycapply.netlify.app/apply/:splat"
+  status = 301
+[[redirects]]
+  from = "/apply"
+  to = "https://cycapply.netlify.app/apply/"
+  status = 301
+[[redirects]]
+  from = "/admin/*"
+  to = "https://cycapply.netlify.app/admin/:splat"
+  status = 301
+[[redirects]]
+  from = "/admin"
+  to = "https://cycapply.netlify.app/admin/"
+  status = 301
+[[redirects]]
+  from = "/vault/*"
+  to = "https://cycapply.netlify.app/vault/:splat"
+  status = 301
+[[redirects]]
+  from = "/vault"
+  to = "https://cycapply.netlify.app/vault/"
+  status = 301
+
 # 名單載有個人資料：不讓搜尋引擎收錄，也不允許被其他網站嵌入
 [[headers]]
   for = "/*"
