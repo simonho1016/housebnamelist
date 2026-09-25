@@ -223,7 +223,7 @@
 <dialog id="auth">
   <form class="dlg" id="authForm">
     <div class="dlg-head"><h2>請先經入口頁登入</h2></div>
-    <p class="sub" style="margin:0">此名單載有舍友的個人資料，只供獲授權的職員使用。密碼統一在入口頁輸入，登入後 15 分鐘自動登出。</p>
+    <p class="sub" style="margin:0">此名單載有舍友的個人資料，只供獲授權的職員使用。請先在入口頁用 @sbccyc.org.hk Google 帳戶登入。</p>
     <div class="dlg-foot" style="justify-content:flex-start">
       <a class="btn primary" id="authPortal" href="/" style="text-decoration:none">前往入口頁登入</a>
     </div>
@@ -993,9 +993,9 @@
   var auth = $('auth'), authInput = $('authInput'), authMsg = $('authMsg'), authGo = $('authGo');
   var accessKey = '';
 
-  // ── 入口頁統一登入：密碼只在前置頁面輸入，經網址 hash 傳入（不會送上伺服器），15 分鐘後自動登出 ──
+  // ── 入口頁統一登入：Google 網域認證後密鑰經 sessionStorage 共用（唔會送上伺服器），唔設時限 ──
   var PORTAL_URL = '/';
-  var AUTH_SESSION_KEY = 'cyc-portal-auth', AUTH_TTL = 15 * 60 * 1000;
+  var AUTH_SESSION_KEY = 'cyc-portal-auth', AUTH_TTL = 365 * 24 * 60 * 60 * 1000;
   (function () {
     try {
       var h = new URLSearchParams(location.hash.slice(1));
@@ -1005,7 +1005,7 @@
       }
       if (k || h.get('t')) history.replaceState(null, '', location.pathname + location.search);
     } catch (e) {}
-    try { localStorage.removeItem(KEY_STORE); } catch (e) {}   // 舊版記住的密碼一律清除，改用 15 分鐘時限
+    try { localStorage.removeItem(KEY_STORE); } catch (e) {}   // 舊版記住的密碼一律清除
   })();
   function portalAuth() {
     try {
@@ -1183,11 +1183,11 @@
     });
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') maybeRefresh(); });
     setInterval(maybeRefresh, 60000);
-    setInterval(function () {   // 15 分鐘時限一到即自動登出
+    setInterval(function () {   // 登入狀態被清除（例如另一分頁登出）即要求重新登入
       if (accessKey && !portalAuth()) {
         accessKey = '';
         setStatus('err', '已登出');
-        showAuth('登入已過期（15 分鐘），請經入口頁重新登入。');
+        showAuth('登入狀態已清除，請經入口頁重新登入。');
       }
     }, 15000);
     window.addEventListener('online', function () { if (hasUnsaved()) pushNow(); else maybeRefresh(); });

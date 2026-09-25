@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>香港扶幼會則仁中心 忠孝宿舍服務</title>
-<meta name="description" content="則仁中心忠孝宿舍服務入口：舍務抽籤及舍友名單。登入後 15 分鐘自動登出。零用金支錢系統已獨立成專屬網站。">
+<meta name="description" content="則仁中心忠孝宿舍服務入口：舍務抽籤及舍友名單。以 @sbccyc.org.hk Google 帳戶登入。零用金支錢系統已獨立成專屬網站。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root{
     /* 舍友名單（漫畫風選擇畫面） */
@@ -159,15 +160,17 @@
     <p class="org">香港扶幼會則仁中心</p>
     <h1 class="title">忠孝宿舍服務</h1>
 
-    <!-- 登入閘：密碼統一在此輸入 -->
+    <!-- 登入閘：Google 網域認證（只限 @sbccyc.org.hk），唔設時限 -->
     <section class="lock" id="lockView" hidden>
       <div class="lock-icon" aria-hidden="true">🔒</div>
-      <p>舍務抽籤及舍友名單載有舍友個人資料，只供獲授權的職員使用。<br>請輸入共用密碼；登入後 <strong>15 分鐘</strong>會自動登出。</p>
-      <form class="lock-row" id="lockForm">
+      <p>舍務抽籤及舍友名單載有舍友個人資料，只供獲授權的職員使用。<br>請用 <strong>@sbccyc.org.hk</strong> 嘅 Google 帳戶登入；登入狀態會保持到撳「登出」或關閉分頁為止。</p>
+      <div id="gbtnWrap" style="display:flex;justify-content:center;margin:4px 0 6px"></div>
+      <p class="lock-msg" id="lockMsg" role="status"></p>
+      <p class="lock-skip"><button type="button" id="lockAltBtn">未能使用 Google 登入？用共用密碼進入</button></p>
+      <form class="lock-row" id="lockForm" hidden>
         <input type="password" id="lockInput" autocomplete="current-password" placeholder="共用密碼" maxlength="200" aria-label="共用密碼">
         <button type="submit" class="btn green" id="lockGo">進入</button>
       </form>
-      <p class="lock-msg" id="lockMsg" role="status"></p>
       <p class="lock-skip" id="lockSkip" hidden>未能連線驗證。<button type="button" id="lockSkipBtn">略過驗證直接進入</button>（密碼錯誤時各系統會要求重新登入）</p>
     </section>
 
@@ -221,8 +224,12 @@
 
 <script>
 'use strict';
-// ── 統一登入：密碼只在此頁輸入，經網址 hash 帶到各系統（不會送上伺服器），15 分鐘後自動登出 ──
-const AUTH_SESSION_KEY = 'cyc-portal-auth', AUTH_TTL = 15 * 60 * 1000;
+// ── 統一登入：Google 網域認證（只限 @sbccyc.org.hk），唔設時限，撳「登出」或關閉分頁先清除 ──
+// Google 登入成功後向 /api/auth-keys 換取系統共用密鑰（伺服器驗證 Google token 先會回傳），
+// 密鑰存於 sessionStorage 供舍務抽籤／舍友名單使用；舊密碼登入保留做後備（收埋喺連結後面）。
+const AUTH_SESSION_KEY = 'cyc-portal-auth', AUTH_TTL = 365 * 24 * 60 * 60 * 1000; // 實際唔會過期；sessionStorage 關分頁即清
+const GOOGLE_CLIENT_ID = '141456186458-t5ihfut5sir6fl0l3kqbi72hehekerlr.apps.googleusercontent.com';
+const ALLOWED_DOMAIN = 'sbccyc.org.hk';
 const ROSTER_API = '/api/roster?house=xiao';
 const DUTY_VERIFY = 'https://pkziogchjqgcvezmeteq.supabase.co/rest/v1/rpc/duty_records_verify';
 const DUTY_KEY = 'sb_publishable_GiDTfksX6FnyKGokiIjulQ_IJbtGIH1';
@@ -239,19 +246,61 @@ function portalAuth() {
   } catch (e) {}
   return null;
 }
-function portalLogin(p) {
-  try { sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ p, exp: Date.now() + AUTH_TTL })); } catch (e) {}
+function portalLogin(p, extra) {
+  try { sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ p, exp: Date.now() + AUTH_TTL, ...(extra || {}) })); } catch (e) {}
 }
 function portalLogout() {
   try { sessionStorage.removeItem(AUTH_SESSION_KEY); } catch (e) {}
 }
+
+// ── Google 登入 ──
+function decodeJwt(t) {
+  try {
+    const part = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(decodeURIComponent(atob(part).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+  } catch (e) { return null; }
+}
+async function handleGoogleCred(res) {
+  const payload = decodeJwt(res && res.credential);
+  if (!payload) { $('lockMsg').textContent = '登入資料讀取失敗，請再試一次。'; return; }
+  const email = String(payload.email || '').toLowerCase();
+  const hd = String(payload.hd || '').toLowerCase();
+  if (hd !== ALLOWED_DOMAIN && !email.endsWith('@' + ALLOWED_DOMAIN)) {
+    $('lockMsg').textContent = `只限 @${ALLOWED_DOMAIN} 帳戶登入（你用緊 ${email || '未知帳戶'}）。`;
+    return;
+  }
+  $('lockMsg').textContent = '正在驗證…';
+  // 向伺服器換取系統共用密鑰（伺服器會再驗證一次 Google token）
+  try {
+    const r = await fetch('/api/auth-keys', {
+      method: 'POST', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: res.credential }),
+    });
+    const b = await r.json().catch(() => null);
+    if (!r.ok || !b || !b.key) {
+      $('lockMsg').textContent = (b && b.message) || '登入驗證失敗，請再試一次或通知系統管理員。';
+      return;
+    }
+    portalLogin(b.key, { email, name: payload.name || b.name || email });
+    showMain();
+  } catch (e) {
+    $('lockMsg').textContent = '未能連線驗證，請檢查網絡後再試。';
+  }
+}
+// GIS script 係 async，載入完成先整登入掣
+let gisTimer = setInterval(() => {
+  if (!(window.google && google.accounts && google.accounts.id)) return;
+  clearInterval(gisTimer);
+  google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCred });
+  google.accounts.id.renderButton($('gbtnWrap'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'zh-HK' });
+}, 300);
 
 function showLock(msg) {
   $('mainView').hidden = true;
   $('lockView').hidden = false;
   $('lockMsg').textContent = msg || '';
   $('lockSkip').hidden = true;
-  $('lockInput').focus();
 }
 function showMain() {
   $('lockView').hidden = true;
@@ -260,14 +309,12 @@ function showMain() {
 }
 function tickSession() {
   const a = portalAuth();
-  if (!a) { showLock('登入已過期（15 分鐘），請重新輸入密碼。'); return; }
-  const mins = Math.max(1, Math.ceil((a.exp - Date.now()) / 60000));
-  const until = new Date(a.exp).toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' });
-  $('sessionPill').textContent = `已登入 · ${until} 自動登出（約 ${mins} 分鐘）`;
+  if (!a) { showLock('登入狀態已清除，請重新登入。'); return; }
+  $('sessionPill').textContent = a.name ? `已登入 · ${a.name}` : '已登入';
 }
 setInterval(tickSession, 15000);
 
-// 驗證密碼：先試舍友名單 API（GET 讀取），網絡失敗再試舍務抽籤的驗證 RPC
+// 後備密碼登入：先試舍友名單 API（GET 讀取），網絡失敗再試舍務抽籤的驗證 RPC
 async function verifyPassword(p) {
   try {
     const res = await fetch(ROSTER_API, {
@@ -291,6 +338,11 @@ async function verifyPassword(p) {
 }
 
 let lastTry = '';
+$('lockAltBtn').addEventListener('click', () => {
+  $('lockForm').hidden = false;
+  $('lockAltBtn').hidden = true;
+  $('lockInput').focus();
+});
 $('lockForm').addEventListener('submit', async e => {
   e.preventDefault();
   const p = $('lockInput').value.trim();
@@ -323,11 +375,11 @@ $('logoutBtn').addEventListener('click', () => {
   showLock('已登出。');
 });
 
-// 進入各系統時，把密碼及進入時間附加在網址 hash（只留在瀏覽器，不會送上伺服器）
+// 進入各系統：同網域共用 sessionStorage，直接跳轉（唔再經網址 hash 傳密碼）
 // 撳「忠社／孝社」會順便帶埋社別，直接進入該社；撳卡身就一律先入揀社畫面
 function openSystem(url, dorm) {
   const a = portalAuth();
-  if (!a) { showLock('登入已過期（15 分鐘），請重新輸入密碼。'); return; }
+  if (!a) { showLock('登入狀態已清除，請重新登入。'); return; }
   let target = url;
   if (url === '/duties/') {
     // 抽籤一律先入揀社＋上次記錄畫面（免密碼）；指定社別就只係預先揀定
@@ -340,7 +392,7 @@ function openSystem(url, dorm) {
   } else if (dorm && url === '/roster/') {
     target = '/roster/?house=' + dorm;
   }
-  location.href = target + '#key=' + encodeURIComponent(a.p) + '&t=' + Date.now();
+  location.href = target;
 }
 document.querySelectorAll('.card[data-url]').forEach(card => {
   card.addEventListener('click', e => {

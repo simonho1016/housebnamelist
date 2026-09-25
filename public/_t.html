@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><meta charset="UTF-8"><title>e2e</title></head>
+<body>
+<pre id="log">running…</pre>
+<script>
+'use strict';
+// 模擬 Google 登入後嘅 session（長效）
+sessionStorage.setItem('cyc-portal-auth', JSON.stringify({ p: 'wrong-key-for-test', exp: Date.now() + 365*24*60*60*1000, email: 'test@sbccyc.org.hk', name: '測試員' }));
+const out = [];
+const log = s => { out.push(s); document.getElementById('log').textContent = out.join('\n'); };
+
+function loadFrame(url) {
+  return new Promise(res => {
+    const f = document.createElement('iframe');
+    f.src = url; f.style.display = 'none';
+    f.onload = () => res(f);
+    document.body.appendChild(f);
+  });
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+(async () => {
+  // 1) auth-keys function：假 token 應回 401 bad_token（證明 function 已部署同運作）
+  try {
+    const r = await fetch('/api/auth-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: 'fake.token.here' }) });
+    const b = await r.json();
+    log('auth-keys fake token → HTTP ' + r.status + ' ' + JSON.stringify(b) + (r.status === 401 && b.error === 'bad_token' ? ' ✅' : ' ❌'));
+  } catch (e) { log('auth-keys fetch 失敗 ❌ ' + e); }
+
+  // 2) 前置頁結構：Google 掣容器存在、密碼 form 收埋咗、冇 15 分鐘字眼
+  const portal = await loadFrame('/');
+  await sleep(1500);
+  const pd = portal.contentDocument;
+  log('前置頁 gbtnWrap: ' + (pd.getElementById('gbtnWrap') ? '存在 ✅' : '冇 ❌'));
+  log('前置頁 lockForm hidden: ' + (pd.getElementById('lockForm').hidden ? '收埋 ✅' : '顯示緊 ❌'));
+  log('前置頁 lockView 有 15 分鐘字眼: ' + (/15\s*分鐘/.test(pd.getElementById('lockView').textContent) ? '有 ❌' : '冇 ✅'));
+  const gs = [...pd.scripts].some(s => (s.src || '').includes('accounts.google.com/gsi/client'));
+  log('前置頁 GIS script: ' + (gs ? '已載入 ✅' : '冇 ❌'));
+  // 有有效 session 應直接顯示功能頁
+  log('前置頁 mainView 顯示: ' + (!pd.getElementById('mainView').hidden ? '係 ✅' : '唔係 ❌'));
+  log('前置頁 sessionPill: 「' + pd.getElementById('sessionPill').textContent + '」' + (/測試員/.test(pd.getElementById('sessionPill').textContent) ? ' ✅' : ''));
+
+  // 3) 舍務抽籤：免密碼入口（dutyAuthValid 應為 true、gate note 冇 15 分鐘）
+  const duty = await loadFrame('/duties/');
+  await sleep(1500);
+  try {
+    const ok = duty.contentWindow.eval('dutyAuthValid()');
+    log('duties dutyAuthValid: ' + ok + (ok ? ' ✅' : ' ❌'));
+    const note = duty.contentDocument.querySelector('.gate-note');
+    log('duties gate-note: 「' + (note ? note.textContent.slice(0, 40) : '冇') + '」' + (note && !/15\s*分鐘/.test(note.textContent) ? ' ✅' : ' ❌'));
+    const passLabel = duty.contentDocument.getElementById('gatePass');
+    log('duties 密碼欄收埋: ' + (passLabel && passLabel.closest('label').hidden ? '係 ✅' : '唔係 ❌'));
+  } catch (e) { log('duties 檢查失敗 ❌ ' + e); }
+
+  // 4) 舍友名單：有 session 唔應該彈密碼 dialog；錯 key 會觸發 401 流程（預期彈 auth）
+  const roster = await loadFrame('/roster/?house=xiao');
+  await sleep(2500);
+  try {
+    const rd = roster.contentDocument;
+    const authOpen = rd.getElementById('auth').open;
+    // 用錯 key 測試，401 係預期行為（證明 server 仍然有把關）；重點係頁面讀到 session
+    log('roster auth dialog 彈出: ' + authOpen + '（用假 key 測試，彈出屬預期；文字應提及 Google 登入）');
+    log('roster auth 文字有 Google 字眼: ' + (/Google/.test(rd.getElementById('auth').textContent) ? '有 ✅' : '冇 ❌'));
+    log('roster auth 文字有 15 分鐘: ' + (/15\s*分鐘/.test(rd.getElementById('auth').textContent) ? '有 ❌' : '冇 ✅'));
+  } catch (e) { log('roster 檢查失敗 ❌ ' + e); }
+
+  log('DONE');
+})();
+</script>
+</body>
+</html>

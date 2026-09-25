@@ -17,17 +17,19 @@
 ## 目錄結構
 
 ```
-public/index.html          前置頁（香港扶幼會則仁中心 忠孝宿舍服務）：密碼登入（15 分鐘有效）→ 舍務抽籤／舍友名單，另有連結卡去獨立支錢系統（新分頁）
+public/index.html          前置頁（香港扶幼會則仁中心 忠孝宿舍服務）：Google 網域登入（只限 @sbccyc.org.hk，唔設時限）→ 舍務抽籤／舍友名單，另有連結卡去獨立支錢系統（新分頁）
 public/duties/index.html   舍務抽籤（?house=zhong|xiao 揀社）
 public/roster/index.html   舍友名單（?house=zhong|xiao）
-netlify/functions/         roster.mjs（舍友名單雲端 API，Netlify Blobs）
+netlify/functions/         roster.mjs（舍友名單雲端 API，Netlify Blobs）；auth-keys.mjs（Google token 驗證後回傳系統共用密鑰）
 ```
 
-## 登入／密碼模型（15 分鐘有效，sessionStorage）
+## 登入模型（Google 網域認證，唔設時限，sessionStorage 關分頁即清）
 
-- `cyc-portal-auth`：`{p, exp}`，前置頁統一登入；duties/roster 每頁都有 IIFE 檢查，冇就跳返 `/`。
-- 前置頁驗證密碼：先試舍友名單 API（`/api/roster`，x-roster-key header），失敗再試舍務抽籤嘅 `duty_records_verify` RPC。
-- 舊格式（`'1'` 字串）已廢，係咪有效要用 JSON.parse 檢查 `exp`。
+- 前置頁用 Google Identity Services（GIS）登入掣，Client ID 同支錢系統共用（`141456186458-…apps.googleusercontent.com`）；新網域要喺 Google Cloud Console 嘅 Authorized JavaScript origins 度加返先用到。
+- 登入成功後前端攞 Google ID token 去 `POST /api/auth-keys`；function 向 Google tokeninfo 查證（aud＋`hd`/`email` 必須屬於 sbccyc.org.hk），通過先回傳共用密鑰（env `PORTAL_KEY`，未設就沿用 `ROSTER_PASSWORD`）。密鑰唔寫死喺前端。
+- `cyc-portal-auth`：`{p, exp, email, name}`，`p` 係共用密鑰（duties/roster 嘅雲端寫入仍然靠佢），`exp` 係 +365 日（實際唔會過期）；duties/roster 每頁都有 IIFE 檢查，冇就跳返 `/`。
+- 舊密碼登入保留做後備（前置頁「未能使用 Google 登入？」連結展開）；驗證：先試舍友名單 API（`/api/roster`，x-roster-key header），失敗再試舍務抽籤嘅 `duty_records_verify` RPC。
+- 確認 Google 登入穩定後可以刪走後備密碼 form 同 `verifyPassword`。
 
 ## 開發流程
 
