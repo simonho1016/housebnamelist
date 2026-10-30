@@ -26,11 +26,13 @@ function runTests(w){
  const say=(...a)=>parent.postMessage({t:'log',m:a.join(' ')},'*');
  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
  try{
+  window.requestAnimationFrame=cb=>setTimeout(()=>cb(performance.now()),16);
+  window.matchMedia=q=>({matches:true,media:q,onchange:null,addListener(){},removeListener(){},addEventListener(){},removeEventListener(){},dispatchEvent(){return false}});
   say('ua='+navigator.userAgent.slice(0,40));
   for(let i=0;i<200&&configSync.busy;i++)await sleep(100);
   await sleep(1500);
   for(let i=0;i<200&&configSync.busy;i++)await sleep(100);
-  say('config settled. residents='+RESIDENTS.length+' jobs='+JOBS.length+' cloudLoaded='+cloud.loaded+' records='+allRecords().length);
+  say('config settled. residents='+RESIDENTS.length+' jobs='+JOBS.length+' cloudLoaded='+cloud.loaded+' records='+allRecords().length+' ready='+ready()+' problem='+staffingProblem()+' drawDisabled='+document.getElementById('drawBtn').disabled);
   // ---- Bug 2: wheel pointer vs winner ----
   const pal=['#e7f2db','#fff5c4','#b7dccc','#f3d777','#d9e9e1','#f0e8c9'].map(h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16)));
   window.__caps=[];
