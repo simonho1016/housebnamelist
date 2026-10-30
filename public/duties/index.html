@@ -336,7 +336,7 @@ function commitSettings(config){
  if(JSON.stringify(config)===JSON.stringify(configuration()))return '';
  if((rosterLocked()||Object.keys(state.custom).length)&&!window.confirm('更改設定會先保存已揭曉結果至舍務記錄，再清除本週分配及自訂草稿，按新名單重新開始。確定儲存？'))return '已取消儲存，原有設定及分配保留。';
  if(revealed().length&&!storeRecord('settings',true))return '未能保存舊舍務記錄，設定未更改。請先下載備份及匯出 CSV。';
- loadConfiguration(config);state.statuses=Object.fromEntries(ALL.map(id=>[id,state.statuses[id]||'normal']));state.active=ALL.filter(id=>state.statuses[id]==='normal');state.round=null;state.custom={};state.config=configuration();selectedCardResident=null;selectedWheelJob=0;wheelAngle=0;
+ loadConfiguration(config);state.statuses=Object.fromEntries(ALL.map(id=>[id,state.statuses[id]||'normal']));state.active=ALL.filter(id=>state.statuses[id]==='normal');state.round=null;state.custom={};state.config=configuration();selectedCardResident=null;selectedWheelJob=0;wheelAngle=0;wheelHold=false;
  save();render();announce(null);return '';
 }
 function saveSettings(){const before=JSON.stringify(configuration());const problem=commitSettings(settingsDraft);if(problem){$('settingsNotice').textContent=problem;return}settingsDraft=configuration();$('settingsDialog').close();if(JSON.stringify(configuration())!==before){configMarkPending();cloudConfigPush(true);toast('設定已儲存，正在同步至雲端。')}else toast('設定沒有變更。')}
@@ -355,21 +355,22 @@ function daysBetween(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+
 function weekEnd(s=state){return validDate(s.weekEnd)&&s.weekEnd>=s.weekStart?s.weekEnd:addDays(s.weekStart,6)}
 function weekLabel(){return `${state.weekStart.replaceAll('-','/')} 至 ${weekEnd().replaceAll('-','/')}`}
 function validDate(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(new Date(v+'T12:00:00').getTime())&&localDate(new Date(v+'T12:00:00'))===v}
-let state={active:[...ALL],statuses:Object.fromEntries(ALL.map(id=>[id,'normal'])),weekStart:defaultWeek(),weekEnd:addDays(defaultWeek(),6),custom:{},mode:'wheel',round:null,avoidRepeat:false}, busy=false, wheelAngle=0, toastTimer, selectedCardResident=null, selectedWheelJob=0;
+let state={active:[...ALL],statuses:Object.fromEntries(ALL.map(id=>[id,'normal'])),weekStart:defaultWeek(),weekEnd:addDays(defaultWeek(),6),custom:{},mode:'wheel',round:null,avoidRepeat:false}, busy=false, wheelAngle=0, wheelHold=false, toastTimer, selectedCardResident=null, selectedWheelJob=0;
 const reduced=()=>window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function randomInt(n){if(!Number.isInteger(n)||n<1)throw Error('Invalid range');const a=new Uint32Array(1),limit=4294967296-(4294967296%n);do{crypto.getRandomValues(a)}while(a[0]>=limit);return a[0]%n}
 function shuffle(items){const a=[...items];for(let i=a.length-1;i>0;i--){const j=randomInt(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 function makeRound(active,useAvoid=true){
  if(staffingProblem(active.length))throw Error('Insufficient staff');
  const slots=staffingCounts(active.length).flatMap((count,j)=>Array(count).fill(j));
- let entries=null,fallback=false;
+ let entries=null,repeats=[],noRecord=false;
  if(useAvoid&&state.avoidRepeat){
   const lastJobs=lastRoundJobs();
-  if(Object.keys(lastJobs).length){entries=assignAvoiding(active,slots,lastJobs);if(!entries)fallback=true}
+  if(Object.keys(lastJobs).length){const result=assignAvoiding(active,slots,lastJobs);entries=result.entries;repeats=result.repeats}
+  else noRecord=true;
  }
  if(!entries)entries=shuffle(active).map((id,i)=>({id,job:slots[i],revealed:false}));
  const rungs=Array.from({length:active.length>1?58:0},(_,i)=>({left:randomInt(active.length-1),y:72+i*3.65}));
- return{entries,rungs,cardOrder:shuffle(active),ladderOrder:[...active].sort((a,b)=>a-b),wheelOrder:[...active].sort((a,b)=>a-b),created:new Date().toISOString(),last:null,repeatFallback:fallback};
+ return{entries,rungs,cardOrder:shuffle(active),ladderOrder:[...active].sort((a,b)=>a-b),wheelOrder:[...active].sort((a,b)=>a-b),created:new Date().toISOString(),last:null,repeatFallback:repeats.length>0,repeats,avoidNoRecord:noRecord};
 }
 // 取最近一筆記錄中各位舍友做過的舍務名稱（以名稱比對，舍務改名後自動略過）
 function lastRoundJobs(){
@@ -379,7 +380,7 @@ function lastRoundJobs(){
   const map={};entries.forEach(e=>{if(e&&e.revealed&&jobs[e.job])map[e.id]=jobs[e.job].name});return map;
  }catch{return {}}
 }
-// 編配時避開上週舍務（隨機次序的增廣路匹配）；人數不足無法全部避開時返回 null
+// 編配時盡量避開上週舍務（隨機次序的增廣路匹配，能避就避）；人手所限無法避開的舍友會標記 repeat，名單上顯示「同上週」
 function assignAvoiding(active,slots,lastJobs){
  const people=shuffle(active);
  const prefs=people.map(id=>shuffle(slots.map((_,si)=>si)).filter(si=>JOBS[slots[si]].name!==lastJobs[id]));
@@ -391,9 +392,15 @@ function assignAvoiding(active,slots,lastJobs){
   }
   return false;
  }
- for(let pi=0;pi<people.length;pi++)if(!augment(pi,new Array(slots.length).fill(false)))return null;
- const jobs=new Array(people.length);match.forEach((pi,si)=>jobs[pi]=slots[si]);
- return people.map((id,pi)=>({id,job:jobs[pi],revealed:false}));
+ for(let pi=0;pi<people.length;pi++)augment(pi,new Array(slots.length).fill(false));
+ const jobs=new Array(people.length),matched=new Set();
+ match.forEach((pi,si)=>{jobs[pi]=slots[si];matched.add(pi)});
+ // 匹配不到的舍友：在剩餘名額中隨機安排（無可避免要重複上週舍務）
+ const free=shuffle(slots.map((_,si)=>si).filter(si=>match[si]<0));
+ let next=0;
+ people.forEach((id,pi)=>{if(!matched.has(pi))jobs[pi]=slots[free[next++]]});
+ const isRepeat=(id,job)=>Boolean(lastJobs[id]&&JOBS[job].name===lastJobs[id]);
+ return {entries:people.map((id,pi)=>({id,job:jobs[pi],revealed:false,...(isRepeat(id,jobs[pi])?{repeat:true}:{})})),repeats:people.map((id,pi)=>isRepeat(id,jobs[pi])?{id,job:JOBS[jobs[pi]].name}:null).filter(Boolean)};
 }
 function validState(s,partial=false){
  if(!s||!Array.isArray(s.active)||!s.active.every(id=>ALL.includes(id))||new Set(s.active).size!==s.active.length||!['wheel','ladder','cards','custom'].includes(s.mode))return false;
@@ -419,7 +426,9 @@ function entries(){return [...(state.round?.entries||[]),...automatic()]}
 function pending(){return entries().filter(e=>!e.revealed)}
 function revealed(){return entries().filter(e=>e.revealed)}
 function ready(){return !staffingProblem()}
-function ensureRound(){if(!state.round&&ready()){state.round=makeRound(state.active);if(state.round.repeatFallback)toast('人數較少，未能安排避開上週舍務；本輪已按一般抽籤處理。')}if(state.round&&!state.round.ladderOrder)state.round.ladderOrder=[...state.active].sort((a,b)=>a-b);if(state.round)save();return state.round}
+function avoidDataReady(){return !state.avoidRepeat||state.round||cloud.loaded||cloud.error}
+function waitAvoidData(){if(avoidDataReady())return false;if(!cloud.busy)cloudFetch(false);toast('正在載入上週抽籤記錄，確保能避開上週舍務；載入後請再按一次。');return true}
+function ensureRound(){if(!state.round&&ready()){if(!avoidDataReady())return null;state.round=makeRound(state.active);if(state.round.avoidNoRecord)toast('找不到上一週期的抽籤記錄，未能啟用「避免重複上週舍務」；本輪已按一般抽籤處理。');else if(state.round.repeats?.length)toast(`人手所限，${state.round.repeats.length} 位舍友未能避開上週舍務；名單上會標示「同上週」。`)}if(state.round&&!state.round.ladderOrder)state.round.ladderOrder=[...state.active].sort((a,b)=>a-b);if(state.round)save();return state.round}
 // Exchange only unrevealed residents between slots. Slot duties stay in place on both boards.
 function swapResidents(first,second){
  if(busy||first===second)return first===second;const r=ensureRound();if(!r)return false;
@@ -429,7 +438,8 @@ function swapResidents(first,second){
 }
 function selectCardResident(id){if(busy)return;ensureRound();selectedCardResident=pending().some(e=>e.id===id)?id:null;renderCards();renderControls()}
 function setLadderResident(lane,id){
- if(busy||!ready())return;const r=ensureRound();if(!Number.isInteger(lane)||lane<0||lane>=r.ladderOrder.length)return;
+ if(busy||!ready())return;const r=ensureRound();if(!r){waitAvoidData();return}
+ if(!Number.isInteger(lane)||lane<0||lane>=r.ladderOrder.length)return;
  if(!swapResidents(r.ladderOrder[lane],id)){renderLadder();renderControls();return}save();renderLadder();renderControls();
 }
 function shuffleLadderDuties(){
@@ -437,12 +447,12 @@ function shuffleLadderDuties(){
  const jobs=shuffle(list.map(e=>e.job));list.forEach((e,i)=>e.job=jobs[i]);save();renderLadder();renderResults();renderControls();toast('已將未揭曉的底部舍務洗牌；已揭曉結果保留。');
 }
 function shuffleWheelOrder(){
- if(busy||!ready())return;ensureRound();
- state.round.wheelOrder=shuffle(state.round.wheelOrder||[...state.active]);save();drawWheel();toast('已隨機打散輪盤上的舍友次序（不再按舍號排序）。');
+ if(busy||!ready())return;const r=ensureRound();if(!r){waitAvoidData();return}
+ wheelHold=false;r.wheelOrder=shuffle(r.wheelOrder||[...state.active]);save();drawWheel();toast('已隨機打散輪盤上的舍友次序（不再按舍號排序）。');
 }
 function shuffleLadderOrder(){
- if(busy||!ready())return;ensureRound();
- state.round.ladderOrder=shuffle(state.round.ladderOrder);save();renderLadder();renderControls();toast('已隨機打散舍友在路線上的位置；已揭曉結果不受影響。');
+ if(busy||!ready())return;const r=ensureRound();if(!r){waitAvoidData();return}
+ r.ladderOrder=shuffle(r.ladderOrder);save();renderLadder();renderControls();toast('已隨機打散舍友在路線上的位置；已揭曉結果不受影響。');
 }
 function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,3500)}
 function setBusy(value){busy=value;renderControls()}
@@ -465,7 +475,7 @@ function renderResults(){
  const done=revealed(), total=countedTotal();
  $('progressLabel').textContent=`${done.length} / ${total} 人`;$('progressFill').style.width=`${total?done.length/total*100:0}%`;
  $('progressBar').setAttribute('aria-valuemax',total);$('progressBar').setAttribute('aria-valuenow',done.length);
- $('jobList').innerHTML=JOBS.map((job,j)=>{const members=done.filter(e=>e.job===j).sort((a,b)=>a.id-b.id),target=dutyTargets()[j];return `<section class="job-row"><div class="job-title"><span class="job-dot" style="--job:${job.color}" aria-hidden="true"></span><h3>${esc(job.name)}<span class="job-time">(${esc(job.time)})</span></h3><small>${target===0?'本週取消':job.count===null?`${target} 人（無上限）`:`${target} 人`}</small></div><div class="members">${members.map(e=>e.automatic?`<span class="member">${esc(residentLabel(e.id))}<small class="auto-reason">${STATUSES[state.statuses[e.id]]}</small></span>`:`<button class="member member-cancel" data-id="${e.id}" title="取消 ${esc(residentLabel(e.id))} 的${esc(JOBS[e.job].name)}" aria-label="取消 ${esc(residentLabel(e.id))} 的${esc(JOBS[e.job].name)}">${esc(residentLabel(e.id))} <span aria-hidden="true">×</span></button>`).join('')}${target===0?'<span class="muted">本週不安排此舍務</span>':job.count!==null?Array.from({length:Math.max(0,target-members.length)},()=>'<span class="empty-slot" aria-label="待揭曉">—</span>').join(''):members.length===0?`<span class="muted">${target?`其餘 ${target} 人將列作後備`:'本輪無需後備人手'}</span>`:''}</div></section>`}).join('');
+ $('jobList').innerHTML=JOBS.map((job,j)=>{const members=done.filter(e=>e.job===j).sort((a,b)=>a.id-b.id),target=dutyTargets()[j];return `<section class="job-row"><div class="job-title"><span class="job-dot" style="--job:${job.color}" aria-hidden="true"></span><h3>${esc(job.name)}<span class="job-time">(${esc(job.time)})</span></h3><small>${target===0?'本週取消':job.count===null?`${target} 人（無上限）`:`${target} 人`}</small></div><div class="members">${members.map(e=>e.automatic?`<span class="member">${esc(residentLabel(e.id))}<small class="auto-reason">${STATUSES[state.statuses[e.id]]}</small></span>`:`<button class="member member-cancel" data-id="${e.id}" title="取消 ${esc(residentLabel(e.id))} 的${esc(JOBS[e.job].name)}" aria-label="取消 ${esc(residentLabel(e.id))} 的${esc(JOBS[e.job].name)}">${esc(residentLabel(e.id))}${e.repeat?'<small class="auto-reason">同上週</small>':''} <span aria-hidden="true">×</span></button>`).join('')}${target===0?'<span class="muted">本週不安排此舍務</span>':job.count!==null?Array.from({length:Math.max(0,target-members.length)},()=>'<span class="empty-slot" aria-label="待揭曉">—</span>').join(''):members.length===0?`<span class="muted">${target?`其餘 ${target} 人將列作後備`:'本輪無需後備人手'}</span>`:''}</div></section>`}).join('');
  $('roundLabel').textContent=`${state.active.length} 人抽籤 · ${automatic().length} 人直接後備`;
  $('weekStart').value=state.weekStart;$('weekEnd').value=weekEnd();$('weekEnd').min=state.weekStart;$('weekRange').textContent=weekLabel();
  $('printMeta').textContent=state.round?`${new Date(state.round.created).toLocaleString('zh-HK')} · ${done.length===total?'完整名單':`部分結果（${done.length} / ${total} 人）`}`:'';
@@ -482,15 +492,15 @@ function renderWheelPicker(){
  const counts=wheelRemaining();if(!Number.isInteger(selectedWheelJob)||!(counts[selectedWheelJob]>0))selectedWheelJob=counts.findIndex(n=>n>0);
  $('wheelJob').innerHTML=JOBS.map((job,j)=>`<option value="${j}" ${j===selectedWheelJob?'selected':''} ${counts[j]===0?'disabled':''}>${esc(dutyLabel(j))} · 尚餘 ${counts[j]} 個名額</option>`).join('');
 }
-function selectWheelJob(job){if(busy||!Number.isInteger(job)||job<0||job>=JOBS.length||!wheelRemaining()[job])return;selectedWheelJob=job;drawWheel();renderControls()}
+function selectWheelJob(job){if(busy||!Number.isInteger(job)||job<0||job>=JOBS.length||!wheelRemaining()[job])return;selectedWheelJob=job;wheelHold=false;drawWheel();renderControls()}
 function cancelAssignment(id){
  if(busy)return;const e=state.round?.entries.find(e=>e.id===id);if(!e?.revealed)return;
- const label=JOBS[e.job].name;e.revealed=false;if(state.round.last===id)state.round.last=null;delete state.custom[id];selectedWheelJob=e.job;if(state.mode==='cards')selectedCardResident=id;
+ const label=JOBS[e.job].name;e.revealed=false;if(state.round.last===id)state.round.last=null;delete state.custom[id];selectedWheelJob=e.job;wheelHold=false;if(state.mode==='cards')selectedCardResident=id;
  save();render();$('announcement').innerHTML=`<span class="label">已取消</span><span class="big">${esc(residentLabel(id))} · ${esc(label)}</span>`;
  toast(pending().length===1?'已取消。如要抽中另一位舍友，請先取消另一位舍友的分配，讓他加入候選名單。':'已取消，該名舍友已重新加入候選名單。');
 }
 function addLadderRung(){
- if(busy||!ready())return;const r=ensureRound();if(pending().length<2||r.rungs.length>=200)return;
+ if(busy||!ready())return;const r=ensureRound();if(!r){waitAvoidData();return}if(pending().length<2||r.rungs.length>=200)return;
  const oldBottom=ladderGeometry().bottom.map(b=>b.job),occupants=[...r.ladderOrder],fixed=new Set(r.entries.filter(e=>e.revealed).map(e=>e.id)),options=[];
  // At each gap, only join two lanes occupied by unrevealed residents.
  for(let row=0;row<=r.rungs.length;row++){
@@ -507,6 +517,7 @@ function addLadderRung(){
 function wheelPeopleOrder(){const list=pending().map(e=>e.id),order=state.round?.wheelOrder;return order?list.sort((a,b)=>order.indexOf(a)-order.indexOf(b)):list.sort((a,b)=>a-b)}
 function drawWheel(){
  renderWheelPicker();
+ if(wheelHold)return;// 抽中後保持輪盤停留喺得獎位置，直到下一次操作
  const people=(state.round?wheelPeopleOrder():[...state.active].sort((a,b)=>a-b));
  const canvas=$('wheel'),c=canvas.getContext('2d'),n=people.length;canvas.style.transform='rotate(0deg)';wheelAngle=0;c.clearRect(0,0,800,800);
  if(!n){c.fillStyle='#edf4ee';c.beginPath();c.arc(400,400,399,0,Math.PI*2);c.fill();$('wheelCaption').textContent='請先選擇參與舍友。';return}
@@ -550,10 +561,16 @@ function renderStage(){
  else if(state.mode==='wheel')drawWheel();else if(ready()){ensureRound();if(state.mode==='ladder')renderLadder();else renderCards()}
  if(!ready())$('stageIntro').textContent=staffingProblem();
 }
-function announce(entry){$('announcement').innerHTML=entry?`<span class="label">剛剛抽中</span><span class="big">${esc(residentLabel(entry.id))}</span><span aria-hidden="true">→</span><span class="big">${esc(dutyLabel(entry.job))}</span>`:'<span class="label">準備就緒</span><span class="big">好，開始抽籤！</span>'}
+function announce(entry){$('announcement').innerHTML=entry?`<span class="label">剛剛抽中</span><span class="big">${esc(residentLabel(entry.id))}</span><span aria-hidden="true">→</span><span class="big">${esc(dutyLabel(entry.job))}</span>${entry.repeat?'<span class="label">同上週 · 人手所限未能避開</span>':''}`:'<span class="label">準備就緒</span><span class="big">好，開始抽籤！</span>'}
 function renderRepeatNotice(){
  const notice=$('repeatNotice'),box=$('avoidRepeat');if(!notice||!box)return;
- notice.hidden=!(state.round&&state.round.repeatFallback);
+ let text='';
+ if(state.round){
+  if(state.round.repeats?.length)text=`⚠ 人手所限，${state.round.repeats.length} 位舍友未能避開上週舍務；名單上會以「同上週」標示。`;
+  else if(state.round.avoidNoRecord)text='⚠ 找不到上一週期的抽籤記錄，未能啟用「避免重複上週舍務」；本輪已按一般抽籤處理。';
+  else if(state.round.repeatFallback)text='⚠ 人數較少，未能安排避開上週舍務；本輪已按一般抽籤處理。';
+ }
+ notice.hidden=!text;if(text)notice.textContent=text;
  box.disabled=Boolean(state.round);
  box.checked=Boolean(state.avoidRepeat);
 }
@@ -561,11 +578,12 @@ function render(){renderRoster();renderStage();renderResults();renderControls();
 function revealEntry(entry){entry.revealed=true;state.round.last=entry.id;save();announce(entry);renderResults()}
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function animateWheel(entry){
- drawWheel();const list=wheelPeopleOrder(),index=list.findIndex(e=>e.id===entry.id),step=360/list.length;
+ wheelHold=false;drawWheel();const list=wheelPeopleOrder(),index=list.indexOf(entry.id),step=360/list.length;
+ if(index<0){revealEntry(entry);return}
  const landing=(360-((index+.5)*step)%360)%360,target=360*5+landing,from=wheelAngle;
  const duration=reduced()?0:2900,start=performance.now();
  await new Promise(resolve=>{function frame(now){const p=duration?Math.min(1,(now-start)/duration):1;const eased=1-Math.pow(1-p,4);$('wheel').style.transform=`rotate(${from+(target-from)*eased}deg)`;if(p<1)requestAnimationFrame(frame);else resolve()}requestAnimationFrame(frame)});
- wheelAngle=target;revealEntry(entry);await sleep(reduced()?0:850);
+ wheelAngle=target;wheelHold=true;revealEntry(entry);await sleep(reduced()?0:850);
 }
 async function animateLadder(entry){
  const geo=ladderGeometry(),lane=geo.people.indexOf(entry.id),trace=traceLane(lane,state.round.rungs),svg=$('ladderSvg');
@@ -578,7 +596,7 @@ async function animateLadder(entry){
 }
 async function animateCard(entry){const card=$('cards').querySelector(`[data-id="${entry.id}"]`);card?.classList.add('drawing');await sleep(reduced()?0:650);revealEntry(entry)}
 async function draw(id){
- if(busy||!ready())return;ensureRound();const list=pending();if(!list.length)return;
+ if(busy||!ready())return;wheelHold=false;if(waitAvoidData())return;ensureRound();const list=pending();if(!list.length)return;
  if(state.mode==='cards'){
   if(!list.some(e=>e.id===selectedCardResident)){toast('請先選擇舍友，再揀抽獎格。');return}
   const slot=id===undefined?list[randomInt(list.length)]:list.find(e=>e.id===id);if(!slot)return;
@@ -594,10 +612,10 @@ async function draw(id){
  catch(error){toast('動畫未能完成，已保留本輪抽籤安排。');if(!entry.revealed)announce(null);else announce(entry)}
  finally{busy=false;render();if(!pending().length){storeRecord('complete',true);toast('全部舍務已分配完成！')}}
 }
-function revealAll(){if(busy||!ready())return;ensureRound();if(!pending().length)return;entries().forEach(e=>e.revealed=true);state.round.last=null;save();render();storeRecord('complete',true);$('announcement').innerHTML=`<span class="label">分配完成</span><span class="big">${countedTotal()} 位舍友，各就各位！</span>`;toast('全部名單已揭曉，可匯出或列印。')}
-function resetRound(){if(busy)return;if((rosterLocked()||Object.keys(state.custom).length)&&!window.confirm('重新抽籤會先將已揭曉結果保存至舍務記錄，再清除本輪分配。確定重新開始？'))return;if(revealed().length&&!storeRecord('reset',true))return;state.round=null;state.custom={};selectedCardResident=null;selectedWheelJob=0;wheelAngle=0;save();announce(null);render();toast('新一輪已準備好，可以修改參與名單。')}
-function changeMode(mode){if(busy||!['wheel','ladder','cards','custom'].includes(mode))return;state.mode=mode;renderStage();renderControls();save()}
-function changeRoster(id,status){if(busy||rosterLocked()||!ALL.includes(id)||!Object.hasOwn(STATUSES,status))return;if(['home','other'].includes(status)&&reserveIndex()<0){toast('請先在設定新增後備類型舍務，才可使用直接後備狀態。');render();return}state.statuses[id]=status;delete state.custom[id];state.active=ALL.filter(id=>state.statuses[id]==='normal');state.round=null;save();announce(null);render()}
+function revealAll(){if(busy||!ready())return;wheelHold=false;if(waitAvoidData())return;ensureRound();if(!pending().length)return;entries().forEach(e=>e.revealed=true);state.round.last=null;save();render();storeRecord('complete',true);$('announcement').innerHTML=`<span class="label">分配完成</span><span class="big">${countedTotal()} 位舍友，各就各位！</span>`;toast('全部名單已揭曉，可匯出或列印。')}
+function resetRound(){if(busy)return;if((rosterLocked()||Object.keys(state.custom).length)&&!window.confirm('重新抽籤會先將已揭曉結果保存至舍務記錄，再清除本輪分配。確定重新開始？'))return;if(revealed().length&&!storeRecord('reset',true))return;state.round=null;state.custom={};selectedCardResident=null;selectedWheelJob=0;wheelAngle=0;wheelHold=false;save();announce(null);render();toast('新一輪已準備好，可以修改參與名單。')}
+function changeMode(mode){if(busy||!['wheel','ladder','cards','custom'].includes(mode))return;state.mode=mode;wheelHold=false;renderStage();renderControls();save()}
+function changeRoster(id,status){if(busy||rosterLocked()||!ALL.includes(id)||!Object.hasOwn(STATUSES,status))return;if(['home','other'].includes(status)&&reserveIndex()<0){toast('請先在設定新增後備類型舍務，才可使用直接後備狀態。');render();return}state.statuses[id]=status;delete state.custom[id];state.active=ALL.filter(id=>state.statuses[id]==='normal');state.round=null;wheelHold=false;save();announce(null);render()}
 function customCounts(){return JOBS.map((_,j)=>Object.values(state.custom).filter(v=>v===j).length)}
 function customProblem(){if(!ready())return staffingProblem();const counts=customCounts(),targets=staffingCounts();for(let j=0;j<JOBS.length;j++)if(counts[j]!==targets[j])return `${JOBS[j].name}本週需要 ${targets[j]} 人，現時指定 ${counts[j]} 人。`;if(state.active.some(id=>!Object.hasOwn(state.custom,id)))return '仍有舍友未指定舍務。';return '';}
 
@@ -701,7 +719,7 @@ function exportCsv(){
 }
 $('drawBtn').addEventListener('click',()=>state.mode==='custom'?applyCustom():draw());$('allBtn').addEventListener('click',revealAll);$('resetBtn').addEventListener('click',resetRound);$('csvBtn').addEventListener('click',exportCsv);$('printBtn').addEventListener('click',openPoster);
 document.querySelectorAll('.tab').forEach(tab=>{tab.addEventListener('click',()=>changeMode(tab.dataset.mode));tab.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key)||busy)return;e.preventDefault();const tabs=[...document.querySelectorAll('.tab')],i=tabs.indexOf(tab),next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length;changeMode(tabs[next].dataset.mode);tabs[next].focus()})});
-$('rosterGrid').addEventListener('change',e=>{const b=e.target.closest('.resident-status');if(b)changeRoster(Number(b.dataset.id),b.value)});$('selectAllBtn').addEventListener('click',()=>{if(busy||rosterLocked())return;state.statuses=Object.fromEntries(ALL.map(id=>[id,'normal']));state.active=[...ALL];state.round=null;save();announce(null);render()});
+$('rosterGrid').addEventListener('change',e=>{const b=e.target.closest('.resident-status');if(b)changeRoster(Number(b.dataset.id),b.value)});$('selectAllBtn').addEventListener('click',()=>{if(busy||rosterLocked())return;state.statuses=Object.fromEntries(ALL.map(id=>[id,'normal']));state.active=[...ALL];state.round=null;wheelHold=false;save();announce(null);render()});
 function changeWeek(field,value){
  const input=$(field),current=field==='weekStart'?state.weekStart:weekEnd();
  if(busy){input.value=current;return}
@@ -764,7 +782,7 @@ function recordJobsHtml(record){
  return withSnapshot(record.snapshot,()=>{
   const done=revealed(),targets=dutyTargets(),out=excluded();
   const rows=JOBS.map((job,j)=>{const members=done.filter(e=>e.job===j).sort((a,b)=>a.id-b.id),target=targets[j];
-   return `<section class="job-row"><div class="job-title"><span class="job-dot" style="--job:${job.color}" aria-hidden="true"></span><h3>${esc(job.name)}<span class="job-time">(${esc(job.time)})</span></h3><small>${target===0?'本週取消':job.count===null?`${target} 人（無上限）`:`${target} 人`}</small></div><div class="members">${members.map(e=>`<span class="member">${esc(residentLabel(e.id))}${e.automatic?`<small class="auto-reason">${STATUSES[state.statuses[e.id]]}</small>`:''}</span>`).join('')}${target===0?'<span class="muted">本週不安排此舍務</span>':job.count!==null?Array.from({length:Math.max(0,target-members.length)},()=>'<span class="empty-slot">待揭曉</span>').join(''):members.length?'':`<span class="muted">${target?`其餘 ${target} 人將列作後備`:'本輪無需後備人手'}</span>`}</div></section>`}).join('');
+   return `<section class="job-row"><div class="job-title"><span class="job-dot" style="--job:${job.color}" aria-hidden="true"></span><h3>${esc(job.name)}<span class="job-time">(${esc(job.time)})</span></h3><small>${target===0?'本週取消':job.count===null?`${target} 人（無上限）`:`${target} 人`}</small></div><div class="members">${members.map(e=>`<span class="member">${esc(residentLabel(e.id))}${e.automatic?`<small class="auto-reason">${STATUSES[state.statuses[e.id]]}</small>`:''}${!e.automatic&&e.repeat?'<small class="auto-reason">同上週</small>':''}</span>`).join('')}${target===0?'<span class="muted">本週不安排此舍務</span>':job.count!==null?Array.from({length:Math.max(0,target-members.length)},()=>'<span class="empty-slot">待揭曉</span>').join(''):members.length?'':`<span class="muted">${target?`其餘 ${target} 人將列作後備`:'本輪無需後備人手'}</span>`}</div></section>`}).join('');
   return `<div class="record-jobs">${rows}</div>${out.length?`<p class="record-excluded muted">不參與：${out.map(id=>esc(residentLabel(id))).join('、')}</p>`:''}`;
  });
 }
@@ -868,7 +886,7 @@ async function cloudFetch(interactive){
   cloud.records=valid.filter((r,i)=>valid.findIndex(x=>x.id===r.id)===i);cloud.loaded=true;cloud.fetchedAt=new Date();cloudSaveCache();
   cloudSetStatus(`雲端有 ${cloud.records.length} 筆記錄 · 更新於 ${cloud.fetchedAt.toLocaleTimeString('zh-HK')}${skipped?` · ${skipped} 筆格式不符已略過`:''}`)}
  catch(e){cloud.error=e.message;cloudSetStatus(`未能載入雲端記錄：${e.message}${cloud.loaded?'（顯示上次載入的內容）':''}`,true);if(interactive)toast('未能載入雲端記錄，請檢查網絡。')}
- finally{cloud.busy=false;cloudRefreshViews()}
+ finally{cloud.busy=false;cloudRefreshViews();if(!busy&&!state.round&&GATE_UNLOCKED)render()}
 }
 async function cloudUpload(record,interactive=false,passcode=''){
  if(!record||cloud.pending.has(record.id))return false;
@@ -974,7 +992,7 @@ function applyCloudConfig(remote,notify=true){
  loadConfiguration(remote.config);
  const hasReserve=reserveIndex()>=0;
  state.statuses=Object.fromEntries(ALL.map(id=>{const s=state.statuses[id]||'normal';return [id,!hasReserve&&['home','other'].includes(s)?'normal':s]}));
- state.active=ALL.filter(id=>state.statuses[id]==='normal');state.round=null;state.custom={};state.config=configuration();selectedCardResident=null;selectedWheelJob=0;wheelAngle=0;
+ state.active=ALL.filter(id=>state.statuses[id]==='normal');state.round=null;state.custom={};state.config=configuration();selectedCardResident=null;selectedWheelJob=0;wheelAngle=0;wheelHold=false;
  save();render();announce(null);
  if($('settingsDialog').open){settingsDraft=configuration();renderSettings();$('settingsNotice').textContent='雲端設定已更新，已重新載入。'}
  configSyncStatus();
@@ -1015,8 +1033,12 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('online',()=>{if(GATE_UNLOCKED&&configSync.pending)cloudConfigPush(false)});
 
 // ---- Version history ----
-const APP_VERSION='1.2.1';
+const APP_VERSION='1.3.0';
 const VERSION_HISTORY=[
+ {version:'1.3.0',date:'2026-10-31',author:'何文諾社工',title:'輪盤修正及避免重複改良',sections:[
+  ['輪盤修正',['修正輪盤指針落點與抽中舍友不符的問題（之前輪盤永遠停在同一位置）','抽中後輪盤會停留在得獎位置，指針對住邊個就係邊個；再抽、取消、打散或切換模式時先會更新']],
+  ['避免重複上週舍務（改良）',['由「全部避開，否則完全放棄」改為「能避就避」：人手不足以全部避開時，系統會盡量安排，不再靜靜哋失效','無法避開的舍友會在名單及記錄上標示「同上週」，並有提示解釋原因','抽籤前會先等雲端記錄載入，確保攞到上週名單；找不到上週記錄時會明確提示']],
+ ]},
  {version:'1.2.1',date:'2026-09-16',author:'何文諾社工',title:'舍友排序及隨機打散',sections:[
   ['設定',['舍友名單新增 ▲▼ 上下移動，可自訂舍友排序；舍友名單、自訂分配等畫面跟隨新次序']],
   ['輪盤及畫鬼腳',['新增「隨機打散」：一按即可將舍友次序隨機打亂，不再按舍號排序','輪盤打散的是輪盤上的排列；畫鬼腳打散的是舍友在路線上的位置；兩者都不影響已揭曉結果']],
