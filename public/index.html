@@ -171,12 +171,6 @@
       <p>舍務抽籤及舍友名單載有舍友個人資料，只供獲授權的職員使用。<br>請用 <strong>@sbccyc.org.hk</strong> 嘅 Google 帳戶登入；登入狀態會保持到撳「登出」或關閉分頁為止。</p>
       <div id="gbtnWrap" style="display:flex;justify-content:center;margin:4px 0 6px"></div>
       <p class="lock-msg" id="lockMsg" role="status"></p>
-      <p class="lock-skip"><button type="button" id="lockAltBtn">未能使用 Google 登入？用共用密碼進入</button></p>
-      <form class="lock-row" id="lockForm" hidden>
-        <input type="password" id="lockInput" autocomplete="current-password" placeholder="共用密碼" maxlength="200" aria-label="共用密碼">
-        <button type="submit" class="btn green" id="lockGo">進入</button>
-      </form>
-      <p class="lock-skip" id="lockSkip" hidden>未能連線驗證。<button type="button" id="lockSkipBtn">略過驗證直接進入</button>（密碼錯誤時各系統會要求重新登入）</p>
     </section>
 
     <!-- 功能選擇（登入後顯示） -->
@@ -231,13 +225,10 @@
 'use strict';
 // ── 統一登入：Google 網域認證（只限 @sbccyc.org.hk），唔設時限，撳「登出」或關閉分頁先清除 ──
 // Google 登入成功後向 /api/auth-keys 換取系統共用密鑰（伺服器驗證 Google token 先會回傳），
-// 密鑰存於 sessionStorage 供舍務抽籤／舍友名單使用；舊密碼登入保留做後備（收埋喺連結後面）。
+// 密鑰存於 sessionStorage 供舍務抽籤／舍友名單使用；已取消共用密碼登入。
 const AUTH_SESSION_KEY = 'cyc-portal-auth', AUTH_TTL = 365 * 24 * 60 * 60 * 1000; // 實際唔會過期；sessionStorage 關分頁即清
 const GOOGLE_CLIENT_ID = '141456186458-t5ihfut5sir6fl0l3kqbi72hehekerlr.apps.googleusercontent.com';
 const ALLOWED_DOMAIN = 'sbccyc.org.hk';
-const ROSTER_API = '/api/roster?house=xiao';
-const DUTY_VERIFY = 'https://pkziogchjqgcvezmeteq.supabase.co/rest/v1/rpc/duty_records_verify';
-const DUTY_KEY = 'sb_publishable_GiDTfksX6FnyKGokiIjulQ_IJbtGIH1';
 
 const $ = id => document.getElementById(id);
 
@@ -305,7 +296,6 @@ function showLock(msg) {
   $('mainView').hidden = true;
   $('lockView').hidden = false;
   $('lockMsg').textContent = msg || '';
-  $('lockSkip').hidden = true;
 }
 function showMain() {
   $('lockView').hidden = true;
@@ -319,62 +309,6 @@ function tickSession() {
 }
 setInterval(tickSession, 15000);
 
-// 後備密碼登入：先試舍友名單 API（GET 讀取），網絡失敗再試舍務抽籤的驗證 RPC
-async function verifyPassword(p) {
-  try {
-    const res = await fetch(ROSTER_API, {
-      cache: 'no-store',
-      headers: { 'x-roster-key': encodeURIComponent(p) },
-    });
-    if (res.status === 401) return 'wrong';
-    if (res.ok) return 'ok';
-  } catch (e) { /* 網絡或 CORS 問題，試下一個 */ }
-  try {
-    const res = await fetch(DUTY_VERIFY, {
-      method: 'POST',
-      headers: { apikey: DUTY_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p_passcode: p }),
-      cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer',
-    });
-    if (res.status === 401 || res.status === 403) return 'wrong';
-    if (res.ok) return 'ok';
-  } catch (e) { /* 仍未能連線 */ }
-  return 'unknown';
-}
-
-let lastTry = '';
-$('lockAltBtn').addEventListener('click', () => {
-  $('lockForm').hidden = false;
-  $('lockAltBtn').hidden = true;
-  $('lockInput').focus();
-});
-$('lockForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const p = $('lockInput').value.trim();
-  if (!p) { $('lockMsg').textContent = '請先輸入密碼。'; return; }
-  lastTry = p;
-  $('lockGo').disabled = true;
-  $('lockMsg').textContent = '正在驗證…';
-  $('lockSkip').hidden = true;
-  const outcome = await verifyPassword(p);
-  $('lockGo').disabled = false;
-  if (outcome === 'ok') {
-    portalLogin(p);
-    $('lockInput').value = '';
-    showMain();
-  } else if (outcome === 'wrong') {
-    $('lockMsg').textContent = '密碼不正確，請再試一次。';
-  } else {
-    $('lockMsg').textContent = '未能連線驗證密碼，請檢查網絡。';
-    $('lockSkip').hidden = false;
-  }
-});
-$('lockSkipBtn').addEventListener('click', () => {
-  if (!lastTry) return;
-  portalLogin(lastTry);
-  $('lockInput').value = '';
-  showMain();
-});
 $('logoutBtn').addEventListener('click', () => {
   portalLogout();
   showLock('已登出。');

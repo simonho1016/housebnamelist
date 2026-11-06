@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>t</title></head><body>
+<pre id="log">START</pre>
+<script>
+const log=(...a)=>{document.getElementById('log').textContent+='\n'+a.join(' ')};
+window.addEventListener('message',e=>{if(e.data&&e.data.t==='log')log(e.data.m)});
+const say=m=>window.postMessage({t:'log',m},'*');
+function probe(url){return new Promise(res=>{const f=document.createElement('iframe');f.style.cssText='width:1100px;height:800px';document.body.appendChild(f);f.onload=()=>setTimeout(()=>res(f),1200);f.src=url+'?t='+Date.now()})}
+(async()=>{
+ try{
+  // 1. 前置頁（未登入）：冇密碼元素
+  let f=await probe('/');
+  let w=f.contentWindow;
+  say('portal: lockView shown='+!w.document.getElementById('lockView').hidden+' lockAlt='+(!!w.document.getElementById('lockAltBtn'))+' lockForm='+(!!w.document.getElementById('lockForm')));
+  f.remove();
+  // 2. 名單頁（未登入）：冇直接密碼入口
+  f=await probe('/roster/?house=xiao');
+  w=f.contentWindow;
+  say('roster: authDlg='+(!!w.document.getElementById('auth').open)+' directToggle='+(!!w.document.getElementById('authDirectToggle'))+' authInput='+(!!w.document.getElementById('authInput'))+' portalBtn='+(!!w.document.getElementById('authPortal')));
+  f.remove();
+  // 3. 抽籤頁（未登入）：冇密碼欄，有「前往主頁登入」
+  f=await probe('/duties/');
+  w=f.contentWindow;
+  w.eval(`document.querySelector('[data-dorm="hau"]').click()`);
+  await new Promise(r=>setTimeout(r,500));
+  say('duties(no-auth): gatePass='+(!!w.document.getElementById('gatePass'))+' enterHidden='+w.document.getElementById('gateEnterBtn').hidden+' loginBtn hidden='+w.document.getElementById('gateLoginBtn').hidden+' formTag='+w.document.getElementById('gateForm').tagName);
+  f.remove();
+  // 4. 抽籤頁（已登入）：進入掣正常
+  sessionStorage.setItem('cyc-portal-auth', JSON.stringify({p:'test',exp:Date.now()+900000}));
+  f=await probe('/duties/');
+  w=f.contentWindow;
+  say('duties(auth): gate shown='+!w.document.getElementById('gate').hidden+' enterHidden='+w.document.getElementById('gateEnterBtn').hidden);
+  w.eval(`document.querySelector('[data-dorm="hau"]').click();document.getElementById('gateEnterBtn').click()`);
+  await new Promise(r=>setTimeout(r,2500));
+  say('duties(auth): after enter, main shown='+!f.contentWindow.document.querySelector('main.wrap').hidden);
+  f.remove();
+ }catch(e){say('ERR '+(e&&e.stack||e))}
+ say('DONE');
+})();
+</script></body></html>

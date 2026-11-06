@@ -178,10 +178,10 @@ input:focus-visible,select:focus-visible{outline:3px solid #2563eb;outline-offse
 <section class="gate" id="gate" aria-label="舍務抽籤首頁">
  <div class="gate-card">
   <div class="brand"><p class="gate-org">香港扶幼會 則仁中心</p><h1>舍務抽籤</h1><p class="sub">請選擇要開啟的社</p></div>
-  <div class="gate-dorms"><button type="button" class="gate-dorm" data-dorm="chung" aria-pressed="false"><span class="gate-big" aria-hidden="true">忠</span><small>忠社 舍務抽籤</small></button><button type="button" class="gate-dorm" data-dorm="hau" aria-pressed="false"><span class="gate-big" aria-hidden="true">孝</span><small>孝社 舍務抽籤</small></button></div><p class="gate-note">兩社各自獨立儲存，使用同一個共用密碼；輸入密碼才可進入抽籤系統，未進入前可查看上次抽籤記錄。</p>
+  <div class="gate-dorms"><button type="button" class="gate-dorm" data-dorm="chung" aria-pressed="false"><span class="gate-big" aria-hidden="true">忠</span><small>忠社 舍務抽籤</small></button><button type="button" class="gate-dorm" data-dorm="hau" aria-pressed="false"><span class="gate-big" aria-hidden="true">孝</span><small>孝社 舍務抽籤</small></button></div><p class="gate-note">兩社各自獨立儲存；經主頁 Google 帳戶登入後即可進入抽籤系統，未進入前可查看上次抽籤記錄。</p>
   <div id="gateDorm" hidden>
    <h2 id="gateDormTitle"></h2>
-   <form id="gateForm" class="gate-form"><label for="gatePass">共用密碼<input id="gatePass" type="password" autocomplete="current-password" maxlength="200" placeholder="輸入共用密碼"></label><button class="primary" id="gateEnterBtn" type="submit">進入抽籤系統</button></form>
+   <div class="gate-form" id="gateForm"><button class="primary" id="gateEnterBtn" type="button">進入抽籤系統</button><a class="primary" id="gateLoginBtn" href="/" style="text-decoration:none" hidden>前往主頁登入</a></div>
    <p class="notice" id="gateNotice" role="status"></p>
    <section class="gate-records" aria-label="上次抽籤記錄"><div class="gate-records-head"><h3>上次抽籤記錄</h3><div class="seg" role="group" aria-label="記錄檢視方式"><button type="button" class="active" data-record-view="jobs" aria-pressed="true">按舍務種類</button><button type="button" data-record-view="residents" aria-pressed="false">按舍友</button></div><select id="gateRecordSelect" aria-label="選擇記錄" hidden></select><button class="quiet" id="gateRefresh" type="button">重新載入</button><button class="secondary" id="gatePrintBtn" type="button" hidden>列印海報</button><button class="secondary" id="gateCsvBtn" type="button" hidden>下載此記錄 CSV</button></div><p class="muted" id="gateRecordStatus">請先選擇舍別。</p><div id="gateRecordBody"></div></section>
   </div>
@@ -221,14 +221,14 @@ input:focus-visible,select:focus-visible{outline:3px solid #2563eb;outline-offse
 <dialog id="settingsDialog" class="settings-dialog" aria-labelledby="settingsTitle">
 <div class="settings-head"><h2 id="settingsTitle">設定</h2><button class="quiet" id="settingsClose">取消／關閉</button></div>
 <div class="settings-body"><p class="muted">舍友及舍務設定儲存後會自動同步至雲端；其他裝置進入同一社後會自動套用最新設定。</p><div class="config-sync"><p class="muted" id="configCloudStatus"></p><button class="quiet" id="configPullBtn" type="button">重新同步</button></div>
-<h3>舍務記錄（雲端）</h3><p class="muted">完成分配後自動保存並上傳雲端；重新抽籤及更改設定前會先保留已揭曉結果。任何裝置開啟本網站都可在首頁查閱舊記錄及匯出 CSV；儲存或刪除雲端記錄使用進入時輸入的共用密碼。</p><button class="secondary" id="settingsHistoryBtn">開啟舍務記錄</button>
+<h3>舍務記錄（雲端）</h3><p class="muted">完成分配後自動保存並上傳雲端；重新抽籤及更改設定前會先保留已揭曉結果。任何裝置開啟本網站都可在首頁查閱舊記錄及匯出 CSV；儲存或刪除雲端記錄需經主頁 Google 帳戶登入授權。</p><button class="secondary" id="settingsHistoryBtn">開啟舍務記錄</button>
 <h3>舍友名單 <small id="settingsResidentCount"></small></h3><div class="settings-scroll"><table class="settings-table"><thead><tr><th>舍號</th><th>姓名</th><th>操作</th></tr></thead><tbody id="settingsResidents"></tbody></table></div><button class="secondary" id="addResidentBtn">＋ 新增舍友</button>
 <h3>舍務及人數 <small id="settingsJobCount"></small></h3><p class="muted">可用 ▲▼ 調整舍務排序；排序會影響結果、海報及輪盤選單的顯示次序。先安排各項最低人數，再依「補足次序」填至最多人數（數字小優先，同數字按列表次序）。最低與最多相同即固定人數；最低設 0 可在人手不足時取消。後備最後安排，最多留空表示不限；「返家適應／其他」自動加入後備名額。</p>
 <div class="settings-scroll"><table class="settings-table settings-jobs"><thead><tr><th>舍務</th><th>時間</th><th>類型</th><th>最低人數</th><th>最多人數</th><th>補足次序</th><th>操作</th></tr></thead><tbody id="settingsJobs"></tbody></table></div><button class="secondary" id="addJobBtn">＋ 新增舍務</button>
 <p class="notice" id="settingsNotice" role="status"></p></div><div class="settings-actions"><button class="primary" id="settingsSave">儲存設定</button></div></dialog>
 <dialog id="historyDialog" class="settings-dialog" aria-labelledby="historyTitle">
 <div class="settings-head"><h2 id="historyTitle">舍務記錄 <small id="historyCount"></small></h2><button class="quiet" id="historyClose">關閉</button></div>
-<div class="settings-body"><p class="muted">記錄儲存在雲端，任何裝置開啟本網站都可查看；儲存及刪除使用進入時輸入的共用密碼。此瀏覽器未上傳的記錄會標示「未上傳」，可按「上傳」補回。查看舊記錄不會更改目前的分配。</p><div class="cloud-line"><p id="historyCloudStatus" role="status">正在載入雲端記錄…</p><div class="cloud-line-actions"><button class="quiet" id="historyRefreshBtn">重新載入</button><button class="secondary" id="historyUploadAllBtn" hidden>上傳未同步記錄</button></div></div>
+<div class="settings-body"><p class="muted">記錄儲存在雲端，任何裝置開啟本網站都可查看；儲存及刪除需經主頁 Google 帳戶登入授權。此瀏覽器未上傳的記錄會標示「未上傳」，可按「上傳」補回。查看舊記錄不會更改目前的分配。</p><div class="cloud-line"><p id="historyCloudStatus" role="status">正在載入雲端記錄…</p><div class="cloud-line-actions"><button class="quiet" id="historyRefreshBtn">重新載入</button><button class="secondary" id="historyUploadAllBtn" hidden>上傳未同步記錄</button></div></div>
 <div class="history-toolbar"><button class="primary" id="historySaveBtn">儲存本週記錄</button><button class="secondary" id="historyBackupBtn">下載全部記錄備份</button><button class="quiet" id="historyImportBtn">匯入記錄備份</button><input id="historyImportFile" type="file" accept=".json,application/json" hidden></div>
 <p class="notice" id="historyImportStatus" role="status"></p><label class="history-search">搜尋週期／儲存日期<input type="search" id="historySearch" placeholder="例如 2026-09 或 2026/09" autocomplete="off"></label>
 <div id="historyList"></div><section id="historyDetail" class="history-detail" hidden><div class="history-detail-head"><h3 id="historyDetailTitle"></h3><div class="seg" role="group" aria-label="記錄檢視方式"><button type="button" class="active" data-record-view="jobs" aria-pressed="true">按舍務種類</button><button type="button" data-record-view="residents" aria-pressed="false">按舍友</button></div><button class="secondary" id="historyPrintBtn">列印海報</button><button class="secondary" id="historyCsvBtn">下載此記錄 CSV</button></div><p class="muted" id="historyDetailMeta"></p><div id="historyDetailBody"></div></section>
@@ -259,7 +259,7 @@ function configProblem(c){
  return '';
 }
 const DORMS={chung:{name:'忠社',key:'dorm-duty-offline-weekly-v3-chung'},hau:{name:'孝社',key:'dorm-duty-offline-weekly-v3'}};
-const SESSION_DORM_KEY='dorm-duty-dorm',SESSION_UNLOCK_KEY='dorm-duty-unlocked',SESSION_PASS_KEY='dorm-duty-passcode',SESSION_OFFLINE_KEY='dorm-duty-offline',PASS_HASH_KEY='dorm-duty-passcode-hash';
+const SESSION_DORM_KEY='dorm-duty-dorm',SESSION_UNLOCK_KEY='dorm-duty-unlocked',SESSION_PASS_KEY='dorm-duty-passcode',SESSION_OFFLINE_KEY='dorm-duty-offline';
 const sessionValue=k=>{try{return sessionStorage.getItem(k)}catch{return null}};
 // ---- 入口頁統一登入：Google 網域認證後密鑰經 sessionStorage 共用（唔會送上伺服器），唔設時限 ----
 const AUTH_EXP_KEY='dorm-duty-auth-exp',AUTH_TTL=365*24*60*60*1000;
@@ -276,13 +276,9 @@ function dutyAuthValid(){const t=Number(sessionValue(AUTH_EXP_KEY));return Numbe
   }
  }catch{}
  if(dutyAuthValid()){
-  // 已喺入口頁登入：揀社後免密碼，先顯示該社上次抽籤記錄，再按「進入」開始
-  const passInput=document.getElementById('gatePass'),enterBtn=document.getElementById('gateEnterBtn');
-  const passLabel=passInput?passInput.closest('label'):null;
-  if(passLabel)passLabel.hidden=true;
+  // 已喺主頁登入：揀社後免密碼，先顯示該社上次抽籤記錄，再按「進入」開始
+  const enterBtn=document.getElementById('gateEnterBtn');
   if(enterBtn){
-   enterBtn.type='button';
-   enterBtn.textContent='進入抽籤系統';
    enterBtn.addEventListener('click',()=>{
     if(!dutyAuthValid()){location.reload();return}
     const dorm=(document.querySelector('[data-dorm].active')||{}).dataset?.dorm;
@@ -291,7 +287,13 @@ function dutyAuthValid(){const t=Number(sessionValue(AUTH_EXP_KEY));return Numbe
     location.reload();
    });
   }
-  const note=document.querySelector('.gate-note');if(note)note.innerHTML='已經由入口頁登入。<br>點選社別可先查看該社上次抽籤記錄，再按「進入」開始抽籤，全程無需再輸入密碼。';
+  const note=document.querySelector('.gate-note');if(note)note.innerHTML='已經由主頁登入。<br>點選社別可先查看該社上次抽籤記錄，再按「進入」開始抽籤，全程無需再輸入密碼。';
+ }else{
+  // 未登入：唔再提供密碼輸入，引導返主頁用 Google 帳戶登入
+  const enterBtn=document.getElementById('gateEnterBtn'),loginBtn=document.getElementById('gateLoginBtn');
+  if(enterBtn)enterBtn.hidden=true;
+  if(loginBtn)loginBtn.hidden=false;
+  const note=document.querySelector('.gate-note');if(note)note.innerHTML='舍務抽籤只供獲授權職員使用。<br>請先喺主頁用 @sbccyc.org.hk Google 帳戶登入；未進入前仍可查看該社上次抽籤記錄。';
  }
  setInterval(()=>{
   if(sessionValue(SESSION_PASS_KEY)&&!dutyAuthValid()){
@@ -852,7 +854,7 @@ const cloud={records:[],loaded:false,busy:false,error:'',fetchedAt:null,pending:
 function cloudSavedPasscode(){try{return sessionStorage.getItem(SESSION_PASS_KEY)||''}catch{return ''}}
 function cloudRemember(p){try{sessionStorage.setItem(SESSION_PASS_KEY,p)}catch{}}
 function cloudForget(){try{sessionStorage.removeItem(SESSION_PASS_KEY)}catch{}}
-async function cloudPasscodeFor(interactive){const saved=cloudSavedPasscode();if(saved)return saved;if(!interactive)return '';const p=window.prompt('請輸入雲端記錄共用密碼（由導師在 Supabase 設定）。驗證成功後會記在此瀏覽器。');return p===null?'':p.trim()}
+async function cloudPasscodeFor(interactive){const saved=cloudSavedPasscode();if(saved)return saved;return ''}// 已取消密碼輸入：寫入授權完全依靠主頁 Google 登入嘅工作階段
 function cloudPasscodeError(e){return e.status===403||e.status===401||e.code==='42501'}
 function cloudSetStatus(text,error=false){$('historyCloudStatus').textContent=text;$('historyCloudStatus').classList.toggle('error',error)}
 function cloudSaveCache(){try{localStorage.setItem(CLOUD_CACHE_KEY,JSON.stringify({version:1,fetchedAt:cloud.fetchedAt?.toISOString()||null,records:cloud.records}))}catch{}}
@@ -896,24 +898,24 @@ async function cloudFetch(interactive){
 async function cloudUpload(record,interactive=false,passcode=''){
  if(!record||cloud.pending.has(record.id))return false;
  passcode=passcode||await cloudPasscodeFor(interactive);
- if(!passcode){cloudSetStatus('記錄已存於此瀏覽器，尚未上傳雲端：請在記錄旁按「上傳」並輸入共用密碼。',true);cloudRefreshViews();return false}
+ if(!passcode){cloudSetStatus('記錄已存於此瀏覽器，尚未上傳雲端：登入狀態已失效，請返回主頁重新登入。',true);cloudRefreshViews();return false}
  cloud.pending.add(record.id);
  try{const {cloud:_c,cloudId:_i,...clean}=record;clean.dorm=DORM_ID;const data=await cloudRPC('duty_records_save',{p_passcode:passcode,p_record:clean});
   cloudRemember(passcode);cloud.records=[clean,...cloud.records.filter(r=>r.id!==clean.id)];cloud.loaded=true;cloudSaveCache();
   cloudSetStatus(`已上傳「${record.title}」至雲端 · 雲端共 ${data?.count??cloud.records.length} 筆`);if(interactive)toast('記錄已上傳雲端，其他裝置可查看。');return true}
- catch(e){if(cloudPasscodeError(e)){cloudForget();cloudSetStatus(`未能上傳：${e.message}。下次上傳時請重新輸入共用密碼。`,true);if(interactive)toast(e.message)}
+ catch(e){if(cloudPasscodeError(e)){cloudForget();cloudSetStatus(`未能上傳：${e.message}。請返回主頁重新登入後再試。`,true);if(interactive)toast(e.message)}
   else{cloudSetStatus(`未能上傳「${record.title}」：${e.message}。記錄已存於此瀏覽器，可稍後按「上傳」。`,true);if(interactive)toast('未能上傳雲端，記錄仍存於此瀏覽器。')}return false}
  finally{cloud.pending.delete(record.id);cloudRefreshViews()}
 }
 async function cloudUploadAll(){
  if(cloud.busy)return;const list=allRecords().filter(r=>!r.cloud).map(r=>dutyHistory.find(l=>l.id===r.id)).filter(Boolean);if(!list.length)return;
- const passcode=await cloudPasscodeFor(true);if(!passcode){toast('需要共用密碼才可上傳記錄。');return}
+ const passcode=await cloudPasscodeFor(true);if(!passcode){toast('登入狀態已失效，請返回主頁重新登入。');return}
  cloud.busy=true;cloudRefreshViews();let ok=0;
  try{for(const r of list){if(!await cloudUpload(r,false,passcode))break;ok++}}finally{cloud.busy=false;cloudRefreshViews()}
  toast(ok===list.length?`已上傳 ${ok} 筆記錄至雲端。`:`已上傳 ${ok} 筆，其餘未能上傳。`);
 }
 async function cloudDelete(cloudId){
- if(!cloudId)return false;const passcode=await cloudPasscodeFor(true);if(!passcode){toast('需要共用密碼才可刪除雲端記錄。');return false}
+ if(!cloudId)return false;const passcode=await cloudPasscodeFor(true);if(!passcode){toast('登入狀態已失效，請返回主頁重新登入。');return false}
  cloud.busy=true;cloudRefreshViews();
  try{await cloudRPC('duty_records_delete',{p_passcode:passcode,p_id:cloudId});cloudRemember(passcode);cloud.records=cloud.records.filter(r=>r.id!==cloudId);cloudSaveCache();cloudSetStatus('已從雲端刪除記錄，其他裝置重新載入後不再顯示。');return true}
  catch(e){if(cloudPasscodeError(e))cloudForget();cloudSetStatus(`未能刪除：${e.message}`,true);toast(cloudPasscodeError(e)?e.message:'未能刪除雲端記錄，請檢查網絡。');return false}
@@ -926,13 +928,11 @@ cloudLoadCache();
 // ---- Front page: choose dorm, view the latest cloud records, enter with the shared passcode. ----
 const gate={dorm:null,records:[],busy:false};
 function gateSelected(){return DORMS[gate.dorm]}
-async function sha256Hex(text){const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('')}
 function gateShow(){$('gate').hidden=false;document.querySelector('main.wrap').hidden=true;document.title='舍務抽籤｜忠社・孝社';const saved=(()=>{try{return sessionStorage.getItem(SESSION_DORM_KEY)}catch{return null}})();if(DORMS[saved])gateChoose(saved)}
 function gateChoose(id){
  if(!DORMS[id])return;gate.dorm=id;document.body.dataset.dorm=id;try{sessionStorage.setItem(SESSION_DORM_KEY,id)}catch{}
  document.querySelectorAll('[data-dorm]').forEach(b=>{b.classList.toggle('active',b.dataset.dorm===id);b.setAttribute('aria-pressed',b.dataset.dorm===id)});
  $('gateDorm').hidden=false;$('gateDormTitle').textContent=`${DORMS[id].name} 舍務抽籤`;$('gateNotice').textContent='';gate.records=[];gateRenderRecords();gateFetch();
- setTimeout(()=>$('gatePass').focus(),50);
 }
 function gateRecordTitle(r){return `${r.title} · ${new Date(r.savedAt).toLocaleString('zh-HK')}`}
 function gateRenderRecords(){
@@ -952,27 +952,9 @@ async function gateFetch(){
  catch(e){if(gate.dorm===dorm)$('gateRecordStatus').textContent=`未能載入雲端記錄：${e.message}`}
  finally{gate.busy=false;$('gateRefresh').disabled=false;if(gate.dorm===dorm)gateRenderRecords()}
 }
-async function gateEnter(event){
- event.preventDefault();if(!gate.dorm)return;const passcode=$('gatePass').value.trim();
- if(!passcode){$('gateNotice').textContent='請輸入共用密碼。';return}
- const button=$('gateEnterBtn');button.disabled=true;$('gateNotice').textContent='正在驗證…';
- let ok=false,offline=false;
- try{await cloudRPC('duty_records_verify',{p_passcode:passcode});ok=true;try{localStorage.setItem(PASS_HASH_KEY,await sha256Hex(passcode))}catch{}}
- catch(e){
-  if(cloudPasscodeError(e)){$('gateNotice').textContent=e.message;button.disabled=false;return}
-  // Cloud unreachable: allow entry when this browser has verified the same passcode before.
-  let known='';try{known=localStorage.getItem(PASS_HASH_KEY)||''}catch{}
-  if(known&&known===await sha256Hex(passcode)){ok=true;offline=true}
-  else{$('gateNotice').textContent=`未能連接雲端驗證密碼：${e.message}`;button.disabled=false;return}
- }
- if(!ok)return;
- try{sessionStorage.setItem(SESSION_DORM_KEY,gate.dorm);sessionStorage.setItem(SESSION_UNLOCK_KEY,'1');sessionStorage.setItem(SESSION_PASS_KEY,passcode);if(offline)sessionStorage.setItem(SESSION_OFFLINE_KEY,'1');else sessionStorage.removeItem(SESSION_OFFLINE_KEY)}
- catch{$('gateNotice').textContent='瀏覽器不允許儲存工作階段資料，無法進入。';button.disabled=false;return}
- location.reload();
-}
 function gateLeave(){try{sessionStorage.removeItem(SESSION_UNLOCK_KEY);sessionStorage.removeItem(SESSION_PASS_KEY);sessionStorage.removeItem(SESSION_OFFLINE_KEY)}catch{}location.reload()}
 document.querySelectorAll('[data-dorm]').forEach(b=>b.addEventListener('click',()=>gateChoose(b.dataset.dorm)));
-$('gateForm').addEventListener('submit',gateEnter);$('gateRefresh').addEventListener('click',gateFetch);$('gateRecordSelect').addEventListener('change',gateRenderRecords);
+$('gateRefresh').addEventListener('click',gateFetch);$('gateRecordSelect').addEventListener('change',gateRenderRecords);
 $('gateCsvBtn').addEventListener('click',()=>{const record=gate.records.find(r=>r.id===$('gateRecordSelect').value)||gate.records[0];if(record)withSnapshot(record.snapshot,exportCsv)});
 $('switchDormBtn').addEventListener('click',gateLeave);
 
@@ -1007,7 +989,7 @@ function applyCloudConfig(remote,notify=true){
 async function cloudConfigPush(interactive=false){
  if(configSync.busy)return false;
  const passcode=await cloudPasscodeFor(interactive);
- if(!passcode){configMarkPending();configSyncStatus('設定已存於此瀏覽器，尚未同步雲端：需要共用密碼。',true);return false}
+ if(!passcode){configMarkPending();configSyncStatus('設定已存於此瀏覽器，尚未同步雲端：登入狀態已失效，請返回主頁重新登入。',true);return false}
  configSync.busy=true;
  try{const data=await cloudRPC('duty_config_set',{p_passcode:passcode,p_dorm:DORM_ID,p_config:configuration(),p_expected_version:configSync.version});
   cloudRemember(passcode);configSync.version=data?.version??configSync.version;configSync.pending=false;configSyncSave();configSyncStatus();return true}
@@ -1038,8 +1020,11 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('online',()=>{if(GATE_UNLOCKED&&configSync.pending)cloudConfigPush(false)});
 
 // ---- Version history ----
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.3.1';
 const VERSION_HISTORY=[
+ {version:'1.3.1',date:'2026-11-06',author:'何文諾社工',title:'取消共用密碼',sections:[
+  ['登入',['取消共用密碼登入，統一經主頁用 @sbccyc.org.hk Google 帳戶登入','未登入者會見到「前往主頁登入」按鈕，仍可查看該社上次抽籤記錄','雲端寫入（儲存記錄、同步設定）沿用主頁登入嘅授權，無需再輸入密碼']],
+ ]},
  {version:'1.3.0',date:'2026-10-31',author:'何文諾社工',title:'輪盤修正及避免重複改良',sections:[
   ['輪盤修正',['修正輪盤指針落點與抽中舍友不符的問題（之前輪盤永遠停在同一位置）','抽中後輪盤會停留在得獎位置，指針對住邊個就係邊個；再抽、取消、打散或切換模式時先會更新']],
   ['避免重複上週舍務（改良）',['由「全部避開，否則完全放棄」改為「能避就避」：人手不足以全部避開時，系統會盡量安排，不再靜靜哋失效','無法避開的舍友會在名單及記錄上標示「同上週」，並有提示解釋原因','抽籤前會先等雲端記錄載入，確保攞到上週名單；找不到上週記錄時會明確提示']],
@@ -1083,7 +1068,6 @@ $('versionBtn').addEventListener('click',openVersions);$('gateVersionBtn').addEv
 if(GATE_UNLOCKED){
  $('gate').hidden=true;document.body.dataset.dorm=DORM_ID;document.querySelector('main.wrap').hidden=false;document.title=DORM_NAME+' 舍務抽籤';$('appTitle').textContent=DORM_NAME+' 舍務抽籤';$('printTitle').textContent=DORM_NAME+' 本週舍務';$('versionLabel').textContent=APP_VERSION;$('posterTitle').textContent=DORM_NAME+' 本週舍務 · A4 海報';
  restore();loadHistory();render();if(state.round?.last)announce(entries().find(e=>e.id===state.round.last));else if(state.round&&pending().length===0)$('announcement').innerHTML='<span class="label">已還原本輪結果</span><span class="big">全部舍務已分配</span>';save();if(revealed().length)storeRecord('restored',true);if(!historyReadError)historyStatusLine();cloudFetch(false);cloudConfigPull(false);
- if(sessionValue(SESSION_OFFLINE_KEY)==='1')toast('離線模式：未能連接雲端，記錄會先存於此瀏覽器。');
 }else gateShow();
 // Optional browser agent interface. Browsers without WebMCP remain fully functional.
 if(GATE_UNLOCKED&&document.modelContext?.registerTool){
