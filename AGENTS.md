@@ -27,9 +27,8 @@ netlify/functions/         roster.mjs（舍友名單雲端 API，Netlify Blobs�
 
 - 前置頁用 Google Identity Services（GIS）登入掣，Client ID 同支錢系統共用（`141456186458-…apps.googleusercontent.com`）；新網域要喺 Google Cloud Console 嘅 Authorized JavaScript origins 度加返先用到。
 - 登入成功後前端攞 Google ID token 去 `POST /api/auth-keys`；function 向 Google tokeninfo 查證（aud＋`hd`/`email` 必須屬於 sbccyc.org.hk），通過先回傳共用密鑰（env `PORTAL_KEY`，未設就沿用 `ROSTER_PASSWORD`）。密鑰唔寫死喺前端。
-- `cyc-portal-auth`：`{p, exp, email, name}`，`p` 係共用密鑰（duties/roster 嘅雲端寫入仍然靠佢），`exp` 係 +365 日（實際唔會過期）；duties/roster 每頁都有 IIFE 檢查，冇就跳返 `/`。
-- 舊密碼登入保留做後備（前置頁「未能使用 Google 登入？」連結展開）；驗證：先試舍友名單 API（`/api/roster`，x-roster-key header），失敗再試舍務抽籤嘅 `duty_records_verify` RPC。
-- 確認 Google 登入穩定後可以刪走後備密碼 form 同 `verifyPassword`。
+- `cyc-portal-auth`：`{p, exp, email, name}`，`p` 係共用密鑰（duties/roster 嘅雲端寫入仍然靠佢），`exp` 係 +365 日（實際唔會過期）；duties/roster 每頁都有 IIFE 檢查，冇就跳返 `/` 或顯示「前往入口頁登入」。
+- **已取消共用密碼登入（2026-11-06）**：前置頁冇咗後備密碼 form；duties 閘頁冇密碼欄（未登入顯示「前往主頁登入」）；roster 冇咗裝置直接輸入密碼嘅緊急備用。雲端寫入授權完全靠 `cyc-portal-auth` 嘅密鑰。
 
 ## 開發流程
 
